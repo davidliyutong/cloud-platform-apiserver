@@ -13,9 +13,22 @@ from src.apiserver.service import service
 from src.apiserver.repo import Repo, UserRepo
 from src.components.config import BackendConfig
 from src.components.logging import create_logger
+import src.components.authn as authn
 from ...components import errors
 
 app = Sanic("root")
+
+
+@app.get("/health", name="health")
+async def health(request):
+    return json_response(
+        {
+            'description': '/health',
+            'status': http.HTTPStatus.OK,
+            'message': "OK"
+        },
+        http.HTTPStatus.OK
+    )
 
 
 class ControllerInterface(metaclass=ABCMeta):
@@ -40,6 +53,7 @@ class AdminUserController(ControllerInterface):
     @openapi.parameter("extra_query_filter", str, location="query", required=False)
     @openapi.parameter("Authorization", str, location="header", required=True)
     @protected()
+    @authn.validate_role(role=("admin", "super_admin"))
     async def list(request):
         logger.debug(f"{request.path} invoked")
 
@@ -76,6 +90,7 @@ class AdminUserController(ControllerInterface):
     )
     @openapi.parameter("Authorization", str, location="header", required=True)
     @protected()
+    @authn.validate_role(role=("admin", "super_admin"))
     async def create(request):
         logger.debug(f"{request.path} invoked")
 
@@ -125,6 +140,7 @@ class AdminUserController(ControllerInterface):
     @app.get("/admin/users/<username:str>", name="admin_user_get", version=1)
     @openapi.parameter("Authorization", str, location="header", required=True)
     @protected()
+    @authn.validate_role(role=("admin", "super_admin"))
     async def get(request, username: str):
         logger.debug(f"{request.path} invoked")
 
@@ -164,6 +180,7 @@ class AdminUserController(ControllerInterface):
         body={'application/json': AdminUserUpdateRequest.model_json_schema()},
     )
     @openapi.parameter("Authorization", str, location="header", required=True)
+    @authn.validate_role(role=("admin", "super_admin"))
     @protected()
     async def update(request, username: str):
         logger.debug(f"{request.path} invoked")
@@ -204,6 +221,7 @@ class AdminUserController(ControllerInterface):
     @app.delete("/admin/users/<username:str>", name="admin_user_delete", version=1)
     @openapi.parameter("Authorization", str, location="header", required=True)
     @protected()
+    @authn.validate_role(role=("admin", "super_admin"))
     async def delete(request, username: str):
         logger.debug(f"{request.path} invoked")
 

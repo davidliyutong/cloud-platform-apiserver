@@ -12,8 +12,9 @@ from sanic import request, response, Sanic
 from sanic_jwt import Configuration, Responses, exceptions, Authentication
 from loguru import logger
 
-async def get_user(repo: Repo, username: str) -> Tuple[
-    Optional[Dict[str, Any]], Optional[Exception]]:
+
+async def get_user(repo: Repo,
+                   username: str) -> Tuple[Optional[Dict[str, Any]], Optional[Exception]]:
     db_col = repo.get_collection(datamodels.database_name, datamodels.user_collection_name)
     user = await db_col.find_one({"username": username})
 
@@ -90,21 +91,27 @@ class MyJWTConfig(Configuration):
     # [默认] 'user_id'
     user_id = "username"
 
+    refresh_token_enabled = True  # 开启 refresh_token 功能
+
     claim_iat = True  # 显示签发时间，JWT的默认保留字段，在 sanic-jwt 中默认不显示该项
 
 
 class MyJWTAuthentication(Authentication):
 
     # 从 payload 中解析用户信息，然后返回查找到的用户
-    # args[0]: request
-    # args[1]: payload
-    async def retrieve_user(self, *args, **kwargs):
+    # request: request
+    # kwargs: payload
+    async def retrieve_user(self, request, **kwargs):
         user_id_attribute = self.config.user_id()
-        if not args or len(args) < 2 or user_id_attribute not in args[1]:
-            return {}
-        user_id = dict(args[1]).get(user_id_attribute)
-        user = get_user(Repo(args[0].app.config), user_id)
-        return user
+        if 'payload' in kwargs.keys():
+            user_id = kwargs['payload'].get(user_id_attribute)
+            user, err = await get_user(Repo(request.app.config), user_id)
+            if err is not None:
+                raise exceptions.AuthenticationFailed(str(err))
+            else:
+                return user
+        else:
+            raise exceptions.AuthenticationFailed(str(errors.invalid_token))
 
     # 拓展 payload
     async def extend_payload(self, payload, *args, **kwargs):
@@ -113,7 +120,7 @@ class MyJWTAuthentication(Authentication):
         user_id_attribute = self.config.user_id()
         user_id = payload.get(user_id_attribute)
         user, _ = await get_user(Repo(Sanic.get_app("root").config), user_id)
-        payload.update({'email': user["email"]})  # 比如添加性别属性
+        payload.update({'email': user["email"], 'role': user['role']})  # 比如添加性别属性
         return payload
 
     async def extract_payload(self, req, verify=True, *args, **kwargs):
@@ -155,3 +162,17 @@ class MyJWTResponse(Responses):
             "token": "",
         }
         return response.json(result, status=exception.status_code)
+
+
+async def retrieve_refresh_token(request, user_id, *args, **kwargs):
+    _ = f'refresh_token_{user_id}'
+    token_str = request.json.get('refresh_token', None)
+    if token_str is None:
+        return b''
+    else:
+        return token_str.encode('utf-8')
+
+
+async def store_refresh_token(user_id, refresh_token, *args, **kwargs):
+    _ = f'refresh_token_{user_id}'
+    return

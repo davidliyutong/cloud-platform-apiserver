@@ -93,7 +93,7 @@ class BackendConfig(BaseModel):
     def to_sanic_config(self):
         # >>> Define Values >>>
         return {
-            "API_NUM_WORKERS": self.api_num_workers,
+            "API_NUMWORKERS": self.api_num_workers,
             "API_HOST": self.api_host,
             "API_PORT": self.api_port,
             "API_ACCESS_LOG": self.api_access_log,
@@ -179,7 +179,7 @@ class BackendConfig(BaseModel):
         v.bind_args(vars(args))
 
         # >>> Set Env Values >>>
-        v.bind_env("api.numWorker")
+        v.bind_env("api.numWorkers")
         v.bind_env("api.host")
         v.bind_env("api.port")
         v.bind_env("api.accessLog")

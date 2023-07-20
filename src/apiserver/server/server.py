@@ -1,5 +1,3 @@
-import uuid
-
 from sanic import Sanic
 from src.apiserver.controller import controller_app
 from src.components.config import BackendConfig
@@ -7,7 +5,15 @@ from loguru import logger
 import pymongo
 import src.components.datamodels as datamodels
 from sanic_jwt import initialize
-from src.apiserver.service.authz import MyJWTConfig, MyJWTAuthentication, MyJWTResponse, authenticate
+from src.components.authz import (
+    MyJWTConfig,
+    MyJWTAuthentication,
+    MyJWTResponse,
+    authenticate,
+    store_refresh_token,
+    retrieve_refresh_token
+)
+
 
 def prepare_run(opt: BackendConfig) -> Sanic:
     controller_app.ctx.opt = opt
@@ -47,6 +53,10 @@ def prepare_run(opt: BackendConfig) -> Sanic:
                authenticate=authenticate,
                authentication_class=MyJWTAuthentication,
                configuration_class=MyJWTConfig,
-               responses_class=MyJWTResponse)
+               responses_class=MyJWTResponse,
+               retrieve_refresh_token=retrieve_refresh_token,
+               store_refresh_token=store_refresh_token)
+
+    controller_app.config.update({'JWT_SECRET': controller_app.ctx.auth.config.secret._value})
 
     return controller_app
