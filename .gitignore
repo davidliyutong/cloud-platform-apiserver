@@ -1,0 +1,14 @@
+# IDE
+.idea
+.vscode
+
+# Logs, Temp Data
+logs
+
+# Python
+*.pyc
+*.egg-info
+
+# Build and Distribution
+build
+dist

@@ -1,0 +1,5 @@
+user_not_found = Exception("user not found")
+empty_username_or_password = Exception("empty username or password")
+wrong_password = Exception("wrong password")
+wrong_query_filter = Exception("wrong query filter")
+db_connection_error = Exception("db connection error")
