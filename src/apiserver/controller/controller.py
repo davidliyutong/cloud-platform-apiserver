@@ -13,35 +13,13 @@ from src.apiserver.service import service
 from src.apiserver.repo import Repo, UserRepo
 from src.components.config import BackendConfig
 from src.components.logging import create_logger
+from ...components import errors
 
 app = Sanic("root")
 
 
 class ControllerInterface(metaclass=ABCMeta):
     pass
-
-
-# class AuthJWTController(ControllerInterface):
-#     @staticmethod
-#     @app.post("/auth/jwt/login", name="auth_jwt_login", version=1)
-#     @openapi.definition(
-#         body={'application/json': AuthJWTLoginRequest.model_json_schema()},
-#     )
-#     @validate(json=AuthJWTLoginRequest)
-#     async def jwt_login(request, body: AuthJWTLoginRequest):
-#         logger.debug(f"login request: {body}")
-#         repo = Repo(request.app.config)
-#         token, expire, err = await service.auth_jwt_service.login(repo, body.username, body.password)
-#         if err is not None:
-#             return json_response(
-#                 AuthJWTLoginResponse(code="ok", expire=datetime.datetime.now(), token=token).model_dump(), status=500)
-#         else:
-#             return json_response(AuthJWTLoginResponse(code="ok", expire=expire, token=token).model_dump(), status=500)
-#
-#     @staticmethod
-#     @app.post("/auth/jwt/refresh", name="auth_jwt_refresh", version=1)
-#     async def jwt_refresh(request):
-#         pass
 
 
 class AuthBasicController(ControllerInterface):
@@ -54,50 +32,210 @@ class AuthBasicController(ControllerInterface):
 class AdminUserController(ControllerInterface):
     @staticmethod
     @app.get("/admin/users", name="admin_user_list", version=1)
-    # @protected()
     @openapi.definition(
         body={'application/json': AdminUserListRequest.model_json_schema()},
     )
+    @openapi.parameter("index_start", int, location="query", required=False)
+    @openapi.parameter("index_end", int, location="query", required=False)
+    @openapi.parameter("extra_query_filter", str, location="query", required=False)
+    @openapi.parameter("Authorization", str, location="header", required=True)
+    @protected()
     async def list(request):
-        req = request.json
-        if req is None:
+        logger.debug(f"{request.path} invoked")
+
+        if request.query_args is None:
             req = AdminUserListRequest()
         else:
-            req = AdminUserListRequest(**req)
+            req = AdminUserListRequest(**{k: v for (k, v) in request.query_args})
         repo = UserRepo(Repo(request.app.config))
         count, users, err = await service.admin_user_service.list(repo, req)
 
         if err is not None:
-            return json_response(AdminUserListResponse(code=500, msg=str(err)).model_dump(),
-                                 status=http.HTTPStatus.INTERNAL_SERVER_ERROR)
+            return json_response(
+                AdminUserListResponse(
+                    status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                    message=str(err)
+                ).model_dump(),
+                status=http.HTTPStatus.INTERNAL_SERVER_ERROR
+            )
         else:
             return json_response(
                 AdminUserListResponse(
-                    code=200,
-                    msg=str(err),
+                    status=http.HTTPStatus.OK,
+                    message="success",
                     total_users=count,
                     users=users
-                ).model_dump(), status=http.HTTPStatus.OK)
+                ).model_dump(),
+                status=http.HTTPStatus.OK
+            )
 
     @staticmethod
     @app.post("/admin/users", name="admin_user_create", version=1)
+    @openapi.definition(
+        body={'application/json': AdminUserCreateRequest.model_json_schema()},
+    )
+    @openapi.parameter("Authorization", str, location="header", required=True)
+    @protected()
     async def create(request):
+        logger.debug(f"{request.path} invoked")
+
+        if request.json is None:
+            return json_response(
+                AdminUserCreateResponse(
+                    status=http.HTTPStatus.BAD_REQUEST,
+                    message=str(errors.invalid_request_body)
+                ).model_dump(),
+                status=http.HTTPStatus.BAD_REQUEST
+            )
+        else:
+            try:
+                req = AdminUserCreateRequest(**request.json)
+            except Exception as e:
+                return json_response(
+                    AdminUserCreateResponse(
+                        status=http.HTTPStatus.BAD_REQUEST,
+                        message=str(e)
+                    ).model_dump(),
+                    status=http.HTTPStatus.BAD_REQUEST
+                )
+            repo = UserRepo(Repo(request.app.config))
+            user, err = await service.admin_user_service.create(repo, req)
+
+            if err is not None:
+                return json_response(
+                    AdminUserCreateResponse(
+                        status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                        message=str(err)
+                    ).model_dump(),
+                    status=http.HTTPStatus.INTERNAL_SERVER_ERROR
+                )
+
+            else:
+                return json_response(
+                    AdminUserCreateResponse(
+                        status=http.HTTPStatus.OK,
+                        message="success",
+                        user=user
+                    ).model_dump(),
+                    status=http.HTTPStatus.OK
+                )
         pass
 
     @staticmethod
-    @app.get("/admin/users/<user_id:str>", name="admin_user_get", version=1)
-    async def get(request, user_id: str):
-        pass
+    @app.get("/admin/users/<username:str>", name="admin_user_get", version=1)
+    @openapi.parameter("Authorization", str, location="header", required=True)
+    @protected()
+    async def get(request, username: str):
+        logger.debug(f"{request.path} invoked")
+
+        if username is None or username == "":
+            return json_response(
+                AdminUserGetResponse(
+                    status=http.HTTPStatus.BAD_REQUEST,
+                    message=str(errors.invalid_request_body)
+                ).model_dump(),
+                status=http.HTTPStatus.BAD_REQUEST
+            )
+        else:
+            req = AdminUserGetRequest(username=username)
+            repo = UserRepo(Repo(request.app.config))
+            user, err = await service.admin_user_service.get(repo, req)
+            if err is not None:
+                return json_response(
+                    AdminUserGetResponse(
+                        status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                        message=str(err)
+                    ).model_dump(),
+                    status=http.HTTPStatus.INTERNAL_SERVER_ERROR
+                )
+            else:
+                return json_response(
+                    AdminUserGetResponse(
+                        status=http.HTTPStatus.OK,
+                        message="success",
+                        user=user
+                    ).model_dump(),
+                    status=http.HTTPStatus.OK
+                )
 
     @staticmethod
-    @app.put("/admin/users/<user_id:str>", name="admin_user_update", version=1)
-    async def update(request, user_id: str):
-        pass
+    @app.put("/admin/users/<username:str>", name="admin_user_update", version=1)
+    @openapi.definition(
+        body={'application/json': AdminUserUpdateRequest.model_json_schema()},
+    )
+    @openapi.parameter("Authorization", str, location="header", required=True)
+    @protected()
+    async def update(request, username: str):
+        logger.debug(f"{request.path} invoked")
+
+        body = request.json
+        if username is None or username == "":
+            return json_response(
+                AdminUserGetResponse(
+                    status=http.HTTPStatus.BAD_REQUEST,
+                    message=str(errors.invalid_request_body)
+                ).model_dump(),
+                status=http.HTTPStatus.BAD_REQUEST
+            )
+        else:
+            body.update({"username": username})
+            req = AdminUserUpdateRequest(**body)
+            repo = UserRepo(Repo(request.app.config))
+            user, err = await service.admin_user_service.update(repo, req)
+            if err is not None:
+                return json_response(
+                    AdminUserUpdateResponse(
+                        status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                        message=str(err)
+                    ).model_dump(),
+                    status=http.HTTPStatus.INTERNAL_SERVER_ERROR
+                )
+            else:
+                return json_response(
+                    AdminUserGetResponse(
+                        status=http.HTTPStatus.OK,
+                        message="success",
+                        user=user
+                    ).model_dump(),
+                    status=http.HTTPStatus.OK
+                )
 
     @staticmethod
-    @app.delete("/admin/users/<user_id:str>", name="admin_user_delete", version=1)
-    async def delete(request, user_id: str):
-        pass
+    @app.delete("/admin/users/<username:str>", name="admin_user_delete", version=1)
+    @openapi.parameter("Authorization", str, location="header", required=True)
+    @protected()
+    async def delete(request, username: str):
+        logger.debug(f"{request.path} invoked")
+
+        if username is None or username == "":
+            return json_response(
+                AdminUserGetResponse(
+                    status=http.HTTPStatus.BAD_REQUEST,
+                    message=str(errors.invalid_request_body)
+                ).model_dump(),
+                status=http.HTTPStatus.BAD_REQUEST
+            )
+        else:
+            req = AdminUserDeleteRequest(username=username)
+            repo = UserRepo(Repo(request.app.config))
+            deleted_user, err = await service.admin_user_service.delete(repo, req)
+            if err is not None:
+                return json_response(
+                    AdminUserDeleteResponse(
+                        status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                        message=str(err)
+                    ).model_dump(),
+                    status=http.HTTPStatus.INTERNAL_SERVER_ERROR
+                )
+            else:
+                return json_response(
+                    AdminUserDeleteResponse(
+                        status=http.HTTPStatus.OK,
+                        message="success",
+                        user=deleted_user
+                    ).model_dump(),
+                    status=http.HTTPStatus.OK
+                )
 
 
 class AdminTemplateController(ControllerInterface):

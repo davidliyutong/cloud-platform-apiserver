@@ -1,22 +1,6 @@
-from functools import wraps
 from typing import Dict
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorCollection
-
-
-def singleton(cls):
-    """
-    :param cls: cls
-    :return: instance
-    """
-    _instances = {}
-
-    @wraps(cls)
-    def instance(*args, **kw):
-        if cls not in _instances:
-            _instances[cls] = cls(*args, **kw)
-        return _instances[cls]
-
-    return instance
+from src.components.utils import singleton
 
 
 @singleton

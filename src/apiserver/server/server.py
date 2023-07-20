@@ -7,7 +7,7 @@ from loguru import logger
 import pymongo
 import src.components.datamodels as datamodels
 from sanic_jwt import initialize
-from src.apiserver.service.auth import MyJWTConfig, MyJWTAuthentication, MyJWTResponse, authenticate
+from src.apiserver.service.authz import MyJWTConfig, MyJWTAuthentication, MyJWTResponse, authenticate
 
 def prepare_run(opt: BackendConfig) -> Sanic:
     controller_app.ctx.opt = opt

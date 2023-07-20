@@ -1,34 +1,64 @@
 import datetime
-from typing import List
+from typing import List, Optional, Dict, Any
 
 import src.components.datamodels as datamodels
 
-from pydantic import BaseModel, field_serializer
-
-
-class AuthJWTLoginRequest(BaseModel):
-    username: str
-    password: str
-
-
-class AuthJWTLoginResponse(BaseModel):
-    code: int
-    expire: datetime.datetime
-    token: str
-
-    @field_serializer("expire")
-    def serialize_expire(self, v: datetime.datetime, _info):
-        return v.isoformat()
+from pydantic import BaseModel, field_serializer, EmailStr, SecretStr
 
 
 class AdminUserListRequest(BaseModel):
-    uid_start: int = -1
-    uid_end: int = -1
+    index_start: int = -1
+    index_end: int = -1
     extra_query_filter: str = ''
 
 
 class AdminUserListResponse(BaseModel):
-    code: int
-    msg: str
+    description: str = ""
+    status: int
+    message: str
     total_users: int = 0
     users: List[datamodels.UserModel] = []
+
+
+class AdminUserCreateRequest(BaseModel):
+    username: str
+    password: str
+    email: Optional[str]
+    role: str
+    quota: Optional[Dict[str, Any]] = None
+
+
+class AdminUserCreateResponse(BaseModel):
+    description: str = ""
+    status: int
+    message: str
+    user: datamodels.UserModel = None
+
+
+class AdminUserGetRequest(BaseModel):
+    username: str
+
+
+class AdminUserGetResponse(AdminUserCreateResponse):
+    pass
+
+
+class AdminUserUpdateRequest(BaseModel):
+    username: str
+    password: Optional[str] = None
+    status: Optional[str] = None
+    email: Optional[EmailStr] = None
+    role: Optional[str] = None
+    quota: Optional[Dict[str, Any]] = None
+
+
+class AdminUserUpdateResponse(AdminUserCreateResponse):
+    pass
+
+
+class AdminUserDeleteRequest(AdminUserGetRequest):
+    pass
+
+
+class AdminUserDeleteResponse(AdminUserCreateResponse):
+    pass

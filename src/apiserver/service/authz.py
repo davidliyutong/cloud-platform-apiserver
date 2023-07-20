@@ -125,7 +125,7 @@ class MyJWTResponse(Responses):
     async def get_access_token_output(request, user, config, instance):
         access_token = await instance.ctx.auth.generate_access_token(user)
 
-        output = {"code": 200, "msg": "success", config.access_token_name(): access_token}
+        output = {"description": "", "status": 200, "message": "success", config.access_token_name(): access_token}
 
         return access_token, output
 

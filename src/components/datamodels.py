@@ -35,6 +35,11 @@ class PodStatusEnum(str, Enum):
     unknown = "unknown"
 
 
+class UserStatusEnum(str, Enum):
+    active = "active"
+    inactive = "inactive"
+
+
 class QuotaModel(BaseModel):
     m_cpu: int
     memory_mb: int
@@ -48,6 +53,7 @@ class UserModel(BaseModel):
     uid: int
     uuid: Optional[UUID4]
     username: str
+    status: UserStatusEnum = UserStatusEnum.active
     email: Optional[EmailStr]
     password: SecretStr
     role: RoleEnum
@@ -72,6 +78,10 @@ class UserModel(BaseModel):
     def serialize_role(self, v: RoleEnum, _info):
         return v.value
 
+    @field_serializer('status')
+    def serialize_status(self, v: UserStatusEnum, _info):
+        return v.value
+
     @field_validator("owned_pod_ids")
     def owned_pod_ids_must_be_valid(cls, v):
         if v is None:
@@ -79,16 +89,21 @@ class UserModel(BaseModel):
         return v
 
 
-def new_user_model(uid: int, username: str, password: str, role: RoleEnum) -> UserModel:
+def new_user_model(uid: int,
+                   username: str,
+                   password: str,
+                   role: RoleEnum,
+                   email: Optional[str] = None,
+                   quota: Optional[Dict[str, Any]] = None) -> UserModel:
     return UserModel(
         uid=uid,
         uuid=None,
         username=username,
-        email=None,
+        email=email,
         password=sha256(password.encode()).hexdigest(),
         role=role,
         owned_pod_ids=[],
-        quota=None,
+        quota=quota,
     )
 
 
