@@ -1,1 +1,1 @@
-from .controller import app as controller_app, ControllerInterface
+from .controller import app as controller_app

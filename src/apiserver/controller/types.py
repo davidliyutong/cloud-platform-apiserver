@@ -62,3 +62,6 @@ class AdminUserDeleteRequest(AdminUserGetRequest):
 
 class AdminUserDeleteResponse(AdminUserCreateResponse):
     pass
+
+class AdminTemplateCreateRequest(BaseModel):
+    pass

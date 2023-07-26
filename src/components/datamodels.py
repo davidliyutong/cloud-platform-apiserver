@@ -25,6 +25,15 @@ class RoleEnum(str, Enum):
     user = "user"
 
 
+class FieldTypeEnum(str, Enum):
+    string = "str"
+    integer = "int"
+    float = "float"
+    boolean = "bool"
+    datetime = "datetime"
+    list = "list"
+
+
 class PodStatusEnum(str, Enum):
     pending = "pending"
     creating = "creating"
@@ -64,6 +73,8 @@ class UserModel(BaseModel):
     def uuid_must_be_valid(cls, v):
         if v is None:
             v = uuid.uuid4()
+        if not isinstance(v, uuid.UUID):
+            v = uuid.UUID(v)
         return v
 
     @field_serializer('uuid')
@@ -111,8 +122,26 @@ class TemplateModel(BaseModel):
     template_id: UUID4
     image_ref: str
     template_str: str
+    fields: Optional[Dict[str, FieldTypeEnum]]
     defaults: Optional[Dict[str, Any]]
-    fields: Optional[Dict[str, Any]]
+
+    @field_validator("template_id")
+    def uuid_must_be_valid(cls, v):
+        if v is None:
+            v = uuid.uuid4()
+        if not isinstance(v, uuid.UUID):
+            v = uuid.UUID(v)
+        return v
+
+    @field_serializer('template_id')
+    def serialize_uuid(self, v: uuid.UUID, _info):
+        return str(v)
+
+    @field_serializer('fields')
+    def serialize_fields(self, v: Dict[str, FieldTypeEnum], _info):
+        return {
+            _k: str(_v) for _k, _v in v.items()
+        }
 
 
 class PodModel(BaseModel):
