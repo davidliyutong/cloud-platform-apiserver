@@ -120,6 +120,8 @@ def new_user_model(uid: int,
 
 class TemplateModel(BaseModel):
     template_id: UUID4
+    template_name: str
+    description: str
     image_ref: str
     template_str: str
     fields: Optional[Dict[str, FieldTypeEnum]]
@@ -149,7 +151,6 @@ class PodModel(BaseModel):
     name: str
     description: str
     template_ref: UUID4
-    auth: Optional[SecretStr]
     uid: int
     created_at: datetime.datetime
     started_at: datetime.datetime

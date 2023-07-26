@@ -529,7 +529,7 @@ This section describes Non-Admin APIs. They are not limited to admins.
 
 This section describes user management APIs. Users can manage their profile
 
-#### GET /v1/user/:username
+#### GET /v1/users/:username
 
 Get a single user's profile. Similar to /v1/admin/user/:username. User can only manage their own profile.
 
@@ -555,7 +555,7 @@ Get a single user's profile. Similar to /v1/admin/user/:username. User can only 
     }
     ```
 
-#### PUT /v1/user/:username
+#### PUT /v1/users/:username
 
 Modify user. Payload is new user profile. Similar to /v1/admin/user/:username.  User can only manage their own profile.
 

@@ -10,7 +10,7 @@
 - **password**: password, hash, mutable
 - **role**: 'user'|'admin'|'super_admin', string, immutable(user)
 - **owned_pod_ids**: unique pod ids owned by this user, list(uuid), mutable, autogen
-- **quota**: quota of this user, Quato struct, immutable(usdr)
+- **quota**: quota of this user, Quato struct, immutable(user)
 
 ## Pod
 
@@ -28,8 +28,13 @@
 
 ## Template (TBD)
 
+- **template_name**: name, str, immutable(user)
+- **description**: description, str, immutable(user)
 - **template_id**: unique id, uuid, immutable, autogen
 - **image_ref**: reference to which image, string, mutable
+- **template_str**: string of template, string, immutable(user)
+- **fields**: other fields, dict, immutable(user)
+- **defaults**: default value of fields, dict, immutable(user)
 
 ## Quota
 

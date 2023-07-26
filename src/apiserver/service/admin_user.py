@@ -11,13 +11,13 @@ class AdminUserService(ServiceInterface):
     @classmethod
     async def get(cls,
                   repo: UserRepo,
-                  req: AdminUserGetRequest) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
+                  req: UserGetRequest) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
         return await repo.get(username=req.username)
 
     @classmethod
     async def list(cls,
                    repo: UserRepo,
-                   req: AdminUserListRequest) -> Tuple[int, List[datamodels.UserModel], Optional[Exception]]:
+                   req: UserListRequest) -> Tuple[int, List[datamodels.UserModel], Optional[Exception]]:
         return await repo.list(index_start=req.index_start,
                                index_end=req.index_end,
                                extra_query_filter_str=req.extra_query_filter)
@@ -25,7 +25,7 @@ class AdminUserService(ServiceInterface):
     @classmethod
     async def create(cls,
                      repo: UserRepo,
-                     req: AdminUserCreateRequest) -> Tuple[datamodels.UserModel, Optional[Exception]]:
+                     req: UserCreateRequest) -> Tuple[datamodels.UserModel, Optional[Exception]]:
         return await repo.create(username=req.username,
                                  password=req.password,
                                  email=req.email,
@@ -35,7 +35,7 @@ class AdminUserService(ServiceInterface):
     @classmethod
     async def update(cls,
                      repo: UserRepo,
-                     req: AdminUserUpdateRequest) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
+                     req: UserUpdateRequest) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
         return await repo.update(username=req.username,
                                  password=req.password,
                                  status=req.status,
@@ -46,5 +46,5 @@ class AdminUserService(ServiceInterface):
     @classmethod
     async def delete(cls,
                      repo: UserRepo,
-                     req: AdminUserDeleteRequest) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
+                     req: UserDeleteRequest) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
         return await repo.delete(username=req.username)

@@ -13,9 +13,9 @@ from src.components.authz import (
     store_refresh_token,
     retrieve_refresh_token
 )
-# from src.apiserver.controller.admin_pod import bp as admin_pod_bp
-# from src.apiserver.controller.admin_template import bp as admin_template_bp
-# from src.apiserver.controller.admin_user import bp as admin_user_bp
+from src.apiserver.controller.admin_pod import bp as admin_pod_bp
+from src.apiserver.controller.admin_template import bp as admin_template_bp
+from src.apiserver.controller.admin_user import bp as admin_user_bp
 from src.apiserver.controller.auth import bp as auth_bp
 from src.apiserver.controller.nonadmin_user import bp as nonadmin_user_bp
 from src.apiserver.controller.nonadmin_pod import bp as nonadmin_pod_bp
@@ -64,9 +64,9 @@ def prepare_run(opt: BackendConfig) -> Sanic:
                store_refresh_token=store_refresh_token)
 
     # attach JWT secret to context
-    # controller_app.blueprint(admin_pod_bp)
-    # controller_app.blueprint(admin_template_bp)
-    # controller_app.blueprint(admin_user_bp)
+    controller_app.blueprint(admin_pod_bp)
+    controller_app.blueprint(admin_template_bp)
+    controller_app.blueprint(admin_user_bp)
     controller_app.blueprint(auth_bp)
     controller_app.blueprint(nonadmin_user_bp)
     controller_app.blueprint(nonadmin_pod_bp)
