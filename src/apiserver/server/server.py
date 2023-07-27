@@ -44,7 +44,7 @@ def prepare_run(opt: BackendConfig) -> Sanic:
         global_doc = conn[opt.db_database][datamodels.global_collection_name].find_one_and_update({"_id": "global"},
                                                                                                   {"$inc": {
                                                                                                       "uid_counter": 1}})
-        super_admin_user = datamodels.new_user_model(
+        super_admin_user = datamodels.UserModel.new(
             uid=global_doc["uid_counter"],
             username=opt.bootstrap_admin_username,
             password=opt.bootstrap_admin_password,

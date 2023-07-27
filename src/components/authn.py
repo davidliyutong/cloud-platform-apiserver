@@ -29,6 +29,7 @@ def validate_role(role: Iterable[str]):
                 try:
                     payload = jwt.decode(token, request.app.config.get('JWT_SECRET'), algorithms='HS256')
                     if payload.get('role') in role:
+                        request.ctx.user = payload
                         return await f(request, *args, **kwargs)
                     else:
                         error_msg = "Unauthorized"
@@ -38,7 +39,7 @@ def validate_role(role: Iterable[str]):
 
             except Exception as e:
                 # Logging the error can help you in debugging
-                logger.error(str(e))
+                logger.exception(str(e))
                 return json_response(
                     {
                         'description': '',

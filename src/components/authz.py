@@ -120,7 +120,7 @@ class MyJWTAuthentication(Authentication):
         user_id_attribute = self.config.user_id()
         user_id = payload.get(user_id_attribute)
         user, _ = await get_user(Repo(Sanic.get_app("root").config), user_id)
-        payload.update({'email': user["email"], 'role': user['role']})  # 比如添加性别属性
+        payload.update({'email': user["email"], 'role': user['role'], 'uid': user['uid']})  # 比如添加性别属性
         return payload
 
     async def extract_payload(self, req, verify=True, *args, **kwargs):

@@ -8,6 +8,7 @@
 - **status**: 'active'|'inactive', string, immutable(user)
 - **email**: email, string(email), mutable
 - **password**: password, hash, mutable
+- **htpasswd**: httpasswd, hash, mutable, autogen
 - **role**: 'user'|'admin'|'super_admin', string, immutable(user)
 - **owned_pod_ids**: unique pod ids owned by this user, list(uuid), mutable, autogen
 - **quota**: quota of this user, Quato struct, immutable(user)

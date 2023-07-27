@@ -32,7 +32,8 @@ Login API. Accept `username` and `password`. Returns JSON web token if username 
         "description": "",
         "status":200,
         "message":"",
-        "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey"
+        "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey",
+        "refresh_token": "xxx"
     }
     ```
 
@@ -51,7 +52,7 @@ Refresh Token API. Accept token as input and return a refreshed token as output
 
     ```json
     {
-        "jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey"
+        "refresh_token": "xxx"
     }
     ```
 
@@ -85,7 +86,9 @@ This section describes admin APIs that manipulate user resource.
 
 #### GET /v1/admin/users
 
-List all users. If `uid_start` and `uid_end` are “greater than” 0, only users with `uid` between `uid_start` and `uid_end` are returned. If `filter` is not empty, apply filter on results. This API returns profiles of users and total number of users. Limited to admins.
+List all users. If `uid_start` and `uid_end` are “greater than” 0, only users with `uid` between `uid_start`
+and `uid_end` are returned. If `filter` is not empty, apply filter on results. This API returns profiles of users and
+total number of users. Limited to admins.
 
 - Request Header:
 
@@ -97,7 +100,7 @@ List all users. If `uid_start` and `uid_end` are “greater than” 0, only user
 - Request Payload:
     ```
     ```
-  
+
 
 - Request Query:
 
@@ -137,7 +140,8 @@ Create user. Payload is user profile. Limited to admins.
         "username": "",
         "password": "",
         "email": "",
-        "role": ""
+        "role": "",
+        "quota": {}
     }
     ```
 
@@ -194,7 +198,12 @@ Modify user. Payload is new user profile. Limited to admins.
 
     ```json
     {
-        "user": {}
+        "username": "",
+        "password": "",
+        "status": "",
+        "email": "",
+        "role": "",
+        "quota": {}
     }
     ```
 
@@ -223,7 +232,6 @@ Delete a user. Limited to admins.
 - Request Payload:
 
     ```json
-    {}
     ```
 
 - Response:
@@ -243,7 +251,9 @@ This section describes admin APIs that manipulate template resource.
 
 #### GET /v1/admin/templates
 
-List all templates. If `template_id_start` and `template_id_end` are “greater than” 0, only templates with `template_id` between `template_id_start` and `template_id_end` are returned. If `filter` is not empty, apply filter on results. This API returns profiles of users and total number of templates. Limited to admins.
+List all templates. If `template_id_start` and `template_id_end` are “greater than” 0, only templates with `template_id`
+between `template_id_start` and `template_id_end` are returned. If `filter` is not empty, apply filter on results. This
+API returns profiles of templates and total number of templates. Limited to admins.
 
 - Request Header:
 
@@ -253,22 +263,27 @@ List all templates. If `template_id_start` and `template_id_end` are “greater 
     ```
 
 - Request Payload:
+    ```
+    ```
 
-    ```json
-    {
-        "template_id_start": -1,
-        "template_id_end": -1,
-        "filter": ""
-    }
+
+- Request Query:
+
+    ```conf
+     "index_start"= -1
+     "index_end"= -1,
+     "filter"= ""
     ```
 
 - Response:
 
     ```json
     {
-        "code":"200",
+        "description": "",
+        "status":200,
+        "message":"",
         "total_templates": 1,
-        "templates": [],
+        "templates": []
     }
     ```
 
@@ -287,7 +302,10 @@ Create template. Payload is a template. Limited to admins.
 
     ```json
     {
-        "template": {}
+        "image_ref": "",
+        "template_str": "",
+        "fields": {},
+        "defaults": {}
     }
     ```
 
@@ -295,7 +313,9 @@ Create template. Payload is a template. Limited to admins.
 
     ```json
     {
-        "code":"200",
+        "description": "",
+        "status":200,
+        "message":"",
         "template": {}
     }
     ```
@@ -314,15 +334,16 @@ Get a single template. Limited to admins.
 - Request Payload:
 
     ```json
-    {}
     ```
 
 - Response:
 
     ```json
     {
-        "code":"200",
-        "template": {},
+        "description": "",
+        "status":200,
+        "message":"",
+        "template": {}
     }
     ```
 
@@ -340,8 +361,13 @@ Modify template. Payload is new template profile. Limited to admins.
 - Request Payload:
 
     ```json
-    {
-        "template": {}
+    { 
+        "template_id": "",
+        "template_name": "",
+        "image_ref": "",
+        "template_str": "", 
+        "fields": {},
+        "defaults": {} 
     }
     ```
 
@@ -349,8 +375,10 @@ Modify template. Payload is new template profile. Limited to admins.
 
     ```json
     {
-        "code":"200",
-        "error": {},
+        "description": "",
+        "status":200,
+        "message":"",
+        "template": {}
     }
     ```
 
@@ -368,25 +396,27 @@ Delete a template. Limited to admins.
 - Request Payload:
 
     ```json
-    {}
     ```
 
 - Response:
 
     ```json
     {
-        "code":"200",
-        "error": {},
+        "description": "",
+        "status":200,
+        "message":"",
+        "template": {}
     }
     ```
 
-### Pod Mangement
+### Pod Management
 
 This section describes admin APIs that manipulate pod resource.
 
 #### GET /v1/admin/pods
 
-List all pods. If `filter` is not empty, apply filter on results. This API returns profiles of users and total number of users. Limited to admins.
+List all pods. If `filter` is not empty, apply filter on results. This API returns profiles of pods and total number of
+pods. Limited to admins.
 
 - Request Header:
 
@@ -396,20 +426,27 @@ List all pods. If `filter` is not empty, apply filter on results. This API retur
     ```
 
 - Request Payload:
+    ```
+    ```
 
-    ```json
-    {
-        "filter": ""
-    }
+
+- Request Query:
+
+    ```conf
+     "index_start"= -1
+     "index_end"= -1,
+     "filter"= ""
     ```
 
 - Response:
 
     ```json
     {
-        "code":"200",
+        "description": "",
+        "status":200,
+        "message":"",
         "total_pods": 1,
-        "pods": [],
+        "pods": []
     }
     ```
 
@@ -428,7 +465,12 @@ Create pod. Payload is pod profile. Limited to admins.
 
     ```json
     {
-        "pod": {}
+        "name": "",
+        "description": "",
+        "template_ref": "",
+        "uid": "",
+        "timeout_s": 1,
+        "values": {}
     }
     ```
 
@@ -436,7 +478,9 @@ Create pod. Payload is pod profile. Limited to admins.
 
     ```json
     {
-        "code":"200",
+        "description": "",
+        "status":200,
+        "message":"",
         "pod": {}
     }
     ```
@@ -455,15 +499,16 @@ Get a single pod's status. Limited to admins.
 - Request Payload:
 
     ```json
-    {}
     ```
 
 - Response:
 
     ```json
     {
-        "code":"200",
-        "user": {},
+        "description": "",
+        "status":200,
+        "message":"",
+        "pod": {}
     }
     ```
 
@@ -482,7 +527,13 @@ Modify a single pod's status. Limited to admins.
 
     ```json
     {
-        "pod": {}
+        "pod_id": "",
+        "name": "",
+        "description": "",
+        "template_ref": "",
+        "uid": "",
+        "timeout_s": "",
+        "target_status": ""
     }
     ```
 
@@ -490,8 +541,10 @@ Modify a single pod's status. Limited to admins.
 
     ```json
     {
-        "code":"200",
-        "error": {},
+        "description": "",
+        "status":200,
+        "message":"",
+        "pod": {}
     }
     ```
 
@@ -509,15 +562,16 @@ Delete a single pod. Limited to admins.
 - Request Payload:
 
     ```json
-    {}
     ```
 
 - Response:
 
     ```json
     {
-        "code":"200",
-        "error": {},
+        "description": "",
+        "status":200,
+        "message":"",
+        "pod": {}
     }
     ```
 
@@ -543,21 +597,22 @@ Get a single user's profile. Similar to /v1/admin/user/:username. User can only 
 - Request Payload:
 
     ```json
-    {}
     ```
 
 - Response:
 
     ```json
     {
-        "code":"200",
-        "user": {},
+        "description": "",
+        "status":200,
+        "message":"",
+        "user": {}
     }
     ```
 
 #### PUT /v1/users/:username
 
-Modify user. Payload is new user profile. Similar to /v1/admin/user/:username.  User can only manage their own profile.
+Modify user. Payload is new user profile. Similar to /v1/admin/user/:username. User can only manage their own profile.
 
 - Request Header:
 
@@ -570,7 +625,12 @@ Modify user. Payload is new user profile. Similar to /v1/admin/user/:username.  
 
     ```json
     {
-        "user": {}
+        "username": "",
+        "password": "",
+        "status": "",
+        "role": "",
+        "email": "",
+        "quota": {}
     }
     ```
 
@@ -578,14 +638,54 @@ Modify user. Payload is new user profile. Similar to /v1/admin/user/:username.  
 
     ```json
     {
-        "code":"200",
-        "error": {},
+        "description": "",
+        "status":200,
+        "message":"",
+        "user": {}
     }
     ```
 
 ### Pod Management
 
 This section describes pod management apis.
+
+#### GET /v1/pods
+
+List all pods owned by current user. If `filter` is not empty, apply filter on results. This API returns profiles of
+pods and total number of pods.
+
+- Request Header:
+
+    ```conf
+    Authorization=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey
+    Content-Type=application/json
+    ```
+
+- Request Payload:
+
+    ```
+    ```
+
+
+- Request Query:
+
+    ```conf
+     "index_start"= -1
+     "index_end"= -1,
+     "filter"= ""
+    ```
+
+- Response:
+
+    ```json
+    {
+        "description": "",
+        "status":200,
+        "message":"",
+        "total_pods": 1,
+        "pods": []
+    }
+    ```
 
 #### POST /v1/pods
 
@@ -602,7 +702,12 @@ Create pod. Payload is pod profile. Users will be limited on their quota. Admins
 
     ```json
     {
-        "pod": {}
+        "name": "",
+        "description": "",
+        "template_ref": "",
+        "uid": "",
+        "timeout_s": 1,
+        "values": {}
     }
     ```
 
@@ -610,14 +715,16 @@ Create pod. Payload is pod profile. Users will be limited on their quota. Admins
 
     ```json
     {
-        "code":"200",
+        "description": "",
+        "status":200,
+        "message":"",
         "pod": {}
     }
     ```
 
 #### GET /v1/pods/:pod_id
 
-Get a single pod's status. Users can only list their own pod. Admins can list any.
+Get a single pod's status owned by current user.
 
 - Request Header:
 
@@ -629,15 +736,16 @@ Get a single pod's status. Users can only list their own pod. Admins can list an
 - Request Payload:
 
     ```json
-    {}
     ```
 
 - Response:
 
     ```json
     {
-        "code":"200",
-        "user": {},
+        "description": "",
+        "status":200,
+        "message":"",
+        "pod": {}
     }
     ```
 
@@ -656,7 +764,13 @@ Modify a single pod's status. User can only modify their own pod. Admins can mod
 
     ```json
     {
-        "pod": {}
+        "pod_id": "",
+        "name": "",
+        "description": "",
+        "template_ref": "",
+        "uid": "",
+        "timeout_s": "",
+        "target_status": ""
     }
     ```
 
@@ -664,8 +778,10 @@ Modify a single pod's status. User can only modify their own pod. Admins can mod
 
     ```json
     {
-        "code":"200",
-        "error": {},
+        "description": "",
+        "status":200,
+        "message":"",
+        "pod": {}
     }
     ```
 
@@ -683,14 +799,15 @@ Delete a single pod. User can only delete their own pod. Admins can delete any.
 - Request Payload:
 
     ```json
-    {}
     ```
 
 - Response:
 
     ```json
     {
-        "code":"200",
-        "error": {},
+        "description": "",
+        "status":200,
+        "message":"",
+        "pod": {}
     }
     ```

@@ -133,6 +133,7 @@ class PodCreateRequest(BaseModel):
     template_ref: str
     uid: int
     timeout_s: int
+    values: Optional[Dict[str, Any]] = None
 
 
 class PodCreateResponse(ResponseBaseModel):
@@ -143,7 +144,7 @@ class PodGetRequest(BaseModel):
     pod_id: str
 
 
-class PodGetResponse(TemplateCreateResponse):
+class PodGetResponse(PodCreateResponse):
     pass
 
 
@@ -161,7 +162,7 @@ class PodUpdateResponse(TemplateGetResponse):
     pass
 
 
-class PodDeleteRequest(TemplateGetRequest):
+class PodDeleteRequest(PodGetRequest):
     pass
 
 

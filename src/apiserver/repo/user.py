@@ -2,6 +2,7 @@ import json
 from hashlib import sha256
 from typing import List, Tuple, Optional, Dict, Any
 
+import bcrypt
 from loguru import logger
 
 from .repo import Repo, singleton
@@ -76,7 +77,7 @@ class UserRepo:
                     "uid_counter": 1}})
             uid = global_doc["uid_counter"]
 
-            user = datamodels.new_user_model(
+            user = datamodels.UserModel.new(
                 uid=uid,
                 username=username,
                 password=password,
@@ -107,6 +108,8 @@ class UserRepo:
 
             try:
                 user['password'] = sha256(password.encode()).hexdigest() if password is not None else user['password']
+                user['htpasswd'] = f"{username}:" + bcrypt.hashpw(password.encode(), bcrypt.gensalt(
+                    rounds=12)).decode() if password is not None else user['htpasswd']
                 user['status'] = status if status is not None else user['status']
                 user['email'] = email if email is not None else user['email']
                 user['role'] = datamodels.RoleEnum(role) if role is not None else user['role']

@@ -1,6 +1,7 @@
 import datetime
 import uuid
 from hashlib import sha256
+import bcrypt
 
 from pydantic import BaseModel, UUID4, EmailStr, SecretStr, SecretBytes
 from pydantic import field_validator, field_serializer
@@ -65,6 +66,7 @@ class UserModel(BaseModel):
     status: UserStatusEnum = UserStatusEnum.active
     email: Optional[EmailStr]
     password: SecretStr
+    htpasswd: Optional[SecretStr] = None
     role: RoleEnum
     owned_pod_ids: List[UUID4]
     quota: Optional[QuotaModel]
@@ -85,6 +87,13 @@ class UserModel(BaseModel):
     def serialize_password(self, v: SecretStr, _info):
         return v.get_secret_value()
 
+    @field_serializer('htpasswd')
+    def serialize_htpasswd(self, v: SecretStr, _info):
+        if v is None:
+            return None
+        else:
+            return v.get_secret_value()
+
     @field_serializer('role')
     def serialize_role(self, v: RoleEnum, _info):
         return v.value
@@ -99,23 +108,25 @@ class UserModel(BaseModel):
             v = []
         return v
 
-
-def new_user_model(uid: int,
-                   username: str,
-                   password: str,
-                   role: RoleEnum,
-                   email: Optional[str] = None,
-                   quota: Optional[Dict[str, Any]] = None) -> UserModel:
-    return UserModel(
-        uid=uid,
-        uuid=None,
-        username=username,
-        email=email,
-        password=sha256(password.encode()).hexdigest(),
-        role=role,
-        owned_pod_ids=[],
-        quota=quota,
-    )
+    @classmethod
+    def new(cls,
+            uid: int,
+            username: str,
+            password: str,
+            role: RoleEnum,
+            email: Optional[str] = None,
+            quota: Optional[Dict[str, Any]] = None):
+        return cls(
+            uid=uid,
+            uuid=None,
+            username=username,
+            email=email,
+            password=sha256(password.encode()).hexdigest(),
+            htpasswd=f"{username}:" + bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12)).decode(),
+            role=role,
+            owned_pod_ids=[],
+            quota=quota,
+        )
 
 
 class TemplateModel(BaseModel):

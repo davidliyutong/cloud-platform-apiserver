@@ -16,8 +16,21 @@ services:
     container_name: mongo-express
     restart: always
     environment:
-    - ME_CONFIG_OPTIONS_EDITORTHEME=ambiance
-    - ME_CONFIG_MONGODB_URL=mongodb://clpl:clpl@mongodb:27017
-    - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+      - ME_CONFIG_OPTIONS_EDITORTHEME=ambiance
+      - ME_CONFIG_MONGODB_URL=mongodb://clpl:clpl@mongodb:27017
+      - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
     ports:
       - "28081:8081"
+  rabbitmq:
+    image: rabbitmq:3.9.29-management
+    hostname: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: clpl
+      RABBITMQ_DEFAULT_PASS: clpl
+    volumes:
+      - ./data/rabbitmq.data:/var/lib/rabbitmq
+      # - ./data/rabbitmq.log:/var/log/rabbitmq
