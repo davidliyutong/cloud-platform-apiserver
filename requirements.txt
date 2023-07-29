@@ -12,3 +12,4 @@ sanic-jwt
 bcrypt>=4.0.1
 pyjwt>=2.8.0
 pyyaml>=6.0
+shortuuid>=1.0.11
