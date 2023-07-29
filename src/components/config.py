@@ -7,9 +7,14 @@ import os.path as osp
 from loguru import logger
 import yaml
 
-_HOME = os.path.expanduser('~')
-_CONFIG_CONFIG_NAME = "backend"
-_CONFIG_PROJECT_NAME = "clpl"
+CONFIG_HOME_PATH = os.path.expanduser('~')
+CONFIG_CONFIG_NAME = "backend"
+CONFIG_PROJECT_NAME = "clpl"
+CONFIG_EVENT_QUEUE_NAME = "clpl_event_queue"
+CONFIG_GLOBAL_COLLECTION_NAME = "clpl_global"
+CONFIG_USER_COLLECTION_NAME = "clpl_users"
+CONFIG_POD_COLLECTION_NAME = "clpl_pods"
+CONFIG_TEMPLATE_COLLECTION_NAME = "clpl_templates"
 
 
 class BackendConfig(BaseModel):
@@ -20,15 +25,15 @@ class BackendConfig(BaseModel):
 
     mq_host: str = "127.0.0.1"
     mq_port: int = 5672
-    mq_username: str = _CONFIG_PROJECT_NAME
-    mq_password: str = _CONFIG_PROJECT_NAME
+    mq_username: str = CONFIG_PROJECT_NAME
+    mq_password: str = CONFIG_PROJECT_NAME
     mq_exchange: str = ""
 
     db_host: str = "127.0.0.1"
     db_port: int = 27017
-    db_username: str = _CONFIG_PROJECT_NAME
-    db_password: str = _CONFIG_PROJECT_NAME
-    db_database: str = _CONFIG_PROJECT_NAME
+    db_username: str = CONFIG_PROJECT_NAME
+    db_password: str = CONFIG_PROJECT_NAME
+    db_database: str = CONFIG_PROJECT_NAME
 
     bootstrap_admin_username: str = "admin"
     bootstrap_admin_password: str = "admin"
@@ -239,10 +244,10 @@ class BackendConfig(BaseModel):
         args = parser.parse_args(argv)
 
         v = cls.get_default_config()
-        v.set_config_name(_CONFIG_CONFIG_NAME)
+        v.set_config_name(CONFIG_CONFIG_NAME)
         v.set_config_type("yaml")
-        v.add_config_path(f"/etc/{_CONFIG_CONFIG_NAME}")
-        v.add_config_path(osp.join(_HOME, f".{_CONFIG_CONFIG_NAME}"))
+        v.add_config_path(f"/etc/{CONFIG_CONFIG_NAME}")
+        v.add_config_path(osp.join(CONFIG_HOME_PATH, f".{CONFIG_CONFIG_NAME}"))
         v.add_config_path(".")
         if args.config is not None:
             v.set_config_file(args.config)
@@ -253,7 +258,7 @@ class BackendConfig(BaseModel):
             v = cls.get_default_config()
             logger.warning(f"config file not found")
 
-        v.set_env_prefix(_CONFIG_PROJECT_NAME.upper())
+        v.set_env_prefix(CONFIG_PROJECT_NAME.upper())
         v.set_env_key_replacer(".", "_")
 
         v.bind_args(vars(args))
@@ -292,7 +297,7 @@ class BackendConfig(BaseModel):
     @classmethod
     def save_config(cls, v: Vyper, path: str = None) -> Optional[Exception]:
         if path is None:
-            path = osp.join(_HOME, f".{_CONFIG_PROJECT_NAME}", f"{_CONFIG_CONFIG_NAME}.yaml")
+            path = osp.join(CONFIG_HOME_PATH, f".{CONFIG_PROJECT_NAME}", f"{CONFIG_CONFIG_NAME}.yaml")
 
         _DIR = osp.dirname(path)
         if not osp.exists(_DIR):

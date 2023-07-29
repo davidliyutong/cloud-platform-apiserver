@@ -1,6 +1,10 @@
+import asyncio
 from typing import Dict
+
+from aio_pika.abc import AbstractRobustChannel, AbstractQueue
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorCollection
 from src.components.utils import singleton
+import aio_pika
 
 
 @singleton
@@ -9,7 +13,13 @@ class Repo:
     About motor's doc: https://github.com/mongodb/motor
     """
     _db: Dict[str, AsyncIOMotorDatabase] = {}
-    _collection: Dict[str, AsyncIOMotorCollection] = {}
+    _db_collection: Dict[str, AsyncIOMotorCollection] = {}
+    _mq: AbstractRobustChannel = None
+    _mq_queue: Dict[str, AbstractQueue] = {}
+
+    motor_uri = ''
+    pika_uri = ''
+
     options = {}
 
     def __init__(self, options):
@@ -43,7 +53,26 @@ class Repo:
         :return: the motor collection instance
         """
         collection_key = db_name + collection
-        if collection_key not in self._collection.keys():
-            self._collection[collection_key] = self.get_db(db_name)[collection]
+        if collection_key not in self._db_collection.keys():
+            self._db_collection[collection_key] = self.get_db(db_name)[collection]
 
-        return self._collection[collection_key]
+        return self._db_collection[collection_key]
+
+    async def get_mq_channel(self) -> AbstractRobustChannel:
+        self.pika_uri = 'amqp://{account}{host}:{port}'.format(
+            account='{username}:{password}@'.format(
+                username=self.options['MQ_USERNAME'],
+                password=self.options['MQ_PASSWORD']) if self.options['MQ_USERNAME'] else '',
+            host=self.options['MQ_HOST'] if self.options['MQ_HOST'] else '127.0.0.1',
+            port=self.options['MQ_PORT'] if self.options['MQ_PORT'] else 5672)
+        if self._mq is None:
+            self._mq = await (await aio_pika.connect_robust(self.pika_uri)).channel()
+        return self._mq
+
+    async def get_mq_queue(self, queue_name: str) -> AbstractQueue:
+        if queue_name not in self._mq_queue.keys():
+            self._mq_queue[queue_name] = await (await self.get_mq_channel()).declare_queue(
+                queue_name,
+                durable=True,
+            )
+        return self._mq_queue[queue_name]

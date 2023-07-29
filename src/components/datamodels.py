@@ -2,6 +2,7 @@ import datetime
 import uuid
 from hashlib import sha256
 import bcrypt
+import shortuuid
 
 from pydantic import BaseModel, UUID4, EmailStr, SecretStr, SecretBytes
 from pydantic import field_validator, field_serializer
@@ -10,12 +11,13 @@ from typing import List, Optional, Dict, Any
 from enum import Enum
 
 from src.components.utils import parse_template_str
+import src.components.config as config
 
-database_name = "clpl"
-global_collection_name = "clpl_global"
-user_collection_name = "clpl_users"
-pod_collection_name = "clpl_pods"
-template_collection_name = "clpl_templates"
+database_name = config.CONFIG_PROJECT_NAME
+global_collection_name = config.CONFIG_GLOBAL_COLLECTION_NAME
+user_collection_name = config.CONFIG_USER_COLLECTION_NAME
+pod_collection_name = config.CONFIG_POD_COLLECTION_NAME
+template_collection_name = config.CONFIG_TEMPLATE_COLLECTION_NAME
 
 
 class GlobalModel(BaseModel):
@@ -222,3 +224,31 @@ class PodModel(BaseModel):
             "POD_STORAGE_LIM": str(self.storage_lim_mb) + "Mi",
             "POD_AUTH": f"{self.uid}-basic-auth",
         }
+
+    @classmethod
+    def new(cls,
+            image_ref: str,
+            template_ref: UUID4,
+            uid: int,
+            name: str = "",
+            description: str = "",
+            cpu_lim_m_cpu: int = 1000,
+            mem_lim_mb: int = 512,
+            storage_lim_mb: int = 10240,
+            timeout_s: int = 3600):
+        return cls(
+            pod_id=shortuuid.uuid(),
+            name=name,
+            description=description,
+            image_ref=image_ref,
+            template_ref=template_ref,
+            cpu_lim_m_cpu=cpu_lim_m_cpu,
+            mem_lim_mb=mem_lim_mb,
+            storage_lim_mb=storage_lim_mb,
+            uid=uid,
+            created_at=datetime.datetime.now(),
+            started_at=datetime.datetime.now(),
+            timeout_s=timeout_s,
+            current_status=PodStatusEnum.pending.value,
+            target_status=PodStatusEnum.running,
+        )

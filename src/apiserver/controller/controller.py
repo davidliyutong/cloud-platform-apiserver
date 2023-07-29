@@ -22,6 +22,6 @@ async def health(_):
 
 @app.main_process_start
 async def main_process_start(application):
-    logger = create_logger()
+    logger = create_logger("./logs/apiserver")
     logger.info(f"creating sanic application: {application}")
     logger.info("main process start")

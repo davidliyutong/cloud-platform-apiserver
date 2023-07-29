@@ -20,7 +20,7 @@ from src.apiserver.controller.auth import bp as auth_bp
 from src.apiserver.controller.nonadmin_user import bp as nonadmin_user_bp
 from src.apiserver.controller.nonadmin_pod import bp as nonadmin_pod_bp
 
-from src.components.tasks import check_and_create_admin_user
+from src.components.tasks import check_and_create_admin_user, check_kubernetes_connection
 
 _service: RootService
 
@@ -32,6 +32,7 @@ def prepare_run(opt: BackendConfig) -> Sanic:
     _ = check_and_create_admin_user(opt)
 
     # establish Kubernetes connection and attach to context
+    # _ = check_kubernetes_connection(opt)
 
     # Install JWT authentication
     initialize(controller_app,
