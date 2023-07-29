@@ -9,6 +9,8 @@ from typing import List, Optional, Dict, Any
 
 from enum import Enum
 
+from src.components.utils import parse_template_str
+
 database_name = "clpl"
 global_collection_name = "clpl_global"
 user_collection_name = "clpl_users"
@@ -152,19 +154,71 @@ class TemplateModel(BaseModel):
 
     @field_serializer('fields')
     def serialize_fields(self, v: Dict[str, FieldTypeEnum], _info):
-        return {
-            _k: str(_v) for _k, _v in v.items()
-        }
+        if v is not None:
+            return {
+                _k: str(_v) for _k, _v in v.items()
+            }
+        else:
+            return None
+
+    @classmethod
+    def new(cls,
+            template_name: str,
+            description: str,
+            image_ref: str,
+            template_str: str,
+            fields: Optional[Dict[str, Any]],
+            defaults: Optional[Dict[str, Any]]):
+        return cls(
+            template_id=uuid.uuid4(),
+            template_name=template_name,
+            description=description,
+            image_ref=image_ref,
+            template_str=template_str,
+            fields=fields,
+            defaults=defaults,
+        )
+
+    __EXAMPLE_VALUES__ = {
+        "POD_ID": "test_id",
+        "POD_IMAGE_REF": "davidliyutong/code-server-speit:latest",
+        "POD_CPU_LIM": "2000m",
+        "POD_MEM_LIM": "4096Mi",
+        "POD_STORAGE_LIM": "10Mi",
+        "POD_AUTH": "uid-basic-auth",
+        "CONFIG_CODE_HOSTNAME": "code.example.org",
+        "CONFIG_CODE_TLS_SECRET": "code-tls-secret",
+        "CONFIG_VNC_HOSTNAME": "vnc.example.org",
+        "CONFIG_VNC_TLS_SECRET": "vnc-tls-secret",
+    }
+
+    def verify(self) -> bool:
+        template_str, used_keys, _ = parse_template_str(self.template_str, self.__EXAMPLE_VALUES__)
+        return len(set(used_keys)) == len(self.__EXAMPLE_VALUES__)
 
 
 class PodModel(BaseModel):
-    pod_id: UUID4
+    pod_id: str
     name: str
     description: str
+    image_ref: str
     template_ref: UUID4
+    cpu_lim_m_cpu: int
+    mem_lim_mb: int
+    storage_lim_mb: int
     uid: int
     created_at: datetime.datetime
     started_at: datetime.datetime
     timeout_s: int
     current_status: str
     target_status: str
+
+    def render(self):
+        return {
+            "POD_ID": self.pod_id,
+            "POD_IMAGE_REF": self.image_ref,
+            "POD_CPU_LIM": str(self.cpu_lim_m_cpu) + "m",
+            "POD_MEM_LIM": str(self.mem_lim_mb) + "Mi",
+            "POD_STORAGE_LIM": str(self.storage_lim_mb) + "Mi",
+            "POD_AUTH": f"{self.uid}-basic-auth",
+        }

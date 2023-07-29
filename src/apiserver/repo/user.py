@@ -5,7 +5,7 @@ from typing import List, Tuple, Optional, Dict, Any
 import bcrypt
 from loguru import logger
 
-from .repo import Repo, singleton
+from .repo import Repo
 import src.components.datamodels as datamodels
 import pymongo
 
@@ -100,11 +100,11 @@ class UserRepo:
                      role: Optional[str],
                      quota: Optional[Dict[str, Any]]) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
         try:
-            user_collection = self.db.get_collection(datamodels.database_name, datamodels.user_collection_name)
-            if await user_collection.count_documents({'username': username}) <= 0:
+            collection = self.db.get_collection(datamodels.database_name, datamodels.user_collection_name)
+            if await collection.count_documents({'username': username}) <= 0:
                 return None, errors.user_not_found
 
-            user = await user_collection.find_one({'username': username})
+            user = await collection.find_one({'username': username})
 
             try:
                 user['password'] = sha256(password.encode()).hexdigest() if password is not None else user['password']
@@ -118,7 +118,7 @@ class UserRepo:
             except Exception as _:
                 return None, errors.wrong_user_profile
 
-            ret = await user_collection.find_one_and_replace({'_id': user['_id']}, user)
+            ret = await collection.find_one_and_replace({'_id': user['_id']}, user)
             if ret is None:
                 logger.error(f"update user unknown error: {username}")
                 return None, errors.unknown_error

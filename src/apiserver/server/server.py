@@ -1,5 +1,8 @@
 from sanic import Sanic
 from src.apiserver.controller import controller_app
+from src.apiserver.service import RootService
+from src.apiserver.repo import Repo, UserRepo, TemplateRepo
+from src.apiserver.service.service import new_root_service
 from src.components.config import BackendConfig
 from loguru import logger
 import pymongo
@@ -19,6 +22,8 @@ from src.apiserver.controller.admin_user import bp as admin_user_bp
 from src.apiserver.controller.auth import bp as auth_bp
 from src.apiserver.controller.nonadmin_user import bp as nonadmin_user_bp
 from src.apiserver.controller.nonadmin_pod import bp as nonadmin_pod_bp
+
+_service: RootService
 
 
 def prepare_run(opt: BackendConfig) -> Sanic:
@@ -41,9 +46,10 @@ def prepare_run(opt: BackendConfig) -> Sanic:
     admin_user_query_result = list(col.find({"username": opt.bootstrap_admin_username}))
     if len(admin_user_query_result) == 0:
         logger.info("admin user not found, creating...")
-        global_doc = conn[opt.db_database][datamodels.global_collection_name].find_one_and_update({"_id": "global"},
-                                                                                                  {"$inc": {
-                                                                                                      "uid_counter": 1}})
+        global_doc = conn[opt.db_database][datamodels.global_collection_name].find_one_and_update(
+            {"_id": "global"},
+            {"$inc": {"uid_counter": 1}}
+        )
         super_admin_user = datamodels.UserModel.new(
             uid=global_doc["uid_counter"],
             username=opt.bootstrap_admin_username,
@@ -71,5 +77,10 @@ def prepare_run(opt: BackendConfig) -> Sanic:
     controller_app.blueprint(nonadmin_user_bp)
     controller_app.blueprint(nonadmin_pod_bp)
     controller_app.config.update({'JWT_SECRET': controller_app.ctx.auth.config.secret._value})
+
+    _ = new_root_service(
+        UserRepo(Repo(controller_app.config)),
+        TemplateRepo(Repo(controller_app.config))
+    )
 
     return controller_app

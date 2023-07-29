@@ -18,8 +18,11 @@
 - **pod_id**: unique id, uuid, immutable, autogen
 - **name**: name, string, mutable
 - **description**: name, string, mutable
-- **template_ref**: unique id of template, uuid, immutable
-- **auth**: internal auth string, string, mutable, insecure
+- **image_ref**: reference of image, string, mutable
+- **template_ref**: unique id of template, uuid, immutable 
+- **cpu_lim_m_cpu**: limit of cpu, integer, mutable
+- **mem_lim_mb**: limit of memory, integer, mutable
+- **storage_lim_mb**: limit of storage, integer, immutable
 - **uid**: unique id of ownner, integer, immutable
 - **created_at**: timestamp, date, immutable, autogen
 - **started_at**: timestamp, date, mutable, autogen
@@ -27,7 +30,7 @@
 - **current_status**: 'creating'|'running'|'stopped'|'deleting', string, mutable, autogen
 - **target_status**: target status, string, mutable
 
-## Template (TBD)
+## Template
 
 - **template_name**: name, str, immutable(user)
 - **description**: description, str, immutable(user)

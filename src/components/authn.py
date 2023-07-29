@@ -10,7 +10,6 @@ def validate_role(role: Iterable[str]):
     def decorator(f):
         @wraps(f)
         async def decorated_function(request, *args, **kwargs):
-            error_msg = ""
 
             try:
                 # Header: Authorization: Bearer <jwt>
@@ -26,15 +25,12 @@ def validate_role(role: Iterable[str]):
                 token = authorization_header_split[1]
 
                 # Verify the jwt, replace 'secret' with your Secret Key.
-                try:
-                    payload = jwt.decode(token, request.app.config.get('JWT_SECRET'), algorithms='HS256')
-                    if payload.get('role') in role:
-                        request.ctx.user = payload
-                        return await f(request, *args, **kwargs)
-                    else:
-                        error_msg = "Unauthorized"
-                        raise Exception(error_msg)
-                except Exception as e:
+                payload = jwt.decode(token, request.app.config.get('JWT_SECRET'), algorithms='HS256')
+                if payload.get('role') in role:
+                    request.ctx.user = payload
+                    return await f(request, *args, **kwargs)
+                else:
+                    error_msg = "Unauthorized"
                     raise Exception(error_msg)
 
             except Exception as e:

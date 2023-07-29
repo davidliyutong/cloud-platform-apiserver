@@ -1,9 +1,8 @@
-import datetime
 from typing import List, Optional, Dict, Any
 
-import src.components.datamodels as datamodels
+from pydantic import BaseModel, EmailStr
 
-from pydantic import BaseModel, field_serializer, EmailStr, SecretStr
+import src.components.datamodels as datamodels
 
 
 class ListRequestBaseModel(BaseModel):
@@ -78,6 +77,8 @@ class TemplateListResponse(ResponseBaseModel):
 
 
 class TemplateCreateRequest(BaseModel):
+    template_name: str
+    description: str
     image_ref: str
     template_str: str
     fields: Optional[Dict[str, Any]]
@@ -100,6 +101,7 @@ class TemplateGetResponse(TemplateCreateResponse):
 class TemplateUpdateRequest(BaseModel):
     template_id: str
     template_name: str = None
+    description: str = None
     image_ref: str = None
     template_str: str = None
     fields: Optional[Dict[str, Any]] = None

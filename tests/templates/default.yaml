@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    k8s-app: apps.clpl-${{ POD_ID }}
+  name: clpl-pvc-${{ POD_ID }}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: ${{ POD_STORAGE_LIM }} # CHANGEME Storage Limit
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    k8s-app: apps.clpl-${{ POD_ID }}
+  name: clpl-${{ POD_ID }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: apps.clpl-${{ POD_ID }}
+  template:
+    metadata:
+      labels:
+        k8s-app: apps.clpl-${{ POD_ID }}
+    spec:
+      containers:
+      - image: ${{ POD_IMAGE_REF }} # CHANGEME
+        imagePullPolicy: Always
+        name: container-0
+        ports:
+        - containerPort: 3000
+          name: 3000tcp
+          protocol: TCP
+        - containerPort: 80
+          name: 80tcp
+          protocol: TCP
+        resources: # CHANGEME
+          limits:
+            cpu: ${{ POD_CPU_LIM }}
+            memory: ${{ POD_MEM_LIM }}
+          requests:
+            cpu: 50m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: true
+          capabilities: {}
+          privileged: false
+          readOnlyRootFilesystem: false
+        volumeMounts:
+        - mountPath: /root
+          name: home
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: home
+        persistentVolumeClaim:
+          claimName: clpl-pvc-${{ POD_ID }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: apps.clpl-${{ POD_ID }}
+  name: clpl-svc-${{ POD_ID }}
+spec:
+  ports:
+  - name: 3000tcp
+    port: 3000
+    protocol: TCP
+    targetPort: 3000
+  - name: 6080tcp80
+    port: 6080
+    protocol: TCP
+    targetPort: 80
+  selector:
+    k8s-app: apps.clpl-${{ POD_ID }}
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    k8s-app: apps.clpl-${{ POD_ID }}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "40960M"
+    nginx.ingress.kubernetes.io/auth-realm: Enter your credentials
+    nginx.ingress.kubernetes.io/auth-secret: ${{ POD_AUTH }}
+    nginx.ingress.kubernetes.io/auth-type: basic
+  name: clpl-ingress-${{ POD_ID }}
+spec:
+  ingressClassName: nginx # CHANGEME
+  rules:
+  - host: ${{ POD_ID }}.${{ CONFIG_CODE_HOSTNAME }} # CHANGEME
+    http:
+      paths:
+      - backend:
+          service:
+            name: clpl-svc-${{ POD_ID }}
+            port:
+              number: 3000
+        path: /
+        pathType: Prefix
+  - host: ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGEME
+    http:
+      paths:
+      - backend:
+          service:
+            name: clpl-svc-${{ POD_ID }}
+            port:
+              number: 6080
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - ${{ POD_ID }}.${{ CONFIG_CODE_HOSTNAME }} # CHANGEME hostname
+    secretName: ${{ CONFIG_CODE_TLS_SECRET }} # CHANGEME TLS Secret
+  - hosts:
+    - ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGEME hostname
+    secretName: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGEME TLS Secret

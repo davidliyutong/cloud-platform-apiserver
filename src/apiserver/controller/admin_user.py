@@ -1,25 +1,15 @@
 import http
+
+from loguru import logger
 from sanic import Blueprint
 from sanic.response import json as json_response
-from .types import (
-    UserListRequest,
-    UserListResponse,
-    UserCreateRequest,
-    UserCreateResponse,
-    UserGetRequest,
-    UserGetResponse,
-    UserUpdateRequest,
-    UserUpdateResponse,
-    UserDeleteRequest,
-    UserDeleteResponse
-)
 from sanic_ext import openapi
 from sanic_jwt import protected
-from loguru import logger
-from src.apiserver.service import service
-from src.apiserver.repo import Repo, UserRepo
+
 import src.components.authn as authn
-from ...components import errors
+from src.apiserver.service import get_root_service
+from src.components import errors
+from .types import *
 
 bp = Blueprint('admin_user', url_prefix="/admin/users", version=1)
 
@@ -39,8 +29,7 @@ async def list(request):
         req = UserListRequest()
     else:
         req = UserListRequest(**{k: v for (k, v) in request.query_args})
-    repo = UserRepo(Repo(request.app.config))
-    count, users, err = await service.admin_user_service.list(repo, req)
+    count, users, err = await get_root_service().admin_user_service.list(req)
 
     if err is not None:
         return json_response(
@@ -92,8 +81,7 @@ async def create(request):
                 ).model_dump(),
                 status=http.HTTPStatus.BAD_REQUEST
             )
-        repo = UserRepo(Repo(request.app.config))
-        user, err = await service.admin_user_service.create(repo, req)
+        user, err = await get_root_service().admin_user_service.create(req)
 
         if err is not None:
             return json_response(
@@ -113,7 +101,6 @@ async def create(request):
                 ).model_dump(),
                 status=http.HTTPStatus.OK
             )
-    pass
 
 
 @bp.get("/<username:str>", name="admin_user_get")
@@ -134,8 +121,7 @@ async def get(request, username: str):
         )
     else:
         req = UserGetRequest(username=username)
-        repo = UserRepo(Repo(request.app.config))
-        user, err = await service.admin_user_service.get(repo, req)
+        user, err = await get_root_service().admin_user_service.get(req)
         if err is not None:
             return json_response(
                 UserGetResponse(
@@ -178,8 +164,7 @@ async def update(request, username: str):
     else:
         body.update({"username": username})
         req = UserUpdateRequest(**body)
-        repo = UserRepo(Repo(request.app.config))
-        user, err = await service.admin_user_service.update(repo, req)
+        user, err = await get_root_service().admin_user_service.update(req)
         if err is not None:
             return json_response(
                 UserUpdateResponse(
@@ -217,8 +202,7 @@ async def delete(request, username: str):
         )
     else:
         req = UserDeleteRequest(username=username)
-        repo = UserRepo(Repo(request.app.config))
-        deleted_user, err = await service.admin_user_service.delete(repo, req)
+        deleted_user, err = await get_root_service().admin_user_service.delete(req)
         if err is not None:
             return json_response(
                 UserDeleteResponse(

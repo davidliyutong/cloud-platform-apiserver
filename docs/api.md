@@ -302,6 +302,8 @@ Create template. Payload is a template. Limited to admins.
 
     ```json
     {
+        "template_name": "",
+        "description": "",
         "image_ref": "",
         "template_str": "",
         "fields": {},

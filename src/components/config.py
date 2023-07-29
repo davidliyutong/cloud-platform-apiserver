@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from vyper import Vyper
 import argparse
-from typing import List, Any, Tuple, Optional, Dict, Union
+from typing import List, Any, Tuple, Optional, Dict
 import os
 import os.path as osp
 from loguru import logger
@@ -27,6 +27,10 @@ class BackendConfig(BaseModel):
     bootstrap_admin_username: str = "admin"
     bootstrap_admin_password: str = "admin"
 
+    config_code_hostname: str = None
+    config_code_tls_secret: str = None
+    config_vnc_hostname: str = None
+    config_vnc_tls_secret: str = None
 
     @logger.catch
     def from_dict(self, d: Dict[str, Any]):
@@ -44,6 +48,11 @@ class BackendConfig(BaseModel):
 
         self.bootstrap_admin_password = str(d["bootstrap"]["adminPassword"])
         self.bootstrap_admin_username = str(d["bootstrap"]["adminUsername"])
+
+        self.config_code_hostname = str(d["config"]["code"]["hostname"])
+        self.config_code_tls_secret = str(d["config"]["code"]["tlsSecret"])
+        self.config_vnc_hostname = str(d["config"]["vnc"]["hostname"])
+        self.config_vnc_tls_secret = str(d["config"]["vnc"]["tlsSecret"])
         # <<< Define Values <<<
         return self
 
@@ -63,6 +72,11 @@ class BackendConfig(BaseModel):
 
         self.bootstrap_admin_password = v.get_string("bootstrap.adminPassword")
         self.bootstrap_admin_username = v.get_string("bootstrap.adminUsername")
+
+        self.config_code_hostname = v.get_string("config.code.hostname")
+        self.config_code_tls_secret = v.get_string("config.code.tlsSecret")
+        self.config_vnc_hostname = v.get_string("config.vnc.hostname")
+        self.config_vnc_tls_secret = v.get_string("config.vnc.tlsSecret")
         # <<< Define Values <<<
 
         return self
@@ -86,6 +100,16 @@ class BackendConfig(BaseModel):
             "bootstrap": {
                 "adminUsername": self.bootstrap_admin_username,
                 "adminPassword": self.bootstrap_admin_password,
+            },
+            "config": {
+                "code": {
+                    "hostname": self.config_code_hostname,
+                    "tlsSecret": self.config_code_tls_secret,
+                },
+                "vnc": {
+                    "hostname": self.config_vnc_hostname,
+                    "tlsSecret": self.config_vnc_tls_secret,
+                }
             }
         }
         # <<< Define Values <<<
@@ -103,7 +127,11 @@ class BackendConfig(BaseModel):
             "DB_PASSWORD": self.db_password,
             "DB_DATABASE": self.db_database,
             "BOOTSTRAP_ADMIN_USERNAME": self.bootstrap_admin_username,
-            "BOOTSTRAP_ADMIN_PASSWORD": self.bootstrap_admin_password
+            "BOOTSTRAP_ADMIN_PASSWORD": self.bootstrap_admin_password,
+            "CONFIG_CODE_HOSTNAME": self.config_code_hostname,
+            "CONFIG_CODE_TLSSECRET": self.config_code_tls_secret,
+            "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
+            "CONFIG_VNC_TLSSECRET": self.config_vnc_tls_secret,
         }
         # <<< Define Values <<<
 
@@ -126,6 +154,11 @@ class BackendConfig(BaseModel):
 
         v.set_default("bootstrap.adminUsername", _DEFAULT.bootstrap_admin_username)
         v.set_default("bootstrap.adminPassword", _DEFAULT.bootstrap_admin_password)
+
+        v.set_default("config.code.hostname", _DEFAULT.config_code_hostname)
+        v.set_default("config.code.tlsSecret", _DEFAULT.config_code_tls_secret)
+        v.set_default("config.vnc.hostname", _DEFAULT.config_vnc_hostname)
+        v.set_default("config.vnc.tlsSecret", _DEFAULT.config_vnc_tls_secret)
         # <<< Set Default Values <<<
 
         return v
@@ -149,6 +182,11 @@ class BackendConfig(BaseModel):
 
         parser.add_argument("--bootstrap.adminUsername", type=str, help="bootstrap admin username")
         parser.add_argument("--bootstrap.adminPassword", type=str, help="bootstrap admin password")
+
+        parser.add_argument("--config.code.hostname", type=str, help="config code hostname")
+        parser.add_argument("--config.code.tlsSecret", type=str, help="config code tlsSecret")
+        parser.add_argument("--config.vnc.hostname", type=str, help="config vnc hostname")
+        parser.add_argument("--config.vnc.tlsSecret", type=str, help="config vnc tlsSecret")
         # <<< Set Default Values <<<
 
         return parser
@@ -192,6 +230,11 @@ class BackendConfig(BaseModel):
 
         v.bind_env("bootstrap.adminUsername")
         v.bind_env("bootstrap.adminPassword")
+
+        v.bind_env("config.code.hostname")
+        v.bind_env("config.code.tlsSecret")
+        v.bind_env("config.vnc.hostname")
+        v.bind_env("config.vnc.tlsSecret")
         # <<< Set Env Values <<<
 
         logger.debug(f"watcher config: {cls().from_vyper(v).to_dict()}")

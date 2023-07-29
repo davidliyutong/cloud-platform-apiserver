@@ -62,7 +62,7 @@ class MyJWTConfig(Configuration):
 
     # -------------- secret -------------------------
     # [描述] 加密密码
-    # [默认] 'This is a big secret. Shhhhh'
+    # [默认] 'This is a big secret. Shhhhh
     # [建议] 该密码是 JWT 的安全核心所在，需要保密，尽量使用更长更复杂的密码
     secret = base64.encodebytes(secrets.token_bytes(32))
 
@@ -101,11 +101,11 @@ class MyJWTAuthentication(Authentication):
     # 从 payload 中解析用户信息，然后返回查找到的用户
     # request: request
     # kwargs: payload
-    async def retrieve_user(self, request, **kwargs):
+    async def retrieve_user(self, req, **kwargs):
         user_id_attribute = self.config.user_id()
         if 'payload' in kwargs.keys():
             user_id = kwargs['payload'].get(user_id_attribute)
-            user, err = await get_user(Repo(request.app.config), user_id)
+            user, err = await get_user(Repo(req.app.config), user_id)
             if err is not None:
                 raise exceptions.AuthenticationFailed(str(err))
             else:
@@ -129,14 +129,14 @@ class MyJWTAuthentication(Authentication):
 
 class MyJWTResponse(Responses):
     @staticmethod
-    async def get_access_token_output(request, user, config, instance):
+    async def get_access_token_output(req, user, config, instance):
         access_token = await instance.ctx.auth.generate_access_token(user)
 
         output = {"description": "", "status": 200, "message": "success", config.access_token_name(): access_token}
 
         return access_token, output
 
-    # 自定义发生异常的返回数据
+    # 自定义异常返回信息
     @staticmethod
     def exception_response(req: request.Request, exception: exceptions):
         # sanic-jwt.exceptions 下面定义的异常类型：
@@ -164,9 +164,9 @@ class MyJWTResponse(Responses):
         return response.json(result, status=exception.status_code)
 
 
-async def retrieve_refresh_token(request, user_id, *args, **kwargs):
+async def retrieve_refresh_token(req, user_id, *args, **kwargs):
     _ = f'refresh_token_{user_id}'
-    token_str = request.json.get('refresh_token', None)
+    token_str = req.json.get('refresh_token', None)
     if token_str is None:
         return b''
     else:
@@ -174,5 +174,5 @@ async def retrieve_refresh_token(request, user_id, *args, **kwargs):
 
 
 async def store_refresh_token(user_id, refresh_token, *args, **kwargs):
-    _ = f'refresh_token_{user_id}'
+    _ = f'refresh_token_{user_id}={refresh_token}'
     return

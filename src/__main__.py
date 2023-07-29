@@ -3,6 +3,7 @@ from src.apiserver.server import prepare_run
 from loguru import logger
 import click
 from sanic import Sanic
+import multiprocessing as mp
 
 Sanic.start_method = 'fork'
 
@@ -52,7 +53,7 @@ if __name__ == '__main__':
         app.run(host=opt.api_host,
                 port=opt.api_port,
                 access_log=opt.api_access_log,
-                workers=opt.api_num_workers,
+                workers=opt.api_num_workers if opt.api_access_log > 0 else mp.cpu_count(),
                 auto_reload=False)
 
 
