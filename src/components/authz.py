@@ -15,7 +15,7 @@ from loguru import logger
 
 async def get_user(repo: Repo,
                    username: str) -> Tuple[Optional[Dict[str, Any]], Optional[Exception]]:
-    db_col = repo.get_collection(datamodels.database_name, datamodels.user_collection_name)
+    db_col = repo.get_db_collection(datamodels.database_name, datamodels.user_collection_name)
     user = await db_col.find_one({"username": username})
 
     if user is None:

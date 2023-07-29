@@ -19,7 +19,7 @@ class UserRepo:
         self.db = db
 
     async def get(self, username) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
-        res = await self.db.get_collection(datamodels.database_name, datamodels.user_collection_name).find_one(
+        res = await self.db.get_db_collection(datamodels.database_name, datamodels.user_collection_name).find_one(
             {'username': username})
         if res is None:
             return None, errors.user_not_found
@@ -32,7 +32,7 @@ class UserRepo:
                    extra_query_filter_str: str = "") -> Tuple[int, List[datamodels.UserModel], Optional[Exception]]:
 
         try:
-            collection = self.db.get_collection(datamodels.database_name, datamodels.user_collection_name)
+            collection = self.db.get_db_collection(datamodels.database_name, datamodels.user_collection_name)
             num_document = await collection.count_documents({})
 
             # assemble query filter
@@ -64,8 +64,8 @@ class UserRepo:
                      role: str,
                      quota: Dict[str, Any]) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
         try:
-            user_collection = self.db.get_collection(datamodels.database_name, datamodels.user_collection_name)
-            global_collection = self.db.get_collection(datamodels.database_name, datamodels.global_collection_name)
+            user_collection = self.db.get_db_collection(datamodels.database_name, datamodels.user_collection_name)
+            global_collection = self.db.get_db_collection(datamodels.database_name, datamodels.global_collection_name)
 
             # check if username exists
             if await user_collection.count_documents({'username': username}) > 0:
@@ -100,7 +100,7 @@ class UserRepo:
                      role: Optional[str],
                      quota: Optional[Dict[str, Any]]) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
         try:
-            collection = self.db.get_collection(datamodels.database_name, datamodels.user_collection_name)
+            collection = self.db.get_db_collection(datamodels.database_name, datamodels.user_collection_name)
             if await collection.count_documents({'username': username}) <= 0:
                 return None, errors.user_not_found
 
@@ -132,7 +132,7 @@ class UserRepo:
 
     async def delete(self, username: str) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
         try:
-            user_collection = self.db.get_collection(datamodels.database_name, datamodels.user_collection_name)
+            user_collection = self.db.get_db_collection(datamodels.database_name, datamodels.user_collection_name)
             res = await user_collection.find_one({'username': username})
             if res is None:
                 return None, errors.user_not_found

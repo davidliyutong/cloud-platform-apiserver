@@ -16,7 +16,7 @@ class Repo:
         self.motor_uri = ''
         self.options = options
 
-    def get_client(self) -> AsyncIOMotorClient:
+    def get_db_client(self) -> AsyncIOMotorClient:
         # motor
         self.motor_uri = 'mongodb://{account}{host}:{port}'.format(
             account='{username}:{password}@'.format(
@@ -32,11 +32,11 @@ class Repo:
         :return: the motor db instance
         """
         if db not in self._db.keys():
-            self._db[db] = self.get_client()[db]
+            self._db[db] = self.get_db_client()[db]
 
         return self._db[db]
 
-    def get_collection(self, db_name: str, collection: str) -> AsyncIOMotorCollection:
+    def get_db_collection(self, db_name: str, collection: str) -> AsyncIOMotorCollection:
         """
         :param db_name: database name
         :param collection: collection name

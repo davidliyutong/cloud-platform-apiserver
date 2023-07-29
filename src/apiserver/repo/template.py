@@ -17,7 +17,7 @@ class TemplateRepo:
         self.db = db
 
     async def get(self, template_id) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
-        res = await self.db.get_collection(datamodels.database_name, datamodels.template_collection_name).find_one(
+        res = await self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name).find_one(
             {'template_id': template_id})
         if res is None:
             return None, errors.template_not_found
@@ -30,7 +30,7 @@ class TemplateRepo:
                    extra_query_filter_str: str = "") -> Tuple[int, List[datamodels.TemplateModel], Optional[Exception]]:
 
         try:
-            collection = self.db.get_collection(datamodels.database_name, datamodels.template_collection_name)
+            collection = self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name)
             num_document = await collection.count_documents({})
 
             # assemble query filter
@@ -64,7 +64,7 @@ class TemplateRepo:
                      defaults: Optional[Dict[str, Any]]) -> Tuple[
         Optional[datamodels.TemplateModel], Optional[Exception]]:
         try:
-            collection = self.db.get_collection(datamodels.database_name, datamodels.template_collection_name)
+            collection = self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name)
 
             template = datamodels.TemplateModel.new(
                 template_name=template_name,
@@ -93,7 +93,7 @@ class TemplateRepo:
                      defaults: Optional[Dict[str, Any]]) -> Tuple[
         Optional[datamodels.TemplateModel], Optional[Exception]]:
         try:
-            collection = self.db.get_collection(datamodels.database_name, datamodels.template_collection_name)
+            collection = self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name)
             if await collection.count_documents({'template_id': template_id}) <= 0:
                 return None, errors.template_not_found
 
@@ -126,7 +126,7 @@ class TemplateRepo:
 
     async def delete(self, template_id: str) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
         try:
-            user_collection = self.db.get_collection(datamodels.database_name, datamodels.template_collection_name)
+            user_collection = self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name)
             res = await user_collection.find_one({'template_id': template_id})
             if res is None:
                 return None, errors.template_not_found

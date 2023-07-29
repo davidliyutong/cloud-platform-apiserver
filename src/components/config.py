@@ -18,6 +18,12 @@ class BackendConfig(BaseModel):
     api_port: int = 8080
     api_access_log: bool = False
 
+    mq_host: str = "127.0.0.1"
+    mq_port: int = 5672
+    mq_username: str = _CONFIG_PROJECT_NAME
+    mq_password: str = _CONFIG_PROJECT_NAME
+    mq_exchange: str = ""
+
     db_host: str = "127.0.0.1"
     db_port: int = 27017
     db_username: str = _CONFIG_PROJECT_NAME
@@ -46,6 +52,12 @@ class BackendConfig(BaseModel):
         self.db_password = str(d["db"]["password"])
         self.db_database = str(d["db"]["database"])
 
+        self.mq_host = str(d["mq"]["host"])
+        self.mq_port = int(d["mq"]["port"])
+        self.mq_username = str(d["mq"]["username"])
+        self.mq_password = str(d["mq"]["password"])
+        self.mq_exchange = str(d["mq"]["exchange"])
+
         self.bootstrap_admin_password = str(d["bootstrap"]["adminPassword"])
         self.bootstrap_admin_username = str(d["bootstrap"]["adminUsername"])
 
@@ -69,6 +81,12 @@ class BackendConfig(BaseModel):
         self.db_username = v.get_string("db.username")
         self.db_password = v.get_string("db.password")
         self.db_database = v.get_string("db.database")
+
+        self.mq_host = v.get_string("mq.host")
+        self.mq_port = v.get_int("mq.port")
+        self.mq_username = v.get_string("mq.username")
+        self.mq_password = v.get_string("mq.password")
+        self.mq_exchange = v.get_string("mq.exchange")
 
         self.bootstrap_admin_password = v.get_string("bootstrap.adminPassword")
         self.bootstrap_admin_username = v.get_string("bootstrap.adminUsername")
@@ -96,6 +114,13 @@ class BackendConfig(BaseModel):
                 "username": self.db_username,
                 "password": self.db_password,
                 "database": self.db_database,
+            },
+            "mq": {
+                "host": self.mq_host,
+                "port": self.mq_port,
+                "username": self.mq_username,
+                "password": self.mq_password,
+                "exchange": self.mq_exchange,
             },
             "bootstrap": {
                 "adminUsername": self.bootstrap_admin_username,
@@ -126,6 +151,11 @@ class BackendConfig(BaseModel):
             "DB_USERNAME": self.db_username,
             "DB_PASSWORD": self.db_password,
             "DB_DATABASE": self.db_database,
+            "MQ_HOST": self.mq_host,
+            "MQ_PORT": self.mq_port,
+            "MQ_USERNAME": self.mq_username,
+            "MQ_PASSWORD": self.mq_password,
+            "MQ_EXCHANGE": self.mq_exchange,
             "BOOTSTRAP_ADMIN_USERNAME": self.bootstrap_admin_username,
             "BOOTSTRAP_ADMIN_PASSWORD": self.bootstrap_admin_password,
             "CONFIG_CODE_HOSTNAME": self.config_code_hostname,
@@ -151,6 +181,12 @@ class BackendConfig(BaseModel):
         v.set_default("db.username", _DEFAULT.db_username)
         v.set_default("db.password", _DEFAULT.db_password)
         v.set_default("db.database", _DEFAULT.db_database)
+
+        v.set_default("mq.host", _DEFAULT.mq_host)
+        v.set_default("mq.port", _DEFAULT.mq_port)
+        v.set_default("mq.username", _DEFAULT.mq_username)
+        v.set_default("mq.password", _DEFAULT.mq_password)
+        v.set_default("mq.exchange", _DEFAULT.mq_exchange)
 
         v.set_default("bootstrap.adminUsername", _DEFAULT.bootstrap_admin_username)
         v.set_default("bootstrap.adminPassword", _DEFAULT.bootstrap_admin_password)
@@ -179,6 +215,12 @@ class BackendConfig(BaseModel):
         parser.add_argument("--db.username", type=str, help="db username")
         parser.add_argument("--db.password", type=str, help="db password")
         parser.add_argument("--db.database", type=str, help="db database")
+
+        parser.add_argument("--mq.host", type=str, help="mq host")
+        parser.add_argument("--mq.port", type=int, help="mq port")
+        parser.add_argument("--mq.username", type=str, help="mq username")
+        parser.add_argument("--mq.password", type=str, help="mq password")
+        parser.add_argument("--mq.exchange", type=str, help="mq exchange")
 
         parser.add_argument("--bootstrap.adminUsername", type=str, help="bootstrap admin username")
         parser.add_argument("--bootstrap.adminPassword", type=str, help="bootstrap admin password")
@@ -227,6 +269,12 @@ class BackendConfig(BaseModel):
         v.bind_env("db.username")
         v.bind_env("db.password")
         v.bind_env("db.database")
+
+        v.bind_env("mq.host")
+        v.bind_env("mq.port")
+        v.bind_env("mq.username")
+        v.bind_env("mq.password")
+        v.bind_env("mq.exchange")
 
         v.bind_env("bootstrap.adminUsername")
         v.bind_env("bootstrap.adminPassword")
