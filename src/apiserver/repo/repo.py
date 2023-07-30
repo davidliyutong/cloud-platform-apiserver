@@ -1,9 +1,10 @@
 import asyncio
 from typing import Dict
 
+from kubernetes import client
 from aio_pika.abc import AbstractRobustChannel, AbstractQueue
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorCollection
-from src.components.utils import singleton
+from src.components.utils import singleton, get_k8s_api
 import aio_pika
 
 
@@ -16,6 +17,7 @@ class Repo:
     _db_collection: Dict[str, AsyncIOMotorCollection] = {}
     _mq: AbstractRobustChannel = None
     _mq_queue: Dict[str, AbstractQueue] = {}
+    _v1: client.CoreV1Api = None
 
     motor_uri = ''
     pika_uri = ''
@@ -76,3 +78,12 @@ class Repo:
                 durable=True,
             )
         return self._mq_queue[queue_name]
+
+    async def get_k8s_api(self):
+        if self._v1 is None:
+            self._v1 = get_k8s_api(self.options['K8S_HOST'],
+                                   self.options['K8S_PORT'],
+                                   self.options['K8S_CACERT'],
+                                   self.options['K8S_TOKEN'])
+
+        return self._v1

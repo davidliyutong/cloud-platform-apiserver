@@ -46,6 +46,12 @@ class InterceptHandler(logging.Handler):
 
 # 修改 create_logger
 def create_logger(log_root: str = "./logs"):
+    logging.getLogger("aiormq").setLevel(logging.WARNING)
+    logging.getLogger("aio_pika").setLevel(logging.WARNING)
+    logging.getLogger("aiormq").propagate = False
+    logging.getLogger("aio_pika").propagate = False
+
+
     # ----------------- 添加这两行，替换 Sanic 默认 logger 配置
     logging.getLogger("sanic.root").handlers.clear()
     logging.basicConfig(handlers=[InterceptHandler()], level=0)

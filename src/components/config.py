@@ -35,6 +35,11 @@ class BackendConfig(BaseModel):
     db_password: str = CONFIG_PROJECT_NAME
     db_database: str = CONFIG_PROJECT_NAME
 
+    k8s_host: str = "10.96.0.1"
+    k8s_port: int = 6443
+    k8s_ca_cert: str = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+    k8s_token: str = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
     bootstrap_admin_username: str = "admin"
     bootstrap_admin_password: str = "admin"
 
@@ -62,6 +67,12 @@ class BackendConfig(BaseModel):
         self.mq_username = str(d["mq"]["username"])
         self.mq_password = str(d["mq"]["password"])
         self.mq_exchange = str(d["mq"]["exchange"])
+
+        self.k8s_host = str(d["k8s"]["host"])
+        self.k8s_port = int(d["k8s"]["port"])
+        self.k8s_ca_cert = str(d["k8s"]["caCert"])
+        self.k8s_token = str(d["k8s"]["token"])
+
 
         self.bootstrap_admin_password = str(d["bootstrap"]["adminPassword"])
         self.bootstrap_admin_username = str(d["bootstrap"]["adminUsername"])
@@ -92,6 +103,11 @@ class BackendConfig(BaseModel):
         self.mq_username = v.get_string("mq.username")
         self.mq_password = v.get_string("mq.password")
         self.mq_exchange = v.get_string("mq.exchange")
+
+        self.k8s_host = v.get_string("k8s.host")
+        self.k8s_port = v.get_int("k8s.port")
+        self.k8s_ca_cert = v.get_string("k8s.caCert")
+        self.k8s_token = v.get_string("k8s.token")
 
         self.bootstrap_admin_password = v.get_string("bootstrap.adminPassword")
         self.bootstrap_admin_username = v.get_string("bootstrap.adminUsername")
@@ -127,6 +143,12 @@ class BackendConfig(BaseModel):
                 "password": self.mq_password,
                 "exchange": self.mq_exchange,
             },
+            "k8s": {
+                "host": self.k8s_host,
+                "port": self.k8s_port,
+                "caCert": self.k8s_ca_cert,
+                "token": self.k8s_token,
+            },
             "bootstrap": {
                 "adminUsername": self.bootstrap_admin_username,
                 "adminPassword": self.bootstrap_admin_password,
@@ -161,6 +183,10 @@ class BackendConfig(BaseModel):
             "MQ_USERNAME": self.mq_username,
             "MQ_PASSWORD": self.mq_password,
             "MQ_EXCHANGE": self.mq_exchange,
+            "K8S_HOST": self.k8s_host,
+            "K8S_PORT": self.k8s_port,
+            "K8S_CACERT": self.k8s_ca_cert,
+            "K8S_TOKEN": self.k8s_token,
             "BOOTSTRAP_ADMIN_USERNAME": self.bootstrap_admin_username,
             "BOOTSTRAP_ADMIN_PASSWORD": self.bootstrap_admin_password,
             "CONFIG_CODE_HOSTNAME": self.config_code_hostname,
@@ -192,6 +218,11 @@ class BackendConfig(BaseModel):
         v.set_default("mq.username", _DEFAULT.mq_username)
         v.set_default("mq.password", _DEFAULT.mq_password)
         v.set_default("mq.exchange", _DEFAULT.mq_exchange)
+
+        v.set_default("k8s.host", _DEFAULT.k8s_host)
+        v.set_default("k8s.port", _DEFAULT.k8s_port)
+        v.set_default("k8s.caCert", _DEFAULT.k8s_ca_cert)
+        v.set_default("k8s.token", _DEFAULT.k8s_token)
 
         v.set_default("bootstrap.adminUsername", _DEFAULT.bootstrap_admin_username)
         v.set_default("bootstrap.adminPassword", _DEFAULT.bootstrap_admin_password)
@@ -226,6 +257,11 @@ class BackendConfig(BaseModel):
         parser.add_argument("--mq.username", type=str, help="mq username")
         parser.add_argument("--mq.password", type=str, help="mq password")
         parser.add_argument("--mq.exchange", type=str, help="mq exchange")
+
+        parser.add_argument("--k8s.host", type=str, help="k8s host")
+        parser.add_argument("--k8s.port", type=int, help="k8s port")
+        parser.add_argument("--k8s.caCert", type=str, help="k8s caCert")
+        parser.add_argument("--k8s.token", type=str, help="k8s token")
 
         parser.add_argument("--bootstrap.adminUsername", type=str, help="bootstrap admin username")
         parser.add_argument("--bootstrap.adminPassword", type=str, help="bootstrap admin password")
@@ -280,6 +316,11 @@ class BackendConfig(BaseModel):
         v.bind_env("mq.username")
         v.bind_env("mq.password")
         v.bind_env("mq.exchange")
+
+        v.bind_env("k8s.host")
+        v.bind_env("k8s.port")
+        v.bind_env("k8s.caCert")
+        v.bind_env("k8s.token")
 
         v.bind_env("bootstrap.adminUsername")
         v.bind_env("bootstrap.adminPassword")

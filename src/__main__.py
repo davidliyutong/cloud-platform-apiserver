@@ -1,7 +1,8 @@
 import asyncio
 
+from src.apiserver.server.server import orchestrator_prepare_run
 from src.components.config import BackendConfig
-from src.apiserver.server import prepare_run
+from src.apiserver.server import apiserver_prepare_run
 from loguru import logger
 import click
 from sanic import Sanic
@@ -52,7 +53,7 @@ if __name__ == '__main__':
         v, err = BackendConfig.load_config(argv=[])
         opt = BackendConfig().from_vyper(v)
         logger.info(f"running option: {opt.to_dict()}")
-        app = prepare_run(opt)
+        app = apiserver_prepare_run(opt)
         app.config.update_config(opt.to_sanic_config())
         app.run(host=opt.api_host,
                 port=opt.api_port,
@@ -69,7 +70,8 @@ if __name__ == '__main__':
         opt = BackendConfig().from_vyper(v)
         logger.info(f"running option: {opt.to_dict()}")
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(EventOrchestrator().run(opt))
+        o = orchestrator_prepare_run(opt)
+        loop.run_until_complete(o.run(opt))
         loop.close()
 
 

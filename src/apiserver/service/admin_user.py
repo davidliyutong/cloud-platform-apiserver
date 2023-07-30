@@ -2,8 +2,8 @@ from typing import Tuple
 
 from .common import ServiceInterface
 from src.apiserver.repo import UserRepo
-from ..controller.types import *
-from ...components import datamodels
+from src.apiserver.controller.types import *
+from src.components import datamodels
 
 
 class AdminUserService(ServiceInterface):

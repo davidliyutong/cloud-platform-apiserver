@@ -1,4 +1,5 @@
-import time
+import json
+from typing import Optional, Tuple, Union
 
 from pydantic import BaseModel, field_validator
 
@@ -58,3 +59,29 @@ class PodStatusUpdateEvent(PodBaseEvent):
 
 class PodDeleteEvent(PodBaseEvent):
     type: str = "pod_delete_event"
+
+
+def event_deserialize(payload: Union[bytes, str]) -> Tuple[Optional[BaseModel], Optional[Exception]]:
+    try:
+        payload = json.loads(payload)
+    except json.JSONDecodeError as e:
+        return None, e
+
+    if payload['type'] == 'user_create_event':
+        return UserCreateEvent(**payload), None
+    elif payload['type'] == 'user_update_event':
+        return UserUpdateEvent(**payload), None
+    elif payload['type'] == 'user_delete_event':
+        return UserDeleteEvent(**payload), None
+    elif payload['type'] == 'template_create_event':
+        return TemplateCreateEvent(**payload), None
+    elif payload['type'] == 'template_update_event':
+        return TemplateUpdateEvent(**payload), None
+    elif payload['type'] == 'template_delete_event':
+        return TemplateDeleteEvent(**payload), None
+    elif payload['type'] == 'pod_create_event':
+        return PodCreateEvent(**payload), None
+    elif payload['type'] == 'pod_update_event':
+        return PodUpdateEvent(**payload), None
+    elif payload['type'] == 'pod_status_update_event':
+        return PodStatusUpdateEvent(**payload), None

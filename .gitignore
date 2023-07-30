@@ -12,3 +12,6 @@ logs
 # Build and Distribution
 build
 dist
+
+# Credentials
+creds

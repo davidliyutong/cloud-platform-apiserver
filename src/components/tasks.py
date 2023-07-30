@@ -1,14 +1,11 @@
-import asyncio
 from typing import Optional
-import os
 
-import aio_pika
-from aio_pika.abc import AbstractIncomingMessage
 from loguru import logger
 import pymongo
 from src.components.config import BackendConfig
 from src.components import datamodels, config
 from src.components.errors import k8s_config_not_found
+from src.components.utils import get_k8s_api
 
 
 def check_and_create_admin_user(opt: BackendConfig) -> Optional[Exception]:
@@ -45,25 +42,11 @@ def check_and_create_admin_user(opt: BackendConfig) -> Optional[Exception]:
 
 
 def check_kubernetes_connection(opt: BackendConfig) -> Optional[Exception]:
-    # k8s_service_host = os.environ.get("KUBERNETES_SERVICE_HOST", "")
-    # k8s_service_port = os.environ.get("KUBERNETES_SERVICE_PORT", "")
-    # if k8s_service_host == "" or k8s_service_port == "":
-    #     logger.warning("kubernetes endpoint not found")
-    #     return k8s_config_not_found
-    # else:
-    #     logger.info(f"kubernetes endpoint configuration found: {k8s_service_host}:{k8s_service_port}")
-    #     return None
-
-    from kubernetes import client, config
-
-    # Configs can be set in Configuration class directly or using helper utility
-    config.load_kube_config()
-
-    v1 = client.CoreV1Api()
-    ret = v1.list_namespace(watch=False)
-    if len(ret.items) == 0:
-        logger.warning("kubernetes endpoint not found")
-        return k8s_config_not_found
-    else:
-        logger.info("kubernetes endpoint found")
-        return None
+    v1 = get_k8s_api(opt.k8s_host, opt.k8s_port, opt.k8s_ca_cert, opt.k8s_token, debug=True)
+    try:
+        _ = v1.list_namespaced_pod(namespace=config.CONFIG_PROJECT_NAME)
+    except Exception as e:
+        logger.exception(e)
+        logger.error("failed to list pods in namespace, check kubernetes connection or cluster configuration")
+        return e
+    return None
