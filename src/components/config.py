@@ -10,6 +10,7 @@ import yaml
 CONFIG_HOME_PATH = os.path.expanduser('~')
 CONFIG_CONFIG_NAME = "backend"
 CONFIG_PROJECT_NAME = "clpl"
+CONFIG_PROJECT_NAMESPACE = "clpl"
 CONFIG_EVENT_QUEUE_NAME = "clpl_event_queue"
 CONFIG_GLOBAL_COLLECTION_NAME = "clpl_global"
 CONFIG_USER_COLLECTION_NAME = "clpl_users"

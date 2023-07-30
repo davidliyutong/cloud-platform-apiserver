@@ -42,7 +42,7 @@ def check_and_create_admin_user(opt: BackendConfig) -> Optional[Exception]:
 
 
 def check_kubernetes_connection(opt: BackendConfig) -> Optional[Exception]:
-    v1 = get_k8s_api(opt.k8s_host, opt.k8s_port, opt.k8s_ca_cert, opt.k8s_token, debug=True)
+    v1 = get_k8s_api(opt.k8s_host, opt.k8s_port, opt.k8s_ca_cert, opt.k8s_token, debug=False)
     try:
         _ = v1.list_namespaced_pod(namespace=config.CONFIG_PROJECT_NAME)
     except Exception as e:
