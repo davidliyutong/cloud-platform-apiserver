@@ -74,7 +74,6 @@ class BackendConfig(BaseModel):
         self.k8s_ca_cert = str(d["k8s"]["caCert"])
         self.k8s_token = str(d["k8s"]["token"])
 
-
         self.bootstrap_admin_password = str(d["bootstrap"]["adminPassword"])
         self.bootstrap_admin_username = str(d["bootstrap"]["adminUsername"])
 

@@ -202,7 +202,7 @@ async def delete(request, template_id: str):
         )
     else:
         req = TemplateDeleteRequest(template_id=template_id)
-        deleted_user, err = await get_root_service().admin_template_service.delete(request.app, req)
+        deleted_template, err = await get_root_service().admin_template_service.delete(request.app, req)
         if err is not None:
             return json_response(
                 TemplateDeleteResponse(
@@ -216,7 +216,7 @@ async def delete(request, template_id: str):
                 TemplateDeleteResponse(
                     status=http.HTTPStatus.OK,
                     message="success",
-                    user=deleted_user
+                    template=deleted_template
                 ).model_dump(),
                 status=http.HTTPStatus.OK
             )

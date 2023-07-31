@@ -4,7 +4,7 @@ from hashlib import sha256
 import bcrypt
 import shortuuid
 
-from pydantic import BaseModel, UUID4, EmailStr, SecretStr, SecretBytes
+from pydantic import BaseModel, UUID4, EmailStr, SecretStr
 from pydantic import field_validator, field_serializer
 from typing import List, Optional, Dict, Any
 

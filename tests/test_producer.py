@@ -3,7 +3,6 @@ import time
 import uuid
 
 import aio_pika
-import json
 from src.components import datamodels
 
 URL = "amqp://clpl:clpl@127.0.0.1:5672/"

@@ -1,6 +1,5 @@
 from abc import ABCMeta
 from typing import Optional
-import dataclasses
 
 
 class ServiceInterface(metaclass=ABCMeta):

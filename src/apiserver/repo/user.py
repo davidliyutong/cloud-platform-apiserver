@@ -142,6 +142,7 @@ class UserRepo:
                 user['quota'] = quota if quota is not None else user['quota']
                 user_model = datamodels.UserModel(**user)  # check if the user model is valid
             except Exception as _:
+                logger.error(f"update user wrong profile: {username}")
                 return None, errors.wrong_user_profile
 
             ret = await collection.find_one_and_replace({'_id': user['_id']}, user)

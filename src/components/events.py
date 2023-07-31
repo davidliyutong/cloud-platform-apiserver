@@ -1,7 +1,7 @@
 import json
 from typing import Optional, Tuple, Union
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 
 
 class UserBaseEvent(BaseModel):

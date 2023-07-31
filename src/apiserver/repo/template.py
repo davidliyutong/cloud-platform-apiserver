@@ -76,14 +76,15 @@ class TemplateRepo:
             logger.error(f"get_collection error: {e}")
             return 0, [], errors.db_connection_error
 
-    async def create(self,
-                     template_name: str,
-                     description: str,
-                     image_ref: str,
-                     template_str: str,
-                     fields: Optional[Dict[str, Any]],
-                     defaults: Optional[Dict[str, Any]]) -> Tuple[
-        Optional[datamodels.TemplateModel], Optional[Exception]]:
+    async def create(
+            self,
+            template_name: str,
+            description: str,
+            image_ref: str,
+            template_str: str,
+            fields: Optional[Dict[str, Any]],
+            defaults: Optional[Dict[str, Any]]
+    ) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
         try:
             collection = self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name)
 
@@ -107,15 +108,16 @@ class TemplateRepo:
             logger.error(f"get_collection error: {e}")
             return None, errors.db_connection_error
 
-    async def update(self,
-                     template_id: str,
-                     template_name: Optional[str],
-                     description: Optional[str],
-                     image_ref: Optional[str],
-                     template_str: Optional[str],
-                     fields: Optional[Dict[str, Any]],
-                     defaults: Optional[Dict[str, Any]]) -> Tuple[
-        Optional[datamodels.TemplateModel], Optional[Exception]]:
+    async def update(
+            self,
+            template_id: str,
+            template_name: Optional[str],
+            description: Optional[str],
+            image_ref: Optional[str],
+            template_str: Optional[str],
+            fields: Optional[Dict[str, Any]],
+            defaults: Optional[Dict[str, Any]]
+    ) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
         try:
             collection = self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name)
             if await collection.count_documents({'template_id': template_id}) <= 0:
@@ -130,10 +132,11 @@ class TemplateRepo:
                 template['template_str'] = template_str if template_str is not None else template['template_str']
                 template['fields'] = fields if fields is not None else template['fields']
                 template['defaults'] = defaults if defaults is not None else template['defaults']
-                template_model = datamodels.TemplateModel(**template)  # check if the user model is valid
+                template_model = datamodels.TemplateModel(**template)  # check if the template model is valid
                 if not template_model.verify():
                     return None, errors.template_invalid
-            except Exception as _:
+            except Exception as e:
+                logger.error(f"update template wrong profile: {e}")
                 return None, errors.wrong_template_profile
 
             ret = await collection.find_one_and_replace({'_id': template['_id']}, template)

@@ -13,29 +13,33 @@ import src.apiserver.service
 
 async def handle_template_create_event(srv: Optional['src.apiserver.service.RootService'],
                                        ev: Union[TemplateCreateEvent, BaseModel]) -> Optional[Exception]:
-    # TODO: TBD
-    pass
+    err = await srv.admin_template_service.repo.commit(ev.template_id)
+    if err is not None:
+        logger.error(f"handle_template_create_event failed to commit: {err}")
+        return err
+    else:
+        return err
 
 
 async def handle_template_update_event(srv: Optional['src.apiserver.service.RootService'],
                                        ev: Union[TemplateUpdateEvent, BaseModel]) -> Optional[Exception]:
-    # TODO: TBD
-    pass
+
+    err = await srv.admin_template_service.repo.commit(ev.template_id)
+    if err is not None:
+        logger.error(f"handle_template_update_event failed to commit: {err}")
+        return err
+    else:
+        return err
 
 
 async def handle_template_delete_event(srv: Optional['src.apiserver.service.RootService'],
                                        ev: Union[TemplateDeleteEvent, BaseModel]) -> Optional[Exception]:
-    template, err = await srv.admin_template_service.repo.get(ev.template_id)
+    _, err = await srv.admin_template_service.repo.purge(ev.template_id)
     if err is not None:
-        logger.warning(err)
-        return None
-    if template is not None:
-        _, err = await srv.admin_user_service.repo.purge(ev.username)
-        if err is not None:
-            logger.error(f"handle_template_delete_event failed to commit: {err}")
-            return err
-        else:
-            return err
+        logger.error(f"handle_template_delete_event failed to commit: {err}")
+        return err
+    else:
+        return err
 
 
 class AdminTemplateService(ServiceInterface):
