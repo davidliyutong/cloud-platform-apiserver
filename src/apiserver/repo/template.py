@@ -132,6 +132,7 @@ class TemplateRepo:
                 template['template_str'] = template_str if template_str is not None else template['template_str']
                 template['fields'] = fields if fields is not None else template['fields']
                 template['defaults'] = defaults if defaults is not None else template['defaults']
+                template['resource_status'] = datamodels.ResourceStatusEnum.pending.value
                 template_model = datamodels.TemplateModel(**template)  # check if the template model is valid
                 if not template_model.verify():
                     return None, errors.template_invalid

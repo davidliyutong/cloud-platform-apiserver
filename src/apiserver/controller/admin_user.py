@@ -29,7 +29,7 @@ async def list(request):
         req = UserListRequest()
     else:
         req = UserListRequest(**{k: v for (k, v) in request.query_args})
-    count, users, err = await get_root_service().admin_user_service.list(request.app, req)
+    count, users, err = await get_root_service().user_service.list(request.app, req)
 
     if err is not None:
         return json_response(
@@ -81,7 +81,7 @@ async def create(request):
                 ).model_dump(),
                 status=http.HTTPStatus.BAD_REQUEST
             )
-        user, err = await get_root_service().admin_user_service.create(request.app, req)
+        user, err = await get_root_service().user_service.create(request.app, req)
 
         if err is not None:
             return json_response(
@@ -121,7 +121,7 @@ async def get(request, username: str):
         )
     else:
         req = UserGetRequest(username=username)
-        user, err = await get_root_service().admin_user_service.get(request.app, req)
+        user, err = await get_root_service().user_service.get(request.app, req)
         if err is not None:
             return json_response(
                 UserGetResponse(
@@ -164,7 +164,7 @@ async def update(request, username: str):
     else:
         body.update({"username": username})
         req = UserUpdateRequest(**body)
-        user, err = await get_root_service().admin_user_service.update(request.app, req)
+        user, err = await get_root_service().user_service.update(request.app, req)
         if err is not None:
             return json_response(
                 UserUpdateResponse(
@@ -202,7 +202,7 @@ async def delete(request, username: str):
         )
     else:
         req = UserDeleteRequest(username=username)
-        deleted_user, err = await get_root_service().admin_user_service.delete(request.app, req)
+        deleted_user, err = await get_root_service().user_service.delete(request.app, req)
         if err is not None:
             return json_response(
                 UserDeleteResponse(

@@ -5,8 +5,7 @@ from typing import Optional
 class ServiceInterface(metaclass=ABCMeta):
     parent: Optional['ServiceInterface'] = None
     auth_basic_service: Optional['ServiceInterface'] = None
-    admin_user_service: Optional['ServiceInterface'] = None
-    admin_template_service: Optional['ServiceInterface'] = None
-    nonadmin_user_service: Optional['ServiceInterface'] = None
-    nonadmin_pod_service: Optional['ServiceInterface'] = None
+    user_service: Optional['ServiceInterface'] = None
+    template_service: Optional['ServiceInterface'] = None
+    pod_service: Optional['ServiceInterface'] = None
     k8s_operator_service: Optional['ServiceInterface'] = None

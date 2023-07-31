@@ -1,6 +1,5 @@
-from typing import Tuple, Union
+from typing import Tuple
 
-from loguru import logger
 from sanic import Sanic
 
 from src.apiserver.controller.types import *
@@ -8,38 +7,7 @@ from src.apiserver.repo import TemplateRepo
 from src.components import datamodels
 from src.components.events import TemplateCreateEvent, TemplateUpdateEvent, TemplateDeleteEvent
 from .common import ServiceInterface
-import src.apiserver.service
-
-
-async def handle_template_create_event(srv: Optional['src.apiserver.service.RootService'],
-                                       ev: Union[TemplateCreateEvent, BaseModel]) -> Optional[Exception]:
-    err = await srv.admin_template_service.repo.commit(ev.template_id)
-    if err is not None:
-        logger.error(f"handle_template_create_event failed to commit: {err}")
-        return err
-    else:
-        return err
-
-
-async def handle_template_update_event(srv: Optional['src.apiserver.service.RootService'],
-                                       ev: Union[TemplateUpdateEvent, BaseModel]) -> Optional[Exception]:
-
-    err = await srv.admin_template_service.repo.commit(ev.template_id)
-    if err is not None:
-        logger.error(f"handle_template_update_event failed to commit: {err}")
-        return err
-    else:
-        return err
-
-
-async def handle_template_delete_event(srv: Optional['src.apiserver.service.RootService'],
-                                       ev: Union[TemplateDeleteEvent, BaseModel]) -> Optional[Exception]:
-    _, err = await srv.admin_template_service.repo.purge(ev.template_id)
-    if err is not None:
-        logger.error(f"handle_template_delete_event failed to commit: {err}")
-        return err
-    else:
-        return err
+from .handler import handle_template_create_event, handle_template_update_event, handle_template_delete_event
 
 
 class AdminTemplateService(ServiceInterface):

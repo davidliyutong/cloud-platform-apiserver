@@ -132,6 +132,7 @@ class UserRepo:
 
             user = await collection.find_one({'username': username})
 
+            # noinspection PyBroadException
             try:
                 user['password'] = sha256(password.encode()).hexdigest() if password is not None else user['password']
                 user['htpasswd'] = f"{username}:" + bcrypt.hashpw(password.encode(), bcrypt.gensalt(
@@ -140,9 +141,10 @@ class UserRepo:
                 user['email'] = email if email is not None else user['email']
                 user['role'] = datamodels.RoleEnum(role) if role is not None else user['role']
                 user['quota'] = quota if quota is not None else user['quota']
+                user['resource_status'] = datamodels.ResourceStatusEnum.pending.value
                 user_model = datamodels.UserModel(**user)  # check if the user model is valid
-            except Exception as _:
-                logger.error(f"update user wrong profile: {username}")
+            except Exception as e:
+                logger.error(f"update user {username} wrong profile: {e}")
                 return None, errors.wrong_user_profile
 
             ret = await collection.find_one_and_replace({'_id': user['_id']}, user)

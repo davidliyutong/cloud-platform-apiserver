@@ -22,13 +22,12 @@ from ...components import errors
 bp = Blueprint("nonadmin_pod", url_prefix="/pods", version=1)
 
 
-@bp.get("/<pod_id:str>", name="pod_get")
+@bp.get("/", name="pod_list")
 @openapi.parameter("Authorization", str, location="header", required=True)
 @openapi.response(200, {"application/json": PodGetResponse.model_json_schema()})
 @protected()
-async def get(request, pod_id: str):
+async def list(request):
     return text("NotImplementedError")
-
 
 @bp.post("/", name="pod_create")
 @openapi.definition(
@@ -38,6 +37,14 @@ async def get(request, pod_id: str):
 @openapi.response(200, {"application/json": PodCreateResponse.model_json_schema()})
 @protected()
 async def create(request):
+    return text("NotImplementedError")
+
+
+@bp.get("/<pod_id:str>", name="pod_get")
+@openapi.parameter("Authorization", str, location="header", required=True)
+@openapi.response(200, {"application/json": PodGetResponse.model_json_schema()})
+@protected()
+async def get(request, pod_id: str):
     return text("NotImplementedError")
 
 

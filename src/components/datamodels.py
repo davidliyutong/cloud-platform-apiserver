@@ -6,7 +6,7 @@ import shortuuid
 
 from pydantic import BaseModel, UUID4, EmailStr, SecretStr
 from pydantic import field_validator, field_serializer
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 
 from enum import Enum
 
@@ -213,7 +213,6 @@ class PodModel(BaseModel):
     pod_id: str
     name: str
     description: str
-    image_ref: str
     template_ref: UUID4
     cpu_lim_m_cpu: int
     mem_lim_mb: int
@@ -225,10 +224,27 @@ class PodModel(BaseModel):
     current_status: PodStatusEnum
     target_status: PodStatusEnum
 
+    @field_serializer('template_ref')
+    def serialize_uuid(self, v: uuid.UUID, _info):
+        return str(v)
+
+    @field_validator('created_at')
+    def validate_created_at(cls, v: Union[str, datetime.datetime]):
+        if isinstance(v, str):
+            v = datetime.datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%fZ")
+        return v
+
+    @field_serializer('created_at')
+    def serialize_created_at(self, v: datetime.datetime, _info):
+        return v.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+    @field_serializer('started_at')
+    def serialize_started_at(self, v: datetime.datetime, _info):
+        return v.timestamp()
+
     def render(self):
         return {
             "POD_ID": self.pod_id,
-            "POD_IMAGE_REF": self.image_ref,
             "POD_CPU_LIM": str(self.cpu_lim_m_cpu) + "m",
             "POD_MEM_LIM": str(self.mem_lim_mb) + "Mi",
             "POD_STORAGE_LIM": str(self.storage_lim_mb) + "Mi",
@@ -237,8 +253,7 @@ class PodModel(BaseModel):
 
     @classmethod
     def new(cls,
-            image_ref: str,
-            template_ref: UUID4,
+            template_ref: Optional[str],
             uid: int,
             name: str = "",
             description: str = "",
@@ -250,8 +265,7 @@ class PodModel(BaseModel):
             pod_id=shortuuid.uuid(),
             name=name,
             description=description,
-            image_ref=image_ref,
-            template_ref=template_ref,
+            template_ref=uuid.UUID(template_ref),
             cpu_lim_m_cpu=cpu_lim_m_cpu,
             mem_lim_mb=mem_lim_mb,
             storage_lim_mb=storage_lim_mb,

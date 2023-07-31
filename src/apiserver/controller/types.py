@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 import src.components.datamodels as datamodels
 
@@ -133,9 +133,40 @@ class PodCreateRequest(BaseModel):
     name: str
     description: str
     template_ref: str
+    cpu_lim_m_cpu: int
+    mem_lim_mb: int
+    storage_lim_mb: int
     uid: int
-    timeout_s: int
+    timeout_s: Optional[int] = None
     values: Optional[Dict[str, Any]] = None
+
+    @field_validator('cpu_lim_m_cpu')
+    def cpu_lim_m_cpu_must_be_valid(cls, v):
+        if v < 0:
+            raise ValueError('cpu_lim_m_cpu must be positive')
+        return v
+
+    @field_validator('mem_lim_mb')
+    def mem_lim_mb_must_be_valid(cls, v):
+        if v < 0:
+            raise ValueError('mem_lim_mb must be positive')
+        return v
+
+    @field_validator('storage_lim_mb')
+    def storage_lim_mb_must_be_valid(cls, v):
+        if v < 0:
+            raise ValueError('storage_lim_mb must be positive')
+        return v
+
+    @field_validator('timeout_s')
+    def timeout_s_must_be_valid(cls, v):
+        if v is None:
+            v = 3600
+        if v < 0:
+            raise ValueError('timeout_s must be positive')
+        elif v > 86400:
+            raise ValueError('timeout_s must be less than 86400 seconds')
+        return v
 
 
 class PodCreateResponse(ResponseBaseModel):
@@ -151,16 +182,29 @@ class PodGetResponse(PodCreateResponse):
 
 
 class PodUpdateRequest(BaseModel):
-    pod_id: str
-    name: str = None
-    description: str = None
-    template_ref: str = None
-    uid: int = None
-    timeout_s: int = None
-    target_status: str = None
+    pod_id: Optional[str]
+    name: Optional[str] = None
+    description: Optional[str] = None
+    uid: Optional[int] = None
+    timeout_s: Optional[int] = None
+    target_status: Optional[datamodels.PodStatusEnum] = None
+
+    @field_validator('timeout_s')
+    def timeout_s_must_be_valid(cls, v):
+        if v is not None:
+            if v < 0:
+                raise ValueError('timeout_s must be positive')
+            elif v > 86400:
+                raise ValueError('timeout_s must be less than 86400 seconds')
+
+    @field_validator('target_status')
+    def target_status_must_be_valid(cls, v):
+        if v is not None and v not in datamodels.PodStatusEnum:
+            raise ValueError('target_status must be valid PodStatusEnum')
+        return v
 
 
-class PodUpdateResponse(TemplateGetResponse):
+class PodUpdateResponse(PodGetResponse):
     pass
 
 
@@ -168,5 +212,5 @@ class PodDeleteRequest(PodGetRequest):
     pass
 
 
-class PodDeleteResponse(TemplateGetResponse):
+class PodDeleteResponse(PodGetResponse):
     pass

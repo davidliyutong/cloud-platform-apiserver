@@ -646,6 +646,75 @@ Modify user. Payload is new user profile. Similar to /v1/admin/user/:username. U
         "user": {}
     }
     ```
+### Templates Management
+
+This section describes user APIs that read template resource.
+
+#### GET /v1/admin/templates
+
+List all templates. If `template_id_start` and `template_id_end` are “greater than” 0, only templates with `template_id`
+between `template_id_start` and `template_id_end` are returned. If `filter` is not empty, apply filter on results. This
+API returns profiles of templates and total number of templates.
+
+- Request Header:
+
+    ```conf
+    Authorization=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey
+    Content-Type=application/json
+    ```
+
+- Request Payload:
+    ```
+    ```
+
+
+- Request Query:
+
+    ```conf
+     "index_start"= -1
+     "index_end"= -1,
+     "filter"= ""
+    ```
+
+- Response:
+
+    ```json
+    {
+        "description": "",
+        "status":200,
+        "message":"",
+        "total_templates": 1,
+        "templates": []
+    }
+    ```
+  
+
+#### GET /v1/admin/templates/:template_id
+
+Get a single template. Limited to admins.
+
+- Request Header:
+
+    ```conf
+    Authorization=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey
+    Content-Type=application/json
+    ```
+
+- Request Payload:
+
+    ```json
+    ```
+
+- Response:
+
+    ```json
+    {
+        "description": "",
+        "status":200,
+        "message":"",
+        "template": {}
+    }
+    ```
 
 ### Pod Management
 
