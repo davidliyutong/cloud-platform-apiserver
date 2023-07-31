@@ -2,11 +2,11 @@ import http
 from functools import wraps
 from sanic.response import json as json_response
 import jwt
-from typing import Iterable
+from typing import Iterable, Optional
 from loguru import logger
 
 
-def validate_role(role: Iterable[str]):
+def validate_role(role: Optional[Iterable[str]]=None):
     def decorator(f):
         @wraps(f)
         async def decorated_function(request, *args, **kwargs):
@@ -26,7 +26,7 @@ def validate_role(role: Iterable[str]):
 
                 # Verify the jwt, replace 'secret' with your Secret Key.
                 payload = jwt.decode(token, request.app.config.get('JWT_SECRET'), algorithms='HS256')
-                if payload.get('role') in role:
+                if role is None or payload.get('role') in role:
                     request.ctx.user = payload
                     return await f(request, *args, **kwargs)
                 else:
