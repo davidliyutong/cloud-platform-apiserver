@@ -21,9 +21,8 @@ from src.apiserver.controller.auth import bp as auth_bp
 from src.apiserver.controller.nonadmin_user import bp as nonadmin_user_bp
 from src.apiserver.controller.nonadmin_pod import bp as nonadmin_pod_bp
 
-from src.components.tasks import check_and_create_admin_user, check_kubernetes_connection
+from src.components.tasks import check_and_create_admin_user, check_kubernetes_connection  # check_rabbitmq_connection
 from src.components.utils import get_k8s_api
-from src.orchestrator import EventOrchestrator
 
 _service: RootService
 
@@ -32,7 +31,22 @@ def apiserver_prepare_run(opt: BackendConfig) -> Sanic:
     controller_app.ctx.opt = opt
 
     # establish MongoDB connection, check and create admin user
-    _ = check_and_create_admin_user(opt)
+    err = check_and_create_admin_user(opt)
+    if err is not None:
+        logger.error(f"task check_and_create_admin_user failed: {err}")
+        exit(1)
+
+    # establish Kubernetes connection
+    err = check_kubernetes_connection(opt)
+    if err is not None:
+        logger.exception(err)
+        exit(1)
+
+    # establish RabbitMQ connection and attach to context
+    # err = check_rabbitmq_connection(opt)
+    # if err is not None:
+    #     logger.error(f"task check_rabbitmq_connection failed: {err}")
+    #     exit(1)
 
     # Install JWT authentication
     initialize(controller_app,
@@ -55,24 +69,6 @@ def apiserver_prepare_run(opt: BackendConfig) -> Sanic:
     controller_app.config.update({'JWT_SECRET': controller_app.ctx.auth.config.secret._value})
 
     # create services
-    _ = new_root_service(
-        UserRepo(Repo(controller_app.config)),
-        TemplateRepo(Repo(controller_app.config))
-    )
-
-    return controller_app
-
-
-def orchestrator_prepare_run(opt: BackendConfig) -> EventOrchestrator:
-    import logging
-    logging.getLogger("pika").setLevel(logging.WARNING)
-
-    # establish Kubernetes connection and attach to context
-    err = check_kubernetes_connection(opt)
-    if err is not None:
-        logger.exception(err)
-        exit(1)
-
     repo = Repo(opt.to_sanic_config())
     _ = new_root_service(
         UserRepo(repo),
@@ -80,4 +76,4 @@ def orchestrator_prepare_run(opt: BackendConfig) -> EventOrchestrator:
         get_k8s_api(opt.k8s_host, opt.k8s_port, opt.k8s_ca_cert, opt.k8s_token)
     )
 
-    return EventOrchestrator(opt)
+    return controller_app

@@ -2,25 +2,43 @@ import json
 from hashlib import sha256
 from typing import List, Tuple, Optional, Dict, Any
 
-import aio_pika
 import bcrypt
+from bson import ObjectId
 from loguru import logger
-from pamqp.commands import Basic
 
 from .repo import Repo
 import src.components.datamodels as datamodels
-import src.components.events as events
-import src.components.config as config
 import pymongo
 
-from ...components import errors
-from ...components.utils import singleton
+from src.components import errors
+from src.components.utils import singleton
 
 
 @singleton
 class UserRepo:
     def __init__(self, db: Repo):
         self.db = db
+
+    async def _commit(self, db_id: ObjectId) -> None:
+        collection = self.db.get_db_collection(datamodels.database_name, datamodels.user_collection_name)
+        ret = collection.find_one_and_update(
+            {"_id": db_id},
+            {"$set": {"resource_status": datamodels.ResourceStatusEnum.committed.value}}
+        )
+        if ret is None:
+            logger.error(f"commit error")
+            raise errors.unknown_error
+
+    async def commit(self, username: str) -> None:
+        collection = self.db.get_db_collection(datamodels.database_name, datamodels.user_collection_name)
+        ret = collection.find_one_and_update(
+            {"username": username},
+            {"$set": {"resource_status": datamodels.ResourceStatusEnum.committed.value}}
+        )
+        if ret is None:
+            raise errors.unknown_error
+        else:
+            return None
 
     async def get(self, username) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
         res = await self.db.get_db_collection(datamodels.database_name, datamodels.user_collection_name).find_one(
@@ -93,29 +111,12 @@ class UserRepo:
             ret = await user_collection.insert_one(user.model_dump())
             if ret is None:
                 return None, errors.db_connection_error
+            else:
+                return user, None
 
         except Exception as e:
             logger.error(f"get_collection error: {e}")
             return None, errors.db_connection_error
-
-        try:
-            message = aio_pika.Message(
-                body=events.UserCreateEvent(
-                    username=username,
-                ).model_dump_json().encode()
-            )
-            ret = await (await self.db.get_mq_channel()).default_exchange.publish(
-                message,
-                routing_key=config.CONFIG_EVENT_QUEUE_NAME
-            )
-            if not isinstance(ret, Basic.Ack):
-                logger.error(f"publish create user event failed: {username}")
-                return None, errors.unknown_error
-            else:
-                return user, None
-        except Exception as e:
-            logger.error(f"publish create user event error: {e}")
-            return None, errors.unknown_error
 
     async def update(self,
                      username: str,
@@ -147,58 +148,44 @@ class UserRepo:
             if ret is None:
                 logger.error(f"update user unknown error: {username}")
                 return None, errors.unknown_error
-        except Exception as e:
-            logger.error(f"get_collection error: {e}")
-            return None, errors.db_connection_error
-
-        try:
-            message = aio_pika.Message(
-                body=events.UserUpdateEvent(
-                    username=username,
-                ).model_dump_json().encode()
-            )
-            ret = await (await self.db.get_mq_channel()).default_exchange.publish(
-                message,
-                routing_key=config.CONFIG_EVENT_QUEUE_NAME
-            )
-            if not isinstance(ret, Basic.Ack):
-                logger.error(f"publish update user event failed: {username}")
-                return None, errors.unknown_error
             else:
                 return user_model, None
         except Exception as e:
-            logger.error(f"publish update user event error: {e}")
-            return None, errors.unknown_error
+            logger.error(f"get_collection error: {e}")
+            return None, errors.db_connection_error
 
     async def delete(self, username: str) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
         try:
-            user_collection = self.db.get_db_collection(datamodels.database_name, datamodels.user_collection_name)
-            res = await user_collection.find_one({'username': username})
+            collection = self.db.get_db_collection(datamodels.database_name, datamodels.user_collection_name)
+            res = await collection.find_one({'username': username})
             if res is None:
                 return None, errors.user_not_found
             else:
-                ret = await user_collection.delete_one({'username': username})
+                user = datamodels.UserModel(**res)
+                ret = await collection.find_one_and_update(
+                    {'username': username},
+                    {'$set': {'resource_status': 'deleted'}})
                 if ret is None:
                     return None, errors.unknown_error
+                else:
+                    return user, None
         except Exception as e:
             logger.error(f"get_collection error: {e}")
             return None, errors.db_connection_error
 
+    async def purge(self, username: str) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
         try:
-            message = aio_pika.Message(
-                body=events.UserDeleteEvent(
-                    username=username,
-                ).model_dump_json().encode()
-            )
-            ret = await (await self.db.get_mq_channel()).default_exchange.publish(
-                message,
-                routing_key=config.CONFIG_EVENT_QUEUE_NAME
-            )
-            if not isinstance(ret, Basic.Ack):
-                logger.error(f"publish delete user event failed: {username}")
-                return None, errors.unknown_error
+            collection = self.db.get_db_collection(datamodels.database_name, datamodels.user_collection_name)
+            res = await collection.find_one({'username': username})
+            if res is None:
+                return None, errors.user_not_found
             else:
-                return datamodels.UserModel(**res), None
+                user = datamodels.UserModel(**res)
+                ret = await collection.delete_one({'username': username})
+                if ret is None:
+                    return None, errors.unknown_error
+                else:
+                    return user, None
         except Exception as e:
-            logger.error(f"publish delete user event error: {e}")
-            return None, errors.unknown_error
+            logger.error(f"get_collection error: {e}")
+            return None, errors.db_connection_error

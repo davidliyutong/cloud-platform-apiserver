@@ -1,11 +1,13 @@
-import asyncio
+# import asyncio
 from typing import Dict
 
+from bson import ObjectId
 from kubernetes import client
-from aio_pika.abc import AbstractRobustChannel, AbstractQueue
+# from aio_pika.abc import AbstractRobustChannel, AbstractQueue
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorCollection
+from src.components import datamodels
 from src.components.utils import singleton, get_k8s_api
-import aio_pika
+# import aio_pika
 
 
 @singleton
@@ -15,8 +17,8 @@ class Repo:
     """
     _db: Dict[str, AsyncIOMotorDatabase] = {}
     _db_collection: Dict[str, AsyncIOMotorCollection] = {}
-    _mq: AbstractRobustChannel = None
-    _mq_queue: Dict[str, AbstractQueue] = {}
+    # _mq: AbstractRobustChannel = None
+    # _mq_queue: Dict[str, AbstractQueue] = {}
     _v1: client.CoreV1Api = None
 
     motor_uri = ''
@@ -60,24 +62,24 @@ class Repo:
 
         return self._db_collection[collection_key]
 
-    async def get_mq_channel(self) -> AbstractRobustChannel:
-        self.pika_uri = 'amqp://{account}{host}:{port}'.format(
-            account='{username}:{password}@'.format(
-                username=self.options['MQ_USERNAME'],
-                password=self.options['MQ_PASSWORD']) if self.options['MQ_USERNAME'] else '',
-            host=self.options['MQ_HOST'] if self.options['MQ_HOST'] else '127.0.0.1',
-            port=self.options['MQ_PORT'] if self.options['MQ_PORT'] else 5672)
-        if self._mq is None:
-            self._mq = await (await aio_pika.connect_robust(self.pika_uri)).channel()
-        return self._mq
+    # async def get_mq_channel(self) -> AbstractRobustChannel:
+    #     self.pika_uri = 'amqp://{account}{host}:{port}'.format(
+    #         account='{username}:{password}@'.format(
+    #             username=self.options['MQ_USERNAME'],
+    #             password=self.options['MQ_PASSWORD']) if self.options['MQ_USERNAME'] else '',
+    #         host=self.options['MQ_HOST'] if self.options['MQ_HOST'] else '127.0.0.1',
+    #         port=self.options['MQ_PORT'] if self.options['MQ_PORT'] else 5672)
+    #     if self._mq is None:
+    #         self._mq = await (await aio_pika.connect_robust(self.pika_uri)).channel()
+    #     return self._mq
 
-    async def get_mq_queue(self, queue_name: str) -> AbstractQueue:
-        if queue_name not in self._mq_queue.keys():
-            self._mq_queue[queue_name] = await (await self.get_mq_channel()).declare_queue(
-                queue_name,
-                durable=True,
-            )
-        return self._mq_queue[queue_name]
+    # async def get_mq_queue(self, queue_name: str) -> AbstractQueue:
+    #     if queue_name not in self._mq_queue.keys():
+    #         self._mq_queue[queue_name] = await (await self.get_mq_channel()).declare_queue(
+    #             queue_name,
+    #             durable=True,
+    #         )
+    #     return self._mq_queue[queue_name]
 
     async def get_k8s_api(self):
         if self._v1 is None:

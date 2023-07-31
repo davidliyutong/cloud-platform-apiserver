@@ -11,7 +11,7 @@ from ..repo import UserRepo, TemplateRepo
 
 
 @dataclasses.dataclass
-class RootService:
+class RootService(ServiceInterface):
     auth_basic_service: ServiceInterface = None
     admin_user_service: AdminUserService = None
     admin_template_service: AdminTemplateService = None
@@ -19,6 +19,21 @@ class RootService:
     nonadmin_pod_service: ServiceInterface = None
     k8s_operator_service: K8SOperatorService = None
 
+    def __post_init__(self):
+        if self.auth_basic_service is not None:
+            self.auth_basic_service.parent = self
+
+        if self.admin_user_service is not None:
+            self.admin_user_service.parent = self
+
+        if self.admin_template_service is not None:
+            self.admin_template_service.parent = self
+
+        if self.nonadmin_user_service is not None:
+            self.nonadmin_user_service.parent = self
+
+        if self.nonadmin_pod_service is not None:
+            self.nonadmin_pod_service.parent = self
 
 
 _service: Optional[RootService] = None

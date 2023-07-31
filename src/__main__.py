@@ -1,14 +1,9 @@
-import asyncio
-
-from src.apiserver.server.server import orchestrator_prepare_run
 from src.components.config import BackendConfig
 from src.apiserver.server import apiserver_prepare_run
 from loguru import logger
 import click
 from sanic import Sanic
 import multiprocessing as mp
-
-from src.orchestrator import EventOrchestrator
 
 Sanic.start_method = 'fork'
 
@@ -60,19 +55,6 @@ if __name__ == '__main__':
                 access_log=opt.api_access_log,
                 workers=opt.api_num_workers if opt.api_access_log > 0 else mp.cpu_count(),
                 auto_reload=False)
-
-
-    @cli.command(context_settings=dict(ignore_unknown_options=True, allow_extra_args=True))
-    @click.pass_context
-    def orchestrate(ctx):
-        global opt
-        v, err = BackendConfig.load_config(argv=[])
-        opt = BackendConfig().from_vyper(v)
-        logger.info(f"running option: {opt.to_dict()}")
-        loop = asyncio.get_event_loop()
-        o = orchestrator_prepare_run(opt)
-        loop.run_until_complete(o.run(opt))
-        loop.close()
 
 
     cli()

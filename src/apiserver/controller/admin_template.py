@@ -29,7 +29,7 @@ async def list(request):
         req = TemplateListRequest()
     else:
         req = TemplateListRequest(**{k: v for (k, v) in request.query_args})
-    count, templates, err = await get_root_service().admin_template_service.list(req)
+    count, templates, err = await get_root_service().admin_template_service.list(request.app, req)
 
     if err is not None:
         return json_response(
@@ -81,7 +81,7 @@ async def create(request):
                 ).model_dump(),
                 status=http.HTTPStatus.BAD_REQUEST
             )
-        template, err = await get_root_service().admin_template_service.create(req)
+        template, err = await get_root_service().admin_template_service.create(request.app, req)
 
         if err is not None:
             return json_response(
@@ -121,7 +121,7 @@ async def get(request, template_id: str):
         )
     else:
         req = TemplateGetRequest(template_id=template_id)
-        template, err = await get_root_service().admin_template_service.get(req)
+        template, err = await get_root_service().admin_template_service.get(request.app, req)
         if err is not None:
             return json_response(
                 TemplateGetResponse(
@@ -164,7 +164,7 @@ async def update(request, template_id: str):
     else:
         body.update({"template_id": template_id})
         req = TemplateUpdateRequest(**body)
-        template, err = await get_root_service().admin_template_service.update(req)
+        template, err = await get_root_service().admin_template_service.update(request.app, req)
         if err is not None:
             return json_response(
                 TemplateUpdateResponse(
@@ -202,7 +202,7 @@ async def delete(request, template_id: str):
         )
     else:
         req = TemplateDeleteRequest(template_id=template_id)
-        deleted_user, err = await get_root_service().admin_template_service.delete(req)
+        deleted_user, err = await get_root_service().admin_template_service.delete(request.app, req)
         if err is not None:
             return json_response(
                 TemplateDeleteResponse(

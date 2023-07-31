@@ -34,7 +34,7 @@ async def authenticate(req: request.Request):
         raise exceptions.AuthenticationFailed(str(errors.empty_username_or_password))
 
     user, err = await get_user(Repo(req.app.config), username)
-    if user is None:
+    if user is None or user['status'] not in ['active']:
         raise exceptions.AuthenticationFailed(str(err))
     else:
         password_hashed = sha256(password.encode()).hexdigest()

@@ -39,6 +39,12 @@ class FieldTypeEnum(str, Enum):
     list = "list"
 
 
+class ResourceStatusEnum(str, Enum):
+    committed = "committed"
+    deleted = "deleted"
+    pending = "pending"
+
+
 class PodStatusEnum(str, Enum):
     pending = "pending"
     creating = "creating"
@@ -55,6 +61,7 @@ class UserStatusEnum(str, Enum):
 
 
 class QuotaModel(BaseModel):
+    committed: bool = False
     m_cpu: int
     memory_mb: int
     storage_mb: int
@@ -64,6 +71,7 @@ class QuotaModel(BaseModel):
 
 
 class UserModel(BaseModel):
+    resource_status: ResourceStatusEnum = ResourceStatusEnum.pending
     uid: int
     uuid: Optional[UUID4]
     username: str
@@ -134,6 +142,7 @@ class UserModel(BaseModel):
 
 
 class TemplateModel(BaseModel):
+    resource_status: ResourceStatusEnum = ResourceStatusEnum.pending
     template_id: UUID4
     template_name: str
     description: str
@@ -200,6 +209,7 @@ class TemplateModel(BaseModel):
 
 
 class PodModel(BaseModel):
+    resource_status: ResourceStatusEnum = ResourceStatusEnum.pending
     pod_id: str
     name: str
     description: str
@@ -212,8 +222,8 @@ class PodModel(BaseModel):
     created_at: datetime.datetime
     started_at: datetime.datetime
     timeout_s: int
-    current_status: str
-    target_status: str
+    current_status: PodStatusEnum
+    target_status: PodStatusEnum
 
     def render(self):
         return {

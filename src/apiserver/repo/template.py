@@ -1,22 +1,41 @@
 import json
 from typing import List, Tuple, Optional, Dict, Any
 
-import aio_pika
+from bson import ObjectId
 from loguru import logger
-from pamqp.commands import Basic
 
 from .repo import Repo
 import src.components.datamodels as datamodels
 import pymongo
 
-from ...components import errors, events, config
-from ...components.utils import singleton
+from src.components import errors
+from src.components.utils import singleton
 
 
 @singleton
 class TemplateRepo:
     def __init__(self, db: Repo):
         self.db = db
+
+    async def _commit(self, db_id: ObjectId) -> None:
+        collection = self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name)
+        ret = collection.find_one_and_update(
+            {"_id": db_id},
+            {"$set": {"resource_status": datamodels.ResourceStatusEnum.committed.value}}
+        )
+        if ret is None:
+            logger.error(f"commit error")
+            raise errors.unknown_error
+
+    async def commit(self, template_id: str) -> None:
+        collection = self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name)
+        ret = collection.find_one_and_update(
+            {"template_id": template_id},
+            {"$set": {"resource_status": datamodels.ResourceStatusEnum.committed.value}}
+        )
+        if ret is None:
+            logger.error(f"commit error")
+            raise errors.unknown_error
 
     async def get(self, template_id) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
         res = await self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name).find_one(
@@ -82,28 +101,11 @@ class TemplateRepo:
             ret = await collection.insert_one(template.model_dump())
             if ret is None:
                 return None, errors.unknown_error
-        except Exception as e:
-            logger.error(f"get_collection error: {e}")
-            return None, errors.db_connection_error
-
-        try:
-            message = aio_pika.Message(
-                body=events.TemplateCreateEvent(
-                    template_id=str(template.template_id),
-                ).model_dump_json().encode()
-            )
-            ret = await (await self.db.get_mq_channel()).default_exchange.publish(
-                message,
-                routing_key=config.CONFIG_EVENT_QUEUE_NAME
-            )
-            if not isinstance(ret, Basic.Ack):
-                logger.error(f"publish create template event failed: {template_name}")
-                return None, errors.unknown_error
             else:
                 return template, None
         except Exception as e:
-            logger.error(f"publish create template event error: {e}")
-            return None, errors.unknown_error
+            logger.error(f"get_collection error: {e}")
+            return None, errors.db_connection_error
 
     async def update(self,
                      template_id: str,
@@ -138,59 +140,45 @@ class TemplateRepo:
             if ret is None:
                 logger.error(f"update template unknown error: {template_id}")
                 return None, errors.unknown_error
+            else:
+                return template, None
 
         except Exception as e:
             logger.error(f"get_collection error: {e}")
             return None, errors.db_connection_error
-
-        try:
-            message = aio_pika.Message(
-                body=events.TemplateUpdateEvent(
-                    template_id=str(template_id),
-                ).model_dump_json().encode()
-            )
-            ret = await (await self.db.get_mq_channel()).default_exchange.publish(
-                message,
-                routing_key=config.CONFIG_EVENT_QUEUE_NAME
-            )
-            if not isinstance(ret, Basic.Ack):
-                logger.error(f"publish update template event failed: {template_name}")
-                return None, errors.unknown_error
-            else:
-                return template_model, None
-        except Exception as e:
-            logger.error(f"publish update template event error: {e}")
-            return None, errors.unknown_error
 
     async def delete(self, template_id: str) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
         try:
-            user_collection = self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name)
-            res = await user_collection.find_one({'template_id': template_id})
+            collection = self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name)
+            res = await collection.find_one({'template_id': template_id})
             if res is None:
                 return None, errors.template_not_found
             else:
-                ret = await user_collection.delete_one({'template_id': template_id})
+                template = datamodels.TemplateModel(**res)
+                ret = await collection.find_one_and_update(
+                    {'template_id': template_id},
+                    {'$set': {'resource_status': 'deleted'}})
                 if ret is None:
                     return None, errors.unknown_error
+                else:
+                    return template, None
         except Exception as e:
             logger.error(f"get_collection error: {e}")
             return None, errors.db_connection_error
 
+    async def purge(self, template_id: str) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
         try:
-            message = aio_pika.Message(
-                body=events.TemplateDeleteEvent(
-                    template_id=str(template_id),
-                ).model_dump_json().encode()
-            )
-            ret = await (await self.db.get_mq_channel()).default_exchange.publish(
-                message,
-                routing_key=config.CONFIG_EVENT_QUEUE_NAME
-            )
-            if not isinstance(ret, Basic.Ack):
-                logger.error(f"publish delete template event failed: {template_id}")
-                return None, errors.unknown_error
+            collection = self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name)
+            res = await collection.find_one({'template_id': template_id})
+            if res is None:
+                return None, errors.template_not_found
             else:
-                return datamodels.TemplateModel(**res), None
+                template = datamodels.TemplateModel(**res)
+                ret = await collection.delete_one({'template_id': template_id})
+                if ret is None:
+                    return None, errors.unknown_error
+                else:
+                    return template, None
         except Exception as e:
-            logger.error(f"publish delete template event error: {e}")
-            return None, errors.unknown_error
+            logger.error(f"get_collection error: {e}")
+            return None, errors.db_connection_error
