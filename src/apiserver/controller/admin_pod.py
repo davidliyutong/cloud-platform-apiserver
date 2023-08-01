@@ -72,8 +72,8 @@ async def create(request):
         )
     else:
         try:
-            if 'uid' not in request.json.keys():
-                request.json['uid'] = request.ctx.user['uid']
+            if 'username' not in request.json.keys():
+                request.json['username'] = request.ctx.user['username']
             req = PodCreateRequest(**request.json)
         except Exception as e:
             return json_response(

@@ -32,7 +32,7 @@ async def list(request):
         req = PodListRequest(**{k: v for (k, v) in request.query_args})
 
     count, pods, err = await get_root_service().pod_service.list(request.app, req)
-    pods = [p for p in pods if p.uid == request.ctx.user['uid']]
+    pods = [p for p in pods if p.username == request.ctx.user['username']]
     if err is not None:
         return json_response(
             PodListResponse(
@@ -126,7 +126,7 @@ async def get(request, pod_id: str):
     else:
         req = PodGetRequest(pod_id=pod_id)
         pod, err = await get_root_service().pod_service.get(request.app, req)
-        if pod.uid != request.ctx.user['uid']:
+        if pod.username != request.ctx.user['username']:
             return json_response(
                 PodGetResponse(
                     status=http.HTTPStatus.UNAUTHORIZED,
@@ -187,7 +187,7 @@ async def update(request, pod_id: str):
                 status=http.HTTPStatus.INTERNAL_SERVER_ERROR
             )
         else:
-            if pod.uid != request.ctx.user['uid']:
+            if pod.username != request.ctx.user['username']:
                 return json_response(
                     PodGetResponse(
                         status=http.HTTPStatus.UNAUTHORIZED,
@@ -245,7 +245,7 @@ async def delete(request, pod_id: str):
                 status=http.HTTPStatus.INTERNAL_SERVER_ERROR
             )
         else:
-            if pod.uid != request.ctx.user['uid']:
+            if pod.username != request.ctx.user['username']:
                 return json_response(
                     PodGetResponse(
                         status=http.HTTPStatus.UNAUTHORIZED,

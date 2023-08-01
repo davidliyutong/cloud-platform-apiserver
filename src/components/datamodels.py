@@ -196,7 +196,7 @@ class TemplateModel(BaseModel):
         "POD_CPU_LIM": "2000m",
         "POD_MEM_LIM": "4096Mi",
         "POD_STORAGE_LIM": "10Mi",
-        "POD_AUTH": "uid-basic-auth",
+        "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format("username"),
         "CONFIG_CODE_HOSTNAME": "code.example.org",
         "CONFIG_CODE_TLS_SECRET": "code-tls-secret",
         "CONFIG_VNC_HOSTNAME": "vnc.example.org",
@@ -217,7 +217,7 @@ class PodModel(BaseModel):
     cpu_lim_m_cpu: int
     mem_lim_mb: int
     storage_lim_mb: int
-    uid: int
+    username: str
     created_at: datetime.datetime
     started_at: datetime.datetime
     timeout_s: int
@@ -248,13 +248,13 @@ class PodModel(BaseModel):
             "POD_CPU_LIM": str(self.cpu_lim_m_cpu) + "m",
             "POD_MEM_LIM": str(self.mem_lim_mb) + "Mi",
             "POD_STORAGE_LIM": str(self.storage_lim_mb) + "Mi",
-            "POD_AUTH": f"{self.uid}-basic-auth",
+            "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format(self.username),
         }
 
     @classmethod
     def new(cls,
             template_ref: Optional[str],
-            uid: int,
+            username: str,
             name: str = "",
             description: str = "",
             cpu_lim_m_cpu: int = 1000,
@@ -269,7 +269,7 @@ class PodModel(BaseModel):
             cpu_lim_m_cpu=cpu_lim_m_cpu,
             mem_lim_mb=mem_lim_mb,
             storage_lim_mb=storage_lim_mb,
-            uid=uid,
+            username=username,
             created_at=datetime.datetime.now(),
             started_at=datetime.datetime.now(),
             timeout_s=timeout_s,

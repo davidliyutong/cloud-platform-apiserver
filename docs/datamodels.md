@@ -23,7 +23,7 @@
 - **cpu_lim_m_cpu**: limit of cpu, integer, mutable
 - **mem_lim_mb**: limit of memory, integer, mutable
 - **storage_lim_mb**: limit of storage, integer, immutable
-- **uid**: unique id of ownner, integer, immutable
+- **username**: username of owner, string, immutable
 - **created_at**: timestamp, date, immutable, autogen
 - **started_at**: timestamp, date, mutable, autogen
 - **timeout_s**: timeout in terms of second, integer, mutable

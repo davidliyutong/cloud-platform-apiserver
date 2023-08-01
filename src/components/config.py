@@ -18,6 +18,7 @@ CONFIG_GLOBAL_COLLECTION_NAME = "clpl_global"
 CONFIG_USER_COLLECTION_NAME = "clpl_users"
 CONFIG_POD_COLLECTION_NAME = "clpl_pods"
 CONFIG_TEMPLATE_COLLECTION_NAME = "clpl_templates"
+CONFIG_K8S_CREDENTIAL_FMT = "{}-basic-auth"
 
 
 class BackendConfig(BaseModel):

@@ -51,7 +51,7 @@ class UserRepo:
     async def list(self,
                    index_start: int = -1,
                    index_end: int = -1,
-                   extra_query_filter_str: str = "") -> Tuple[int, List[datamodels.UserModel], Optional[Exception]]:
+                   extra_query_filter: Dict[str, Any] = None) -> Tuple[int, List[datamodels.UserModel], Optional[Exception]]:
 
         try:
             collection = self.db.get_db_collection(datamodels.database_name, datamodels.user_collection_name)
@@ -61,14 +61,7 @@ class UserRepo:
             _start = 0 if index_start < 0 else index_start
             _end = num_document if index_end < 0 else index_end
 
-            query_filter = {}
-            if extra_query_filter_str != "":
-                try:
-                    json.loads(extra_query_filter_str)
-                    query_filter = json.loads(extra_query_filter_str)
-                except json.JSONDecodeError:
-                    logger.error(f"extra_query_filter_str is not a valid json string: {extra_query_filter_str}")
-                    return num_document, [], errors.wrong_query_filter
+            query_filter = {} if extra_query_filter is None else extra_query_filter
 
             res = []
             cursor = collection.find(query_filter).sort('uid', pymongo.ASCENDING)

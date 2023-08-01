@@ -49,7 +49,7 @@ class PodRepo:
     async def list(self,
                    index_start: int = -1,
                    index_end: int = -1,
-                   extra_query_filter_str: str = "") -> Tuple[int, List[datamodels.PodModel], Optional[Exception]]:
+                   extra_query_filter: Dict[str, Any] = None) -> Tuple[int, List[datamodels.PodModel], Optional[Exception]]:
 
         try:
             collection = self.db.get_db_collection(datamodels.database_name, datamodels.pod_collection_name)
@@ -59,14 +59,7 @@ class PodRepo:
             _start = 0 if index_start < 0 else index_start
             _end = num_document if index_end < 0 else index_end
 
-            query_filter = {}
-            if extra_query_filter_str != "":
-                try:
-                    json.loads(extra_query_filter_str)
-                    query_filter = json.loads(extra_query_filter_str)
-                except json.JSONDecodeError:
-                    logger.error(f"extra_query_filter_str is not a valid json string: {extra_query_filter_str}")
-                    return num_document, [], errors.wrong_query_filter
+            query_filter = {} if extra_query_filter is None else extra_query_filter
 
             res = []
             cursor = collection.find(query_filter).sort('uid', pymongo.ASCENDING)
@@ -84,7 +77,7 @@ class PodRepo:
                      cpu_lim_m_cpu: int,
                      mem_lim_mb: int,
                      storage_lim_mb: int,
-                     uid: int,
+                     username: str,
                      timeout_s: int,
                      values: Optional[Dict[str, Any]]) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
         try:
@@ -92,7 +85,7 @@ class PodRepo:
 
             pod = datamodels.PodModel.new(
                 template_ref=template_ref,
-                uid=uid,
+                username=username,
                 name=name,
                 description=description,
                 cpu_lim_m_cpu=cpu_lim_m_cpu,
@@ -117,7 +110,7 @@ class PodRepo:
             pod_id: str,
             name: str = None,
             description: str = None,
-            uid: int = None,
+            username: str = None,
             timeout_s: int = None,
             target_status: Optional[datamodels.PodStatusEnum] = None
     ) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
@@ -132,7 +125,7 @@ class PodRepo:
             try:
                 pod['name'] = name if name is not None else pod['name']
                 pod['description'] = description if description is not None else pod['description']
-                pod['uid'] = uid if uid is not None else pod['uid']
+                pod['username'] = username if username is not None else pod['username']
                 pod['timeout_s'] = timeout_s if timeout_s is not None else pod['timeout_s']
                 pod['target_status'] = target_status if target_status is not None else pod['target_status']
                 pod['resource_status'] = datamodels.ResourceStatusEnum.pending.value

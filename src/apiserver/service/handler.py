@@ -8,6 +8,7 @@ from loguru import logger
 from pydantic import BaseModel
 
 from src.components import config
+from src.components.config import CONFIG_K8S_CREDENTIAL_FMT
 from src.components.events import (
     TemplateCreateEvent, TemplateUpdateEvent, TemplateDeleteEvent,
     UserCreateEvent, UserUpdateEvent, UserDeleteEvent,
@@ -66,7 +67,7 @@ async def handle_user_create_event(srv: Optional['src.apiserver.service.RootServ
                         "auth": base64.b64encode(user.htpasswd.get_secret_value().encode()).decode()
                     },
                     metadata=kubernetes.client.V1ObjectMeta(
-                        name=f"{user.username}-basic-auth",
+                        name=CONFIG_K8S_CREDENTIAL_FMT.format(user.username),
                         namespace=config.CONFIG_PROJECT_NAMESPACE
                     )
                 ))
@@ -74,7 +75,7 @@ async def handle_user_create_event(srv: Optional['src.apiserver.service.RootServ
                 err = RuntimeError("failed to create k8s secret")
         except ApiException as e:
             if e.reason == 'Conflict':
-                logger.warning(f"secret {user.username}-basic-auth already exists")
+                logger.warning(f"secret {CONFIG_K8S_CREDENTIAL_FMT.format(user.username)} already exists")
             else:
                 logger.error(e)
                 err = e
@@ -101,7 +102,7 @@ async def handle_user_update_event(srv: Optional['src.apiserver.service.RootServ
         err = None
         try:
             ret = srv.k8s_operator_service.v1.patch_namespaced_secret(
-                f"{user.username}-basic-auth",
+                CONFIG_K8S_CREDENTIAL_FMT.format(user.username),
                 config.CONFIG_PROJECT_NAMESPACE,
                 kubernetes.client.V1Secret(
                     api_version="v1",
@@ -110,7 +111,7 @@ async def handle_user_update_event(srv: Optional['src.apiserver.service.RootServ
                         "auth": base64.b64encode(user.htpasswd.get_secret_value().encode()).decode()
                     },
                     metadata=kubernetes.client.V1ObjectMeta(
-                        name=f"{user.username}-basic-auth",
+                        name=CONFIG_K8S_CREDENTIAL_FMT.format(user.username),
                         namespace=config.CONFIG_PROJECT_NAMESPACE
                     )
                 ))
@@ -118,7 +119,7 @@ async def handle_user_update_event(srv: Optional['src.apiserver.service.RootServ
                 err = RuntimeError("failed to update k8s secret")
         except ApiException as e:
             if e.reason == 'Not Found':
-                logger.warning(f"secret {user.username}-basic-auth not found")
+                logger.warning(f"secret {CONFIG_K8S_CREDENTIAL_FMT.format(user.username)}not found")
             else:
                 logger.error(e)
                 err = e
@@ -137,26 +138,28 @@ async def handle_user_update_event(srv: Optional['src.apiserver.service.RootServ
 async def handle_user_delete_event(srv: Optional['src.apiserver.service.RootService'],
                                    ev: Union[UserDeleteEvent, BaseModel]) -> Optional[Exception]:
     user, err = await srv.user_service.repo.get(ev.username)
-    # TODO: delete user resources from namespace
     if err is not None:
         logger.warning(err)
         return None
     if user is not None:
+        # Delete Credentials
         logger.info(f"deleting k8s credentials for user {ev.username}")
         err = None
         try:
             ret = srv.k8s_operator_service.v1.delete_namespaced_secret(
-                f"{user.username}-basic-auth",
+                CONFIG_K8S_CREDENTIAL_FMT.format(user.username),
                 config.CONFIG_PROJECT_NAMESPACE,
             )
             if ret is None:
                 err = RuntimeError("failed to delete k8s secret")
         except ApiException as e:
             if e.reason == 'Not Found':
-                logger.warning(f"secret {user.username}-basic-auth not found")
+                logger.warning(f"secret {CONFIG_K8S_CREDENTIAL_FMT.format(user.username)} not found")
             else:
                 logger.error(e)
                 err = e
+
+        # Delete Pods
 
         if err is not None:
             return err
@@ -204,9 +207,11 @@ async def handle_pod_delete_event(srv: Optional['src.apiserver.service.RootServi
 
 async def handle_user_heartbeat_event(srv: Optional['src.apiserver.service.RootService'],
                                       ev: Union[UserHeartbeatEvent, BaseModel]) -> Optional[Exception]:
+    # TODO: update user heartbeat
     pass
 
 
 async def handle_pod_timeout_event(srv: Optional['src.apiserver.service.RootService'],
                                    ev: Union[PodTimeoutEvent, BaseModel]) -> Optional[Exception]:
+    # TODO: handle pod timeout
     pass

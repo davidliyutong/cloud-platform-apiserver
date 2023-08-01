@@ -136,7 +136,7 @@ class PodCreateRequest(BaseModel):
     cpu_lim_m_cpu: int
     mem_lim_mb: int
     storage_lim_mb: int
-    uid: int
+    username: str
     timeout_s: Optional[int] = None
     values: Optional[Dict[str, Any]] = None
 
@@ -185,7 +185,7 @@ class PodUpdateRequest(BaseModel):
     pod_id: Optional[str]
     name: Optional[str] = None
     description: Optional[str] = None
-    uid: Optional[int] = None
+    username: Optional[str] = None
     timeout_s: Optional[int] = None
     target_status: Optional[datamodels.PodStatusEnum] = None
 

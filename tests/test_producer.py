@@ -16,9 +16,8 @@ async def main():
         channel = await connection.channel()
         while True:
             message_body = datamodels.PodModel.new(
-                image_ref="davidliyutong/code-server-speit:latest",
-                template_ref=uuid.uuid4(),
-                uid=0,
+                template_ref=str(uuid.uuid4()),
+                username='test_user',
             ).model_dump_json()
 
             message = aio_pika.Message(body=message_body.encode())
