@@ -38,7 +38,7 @@ class PodRepo:
         else:
             return None
 
-    async def get(self, pod_id) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
+    async def get(self, pod_id: str) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
         res = await self.db.get_db_collection(datamodels.database_name, datamodels.pod_collection_name).find_one(
             {'pod_id': pod_id})
         if res is None:

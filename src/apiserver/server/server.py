@@ -1,3 +1,6 @@
+import base64
+import secrets
+
 from loguru import logger
 from sanic import Sanic
 from src.apiserver.controller import controller_app
@@ -6,7 +9,7 @@ from src.apiserver.repo import Repo, UserRepo, TemplateRepo, PodRepo
 from src.apiserver.service.service import new_root_service
 from src.components.config import BackendConfig
 from sanic_jwt import initialize
-from src.components.authz import (
+from src.components.authn import (
     MyJWTConfig,
     MyJWTAuthentication,
     MyJWTResponse,
@@ -21,11 +24,23 @@ from src.apiserver.controller.auth import bp as auth_bp
 from src.apiserver.controller.nonadmin_pod import bp as nonadmin_pod_bp
 from src.apiserver.controller.nonadmin_template import bp as nonadmin_template_bp
 from src.apiserver.controller.nonadmin_user import bp as nonadmin_user_bp
+from src.apiserver.controller.heartbeat import bp as heartbeat_bp
 
 from src.components.tasks import check_and_create_admin_user, check_kubernetes_connection  # check_rabbitmq_connection
 from src.components.utils import get_k8s_api
 
 _service: RootService
+
+
+def apiserver_check_option(opt: BackendConfig) -> BackendConfig:
+    # Check Token Secret
+    if opt.config_token_secret is None or len(opt.config_token_secret) == 0:
+        logger.warning("Token secret is not set, use random string as token secret")
+        opt.config_token_secret = base64.encodebytes(secrets.token_bytes(32))
+    else:
+        opt.config_token_secret = base64.encodebytes(opt.config_token_secret.encode('utf-8'))
+
+    return opt
 
 
 def apiserver_prepare_run(opt: BackendConfig) -> Sanic:
@@ -37,13 +52,13 @@ def apiserver_prepare_run(opt: BackendConfig) -> Sanic:
         logger.error(f"task check_and_create_admin_user failed: {err}")
         exit(1)
 
-    # establish Kubernetes connection
+    # check Kubernetes connection
     err = check_kubernetes_connection(opt)
     if err is not None:
         logger.exception(err)
         exit(1)
 
-    # Install JWT authentication
+    # install JWT authentication
     initialize(controller_app,
                authenticate=authenticate,
                authentication_class=MyJWTAuthentication,
@@ -60,9 +75,12 @@ def apiserver_prepare_run(opt: BackendConfig) -> Sanic:
     controller_app.blueprint(nonadmin_user_bp)
     controller_app.blueprint(nonadmin_template_bp)
     controller_app.blueprint(nonadmin_pod_bp)
+    controller_app.blueprint(heartbeat_bp)
 
     # attach JWT secret to context
     controller_app.config.update({'JWT_SECRET': controller_app.ctx.auth.config.secret._value})
+    controller_app.config.update({'JWT_ALGORITHM': controller_app.ctx.auth.config.algorithm._value})
+
 
     # create services
     repo = Repo(opt.to_sanic_config())

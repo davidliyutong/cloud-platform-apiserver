@@ -8,8 +8,12 @@ from loguru import logger
 from pydantic import BaseModel
 
 from src.components import config
-from src.components.events import TemplateCreateEvent, TemplateUpdateEvent, TemplateDeleteEvent, UserCreateEvent, \
-    UserUpdateEvent, UserDeleteEvent, PodCreateEvent, PodUpdateEvent, PodDeleteEvent
+from src.components.events import (
+    TemplateCreateEvent, TemplateUpdateEvent, TemplateDeleteEvent,
+    UserCreateEvent, UserUpdateEvent, UserDeleteEvent,
+    PodCreateEvent, PodUpdateEvent, PodDeleteEvent, PodTimeoutEvent,
+    UserHeartbeatEvent
+)
 import src.apiserver.service
 
 
@@ -196,3 +200,13 @@ async def handle_pod_delete_event(srv: Optional['src.apiserver.service.RootServi
         return err
     else:
         return err
+
+
+async def handle_user_heartbeat_event(srv: Optional['src.apiserver.service.RootService'],
+                                      ev: Union[UserHeartbeatEvent, BaseModel]) -> Optional[Exception]:
+    pass
+
+
+async def handle_pod_timeout_event(srv: Optional['src.apiserver.service.RootService'],
+                                   ev: Union[PodTimeoutEvent, BaseModel]) -> Optional[Exception]:
+    pass

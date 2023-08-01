@@ -40,7 +40,7 @@ class UserRepo:
         else:
             return None
 
-    async def get(self, username) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
+    async def get(self, username: str) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
         res = await self.db.get_db_collection(datamodels.database_name, datamodels.user_collection_name).find_one(
             {'username': username})
         if res is None:

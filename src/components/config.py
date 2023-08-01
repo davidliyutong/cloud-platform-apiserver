@@ -10,6 +10,8 @@ import yaml
 CONFIG_HOME_PATH = os.path.expanduser('~')
 CONFIG_CONFIG_NAME = "backend"
 CONFIG_PROJECT_NAME = "clpl"
+CONFIG_DEFAULT_CONFIG_SEARCH_PATH = osp.join(CONFIG_HOME_PATH, ".config", CONFIG_PROJECT_NAME)
+CONFIG_DEFAULT_CONFIG_PATH = osp.join(CONFIG_DEFAULT_CONFIG_SEARCH_PATH, f"{CONFIG_CONFIG_NAME}.yaml")
 CONFIG_PROJECT_NAMESPACE = "clpl"
 CONFIG_EVENT_QUEUE_NAME = "clpl_event_queue"
 CONFIG_GLOBAL_COLLECTION_NAME = "clpl_global"
@@ -44,6 +46,8 @@ class BackendConfig(BaseModel):
     bootstrap_admin_username: str = "admin"
     bootstrap_admin_password: str = "admin"
 
+    config_token_secret: str = None
+    config_jwt_expire_s: int = 3600
     config_code_hostname: str = None
     config_code_tls_secret: str = None
     config_vnc_hostname: str = None
@@ -77,6 +81,8 @@ class BackendConfig(BaseModel):
         self.bootstrap_admin_password = str(d["bootstrap"]["adminPassword"])
         self.bootstrap_admin_username = str(d["bootstrap"]["adminUsername"])
 
+        self.config_token_secret = str(d["config"]["tokenSecret"])
+        self.config_jwt_expire_s = int(d["config"]["jwtExpireS"])
         self.config_code_hostname = str(d["config"]["code"]["hostname"])
         self.config_code_tls_secret = str(d["config"]["code"]["tlsSecret"])
         self.config_vnc_hostname = str(d["config"]["vnc"]["hostname"])
@@ -112,6 +118,8 @@ class BackendConfig(BaseModel):
         self.bootstrap_admin_password = v.get_string("bootstrap.adminPassword")
         self.bootstrap_admin_username = v.get_string("bootstrap.adminUsername")
 
+        self.config_token_secret = v.get_string("config.tokenSecret")
+        self.config_jwt_expire_s = v.get_int("config.jwtExpireS")
         self.config_code_hostname = v.get_string("config.code.hostname")
         self.config_code_tls_secret = v.get_string("config.code.tlsSecret")
         self.config_vnc_hostname = v.get_string("config.vnc.hostname")
@@ -154,6 +162,8 @@ class BackendConfig(BaseModel):
                 "adminPassword": self.bootstrap_admin_password,
             },
             "config": {
+                "tokenSecret": self.config_token_secret,
+                "jwtExpireS": self.config_jwt_expire_s,
                 "code": {
                     "hostname": self.config_code_hostname,
                     "tlsSecret": self.config_code_tls_secret,
@@ -189,6 +199,8 @@ class BackendConfig(BaseModel):
             "K8S_TOKEN": self.k8s_token,
             "BOOTSTRAP_ADMIN_USERNAME": self.bootstrap_admin_username,
             "BOOTSTRAP_ADMIN_PASSWORD": self.bootstrap_admin_password,
+            "CONFIG_TOKEN_SECRET": self.config_token_secret,
+            "CONFIG_JWTEXPIRES": self.config_jwt_expire_s,
             "CONFIG_CODE_HOSTNAME": self.config_code_hostname,
             "CONFIG_CODE_TLSSECRET": self.config_code_tls_secret,
             "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
@@ -227,6 +239,8 @@ class BackendConfig(BaseModel):
         v.set_default("bootstrap.adminUsername", _DEFAULT.bootstrap_admin_username)
         v.set_default("bootstrap.adminPassword", _DEFAULT.bootstrap_admin_password)
 
+        v.set_default("config.tokenSecret", _DEFAULT.config_token_secret)
+        v.set_default("config.jwtExpires", _DEFAULT.config_jwt_expire_s)
         v.set_default("config.code.hostname", _DEFAULT.config_code_hostname)
         v.set_default("config.code.tlsSecret", _DEFAULT.config_code_tls_secret)
         v.set_default("config.vnc.hostname", _DEFAULT.config_vnc_hostname)
@@ -266,6 +280,8 @@ class BackendConfig(BaseModel):
         parser.add_argument("--bootstrap.adminUsername", type=str, help="bootstrap admin username")
         parser.add_argument("--bootstrap.adminPassword", type=str, help="bootstrap admin password")
 
+        parser.add_argument("--config.tokenSecret", type=str, help="config tokenSecret")
+        parser.add_argument("--config.jwtExpires", type=int, help="config jwtExpires")
         parser.add_argument("--config.code.hostname", type=str, help="config code hostname")
         parser.add_argument("--config.code.tlsSecret", type=str, help="config code tlsSecret")
         parser.add_argument("--config.vnc.hostname", type=str, help="config vnc hostname")
@@ -282,8 +298,8 @@ class BackendConfig(BaseModel):
         v = cls.get_default_config()
         v.set_config_name(CONFIG_CONFIG_NAME)
         v.set_config_type("yaml")
-        v.add_config_path(f"/etc/{CONFIG_CONFIG_NAME}")
-        v.add_config_path(osp.join(CONFIG_HOME_PATH, f".{CONFIG_CONFIG_NAME}"))
+        v.add_config_path(f"/etc/{CONFIG_PROJECT_NAME}")
+        v.add_config_path(CONFIG_DEFAULT_CONFIG_SEARCH_PATH)
         v.add_config_path(".")
         if args.config is not None:
             v.set_config_file(args.config)
@@ -325,6 +341,8 @@ class BackendConfig(BaseModel):
         v.bind_env("bootstrap.adminUsername")
         v.bind_env("bootstrap.adminPassword")
 
+        v.bind_env("config.tokenSecret")
+        v.bind_env("config.jwtExpires")
         v.bind_env("config.code.hostname")
         v.bind_env("config.code.tlsSecret")
         v.bind_env("config.vnc.hostname")
@@ -338,7 +356,7 @@ class BackendConfig(BaseModel):
     @classmethod
     def save_config(cls, v: Vyper, path: str = None) -> Optional[Exception]:
         if path is None:
-            path = osp.join(CONFIG_HOME_PATH, f".{CONFIG_PROJECT_NAME}", f"{CONFIG_CONFIG_NAME}.yaml")
+            path = CONFIG_DEFAULT_CONFIG_PATH
 
         _DIR = osp.dirname(path)
         if not osp.exists(_DIR):

@@ -61,6 +61,15 @@ class PodDeleteEvent(PodBaseEvent):
     type: str = "pod_delete_event"
 
 
+class PodTimeoutEvent(PodBaseEvent):
+    type: str = "pod_timeout_event"
+
+
+class UserHeartbeatEvent(BaseModel):
+    type: str = "user_heartbeat_event"
+    username: str
+
+
 def event_deserialize(payload: Union[bytes, str]) -> Tuple[Optional[BaseModel], Optional[Exception]]:
     try:
         payload = json.loads(payload)
@@ -85,3 +94,11 @@ def event_deserialize(payload: Union[bytes, str]) -> Tuple[Optional[BaseModel], 
         return PodUpdateEvent(**payload), None
     elif payload['type'] == 'pod_status_update_event':
         return PodStatusUpdateEvent(**payload), None
+    elif payload['type'] == 'pod_delete_event':
+        return PodDeleteEvent(**payload), None
+    elif payload['type'] == 'pod_timeout_event':
+        return PodTimeoutEvent(**payload), None
+    elif payload['type'] == 'user_heartbeat_event':
+        return UserHeartbeatEvent(**payload), None
+
+    return None, Exception(f"unknown event type: {payload['type']}")

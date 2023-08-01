@@ -1,7 +1,10 @@
+import base64
 from functools import wraps
 from typing import Optional, Dict, Any, Tuple, List
 import re
 from kubernetes import client
+
+from src.components import errors
 
 
 def singleton(cls):
@@ -63,3 +66,31 @@ def get_k8s_api(host: str,
     v1 = client.CoreV1Api()
 
     return v1
+
+
+def parse_bearer(bearer_str: Optional[str]) -> Tuple[Optional[str], Optional[Exception]]:
+    """
+    parse bearer auth header
+    """
+    if len(bearer_str) == 0 or bearer_str is None:
+        return None, errors.header_missing
+    authorization_header_split = bearer_str.split(' ')
+    if len(authorization_header_split) != 2:
+        return None, errors.header_malformed
+
+    return authorization_header_split[1], None
+
+
+def parse_basic(basic_str: Optional[str]) -> Tuple[Optional[Tuple[str, str]], Optional[Exception]]:
+    """
+    parse basic auth header
+    """
+    basic_auth_split = basic_str.split(' ')
+    if len(basic_auth_split) < 2:
+        return None, errors.header_malformed
+    basic_auth = str(base64.b64decode(basic_auth_split[-1]), encoding='utf-8')
+    username_password = basic_auth.split(':')
+    if len(username_password) < 2:
+        return None, errors.header_malformed
+
+    return tuple(*username_password), None

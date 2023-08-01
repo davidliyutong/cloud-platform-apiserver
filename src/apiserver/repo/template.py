@@ -37,7 +37,7 @@ class TemplateRepo:
             logger.error(f"commit error")
             raise errors.unknown_error
 
-    async def get(self, template_id) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
+    async def get(self, template_id: str) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
         res = await self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name).find_one(
             {'template_id': template_id})
         if res is None:

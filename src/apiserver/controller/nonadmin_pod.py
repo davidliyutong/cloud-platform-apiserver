@@ -7,7 +7,7 @@ from sanic.response import text
 from sanic_ext import openapi
 from sanic_jwt import protected
 
-import src.components.authn as authn
+import src.components.authz as authn
 import src.components.errors as errors
 from src.apiserver.service import get_root_service
 from .types import *
