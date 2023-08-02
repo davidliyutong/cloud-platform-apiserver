@@ -1,3 +1,7 @@
+"""
+This module implements the admin template controller.
+"""
+
 import http
 
 from loguru import logger
@@ -23,14 +27,21 @@ bp = Blueprint("admin_template", url_prefix="/admin/templates", version=1)
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def list(request):
+    """
+    List all templates.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
+    # parse query args
     if request.query_args is None:
         req = TemplateListRequest()
     else:
         req = TemplateListRequest(**{k: v for (k, v) in request.query_args})
+
+    # list templates
     count, templates, err = await get_root_service().template_service.list(request.app, req)
 
+    # return response
     if err is not None:
         return json_response(
             TemplateListResponse(
@@ -60,8 +71,12 @@ async def list(request):
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def create(request):
+    """
+    Create a template.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
+    # parse request body
     if request.json is None:
         return json_response(
             TemplateCreateResponse(
@@ -81,8 +96,11 @@ async def create(request):
                 ).model_dump(),
                 status=http.HTTPStatus.BAD_REQUEST
             )
+
+        # create template
         template, err = await get_root_service().template_service.create(request.app, req)
 
+        # return response
         if err is not None:
             return json_response(
                 TemplateCreateResponse(
@@ -109,8 +127,12 @@ async def create(request):
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def get(request, template_id: str):
+    """
+    Get a template.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
+    # check template_id param in url
     if template_id is None or template_id == "":
         return json_response(
             TemplateGetResponse(
@@ -120,8 +142,11 @@ async def get(request, template_id: str):
             status=http.HTTPStatus.BAD_REQUEST
         )
     else:
+        # get template
         req = TemplateGetRequest(template_id=template_id)
         template, err = await get_root_service().template_service.get(request.app, req)
+
+        # return response
         if err is not None:
             return json_response(
                 TemplateGetResponse(
@@ -150,9 +175,12 @@ async def get(request, template_id: str):
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def update(request, template_id: str):
+    """
+    Update a template.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
-    body = request.json
+    # check template_id param in url
     if template_id is None or template_id == "":
         return json_response(
             UserUpdateResponse(
@@ -162,9 +190,14 @@ async def update(request, template_id: str):
             status=http.HTTPStatus.BAD_REQUEST
         )
     else:
-        body.update({"template_id": template_id})
+        body = request.json
         req = TemplateUpdateRequest(**body)
+        req.template_id = template_id  # set template_id to request
+
+        # update template
         template, err = await get_root_service().template_service.update(request.app, req)
+
+        # return response
         if err is not None:
             return json_response(
                 TemplateUpdateResponse(
@@ -190,8 +223,12 @@ async def update(request, template_id: str):
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def delete(request, template_id: str):
+    """
+    Delete a template. This will mark the pod as deleted.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
+    # check template_id param in url
     if template_id is None or template_id == "":
         return json_response(
             TemplateDeleteResponse(
@@ -201,8 +238,11 @@ async def delete(request, template_id: str):
             status=http.HTTPStatus.BAD_REQUEST
         )
     else:
+        # delete template
         req = TemplateDeleteRequest(template_id=template_id)
         deleted_template, err = await get_root_service().template_service.delete(request.app, req)
+
+        # return response
         if err is not None:
             return json_response(
                 TemplateDeleteResponse(

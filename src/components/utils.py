@@ -1,3 +1,7 @@
+"""
+This module contains all the utility functions.
+"""
+
 import base64
 from functools import wraps
 from typing import Optional, Dict, Any, Tuple, List
@@ -9,6 +13,8 @@ from src.components import errors
 
 def singleton(cls):
     """
+    Singleton decorator. Make sure only one instance of cls is created.
+
     :param cls: cls
     :return: instance
     """
@@ -25,6 +31,10 @@ def singleton(cls):
 
 def render_template_str(template_str: str,
                         kv: Optional[Dict[str, Any]] = None) -> Tuple[Optional[str], List[str], Optional[Exception]]:
+    """
+    Render template string with key-value pairs. The template string is in the format of ${{ key }}.
+    """
+
     used_keys = []
 
     def replace(match):
@@ -49,6 +59,10 @@ def get_k8s_client(host: str,
                    token_path: str,
                    verify_ssl: bool = False,
                    debug: bool = False) -> client:
+    """
+    Get Kubernetes client.
+    """
+
     api_server = f"https://{host}:{str(port)}"
     ca_cert_path = ca_cert_path
     token_path = token_path
@@ -69,7 +83,7 @@ def get_k8s_client(host: str,
 
 def parse_bearer(bearer_str: Optional[str]) -> Tuple[Optional[str], Optional[Exception]]:
     """
-    parse bearer auth header
+    Parse bearer auth header
     """
     if len(bearer_str) == 0 or bearer_str is None:
         return None, errors.header_missing
@@ -82,7 +96,7 @@ def parse_bearer(bearer_str: Optional[str]) -> Tuple[Optional[str], Optional[Exc
 
 def parse_basic(basic_str: Optional[str]) -> Tuple[Optional[Tuple[str, str]], Optional[Exception]]:
     """
-    parse basic auth header
+    Parse basic auth header
     """
     basic_auth_split = basic_str.split(' ')
     if len(basic_auth_split) < 2:

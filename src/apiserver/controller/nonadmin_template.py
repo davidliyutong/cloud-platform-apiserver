@@ -1,3 +1,7 @@
+"""
+This module implements the non-admin template controller.
+"""
+
 import http
 
 from loguru import logger
@@ -21,14 +25,20 @@ bp = Blueprint("nonadmin_template", url_prefix="/templates", version=1)
 @openapi.response(200, {"application/json": TemplateListResponse.model_json_schema()})
 @protected()
 async def list(request):
+    """
+    List all templates. The same as admin_template_list, but without role check.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
     if request.query_args is None:
         req = TemplateListRequest()
     else:
         req = TemplateListRequest(**{k: v for (k, v) in request.query_args})
+
+    # list templates
     count, templates, err = await get_root_service().template_service.list(request.app, req)
 
+    # return response
     if err is not None:
         return json_response(
             TemplateListResponse(
@@ -54,8 +64,12 @@ async def list(request):
 @openapi.response(200, {"application/json": TemplateGetResponse.model_json_schema()})
 @protected()
 async def get(request, template_id: str):
+    """
+    Get a template by id. The same as admin_template_get, but without role check.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
+    # check template_id param in url
     if template_id is None or template_id == "":
         return json_response(
             TemplateGetResponse(
@@ -65,8 +79,11 @@ async def get(request, template_id: str):
             status=http.HTTPStatus.BAD_REQUEST
         )
     else:
+        # get template
         req = TemplateGetRequest(template_id=template_id)
         template, err = await get_root_service().template_service.get(request.app, req)
+
+        # return response
         if err is not None:
             return json_response(
                 TemplateGetResponse(

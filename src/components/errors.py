@@ -1,3 +1,7 @@
+"""
+This module contains all the errors that can be raised by the application.
+"""
+
 db_connection_error = Exception("db connection error")
 duplicate_username = Exception("duplicate username")
 empty_username_or_password = Exception("empty username or password")

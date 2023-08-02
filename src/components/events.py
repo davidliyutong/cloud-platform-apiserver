@@ -1,3 +1,9 @@
+"""
+This module contains the event models and the event deserialization function.
+
+A event must contain a `type` field, which is a string that indicates the type of the event.
+"""
+
 import json
 from typing import Optional, Tuple, Union
 

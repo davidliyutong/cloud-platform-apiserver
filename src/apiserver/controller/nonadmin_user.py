@@ -1,3 +1,7 @@
+"""
+This module implements the non-admin user controller.
+"""
+
 import http
 
 from loguru import logger
@@ -20,8 +24,12 @@ bp = Blueprint("nonadmin_user", url_prefix="/users", version=1)
 @protected()
 @authn.validate_role()
 async def get(request, username: str):
+    """
+    Get user by username.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
+    # check username param in url
     if username is None or username == "":
         return json_response(
             UserGetResponse(
@@ -31,6 +39,8 @@ async def get(request, username: str):
             status=http.HTTPStatus.BAD_REQUEST
         )
     else:
+        # check if user is requesting their own info
+        # attention: request.ctx.user['username'] is set in authn.validate_role()
         if username != request.ctx.user['username']:
             return json_response(
                 PodGetResponse(
@@ -39,8 +49,12 @@ async def get(request, username: str):
                 ).model_dump(),
                 status=http.HTTPStatus.UNAUTHORIZED
             )
+
+        # get user
         req = UserGetRequest(username=username)
         user, err = await get_root_service().user_service.get(request.app, req)
+
+        # return response
         if err is not None:
             return json_response(
                 UserGetResponse(
@@ -69,9 +83,12 @@ async def get(request, username: str):
 @protected()
 @authn.validate_role()
 async def update(request, username: str):
+    """
+    Update user by username.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
-    body = request.json
+    # check username param in url
     if username is None or username == "":
         return json_response(
             UserUpdateResponse(
@@ -81,6 +98,7 @@ async def update(request, username: str):
             status=http.HTTPStatus.BAD_REQUEST
         )
     else:
+        # check if user is updating their own info
         if username != request.ctx.user['username']:
             return json_response(
                 PodGetResponse(
@@ -89,10 +107,14 @@ async def update(request, username: str):
                 ).model_dump(),
                 status=http.HTTPStatus.UNAUTHORIZED
             )
-
-        body.update({"username": username})
+        body = request.json
         req = UserUpdateRequest(**body)
+        req.username = username
+
+        # update user
         user, err = await get_root_service().user_service.update(request.app, req)
+
+        # return response
         if err is not None:
             return json_response(
                 UserUpdateResponse(

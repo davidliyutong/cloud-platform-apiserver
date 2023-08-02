@@ -1,3 +1,7 @@
+"""
+RootService is the root of all services.
+"""
+
 import dataclasses
 from typing import Optional
 

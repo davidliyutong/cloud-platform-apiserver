@@ -1,3 +1,7 @@
+"""
+This module is the entry point of the API server.
+"""
+
 import base64
 import secrets
 
@@ -6,7 +10,7 @@ from loguru import logger
 from sanic import Sanic
 from src.apiserver.controller import controller_app
 from src.apiserver.service import RootService
-from src.apiserver.repo import Repo, UserRepo, TemplateRepo, PodRepo
+from src.apiserver.repo import DBRepo, UserRepo, TemplateRepo, PodRepo
 from src.apiserver.service.service import new_root_service
 from src.components.config import BackendConfig
 from sanic_jwt import initialize
@@ -34,6 +38,9 @@ _service: RootService
 
 
 def apiserver_check_option(opt: BackendConfig) -> BackendConfig:
+    """
+    Check and set default values for options
+    """
     # Check Token Secret
     if opt.config_token_secret is None or len(opt.config_token_secret) == 0:
         logger.warning("Token secret is not set, use random string as token secret")
@@ -45,6 +52,10 @@ def apiserver_check_option(opt: BackendConfig) -> BackendConfig:
 
 
 def apiserver_prepare_run(opt: BackendConfig) -> Sanic:
+    """
+    Prepare to run the server
+    """
+    # set options
     controller_app.ctx.opt = opt
 
     # Set shortuuid alphabet
@@ -86,7 +97,7 @@ def apiserver_prepare_run(opt: BackendConfig) -> Sanic:
     controller_app.config.update({'JWT_ALGORITHM': controller_app.ctx.auth.config.algorithm._value})
 
     # create services
-    repo = Repo(opt.to_sanic_config())
+    repo = DBRepo(opt.to_sanic_config())
     _ = new_root_service(
         opt,
         UserRepo(repo),

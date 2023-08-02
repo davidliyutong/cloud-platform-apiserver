@@ -1,6 +1,10 @@
-import asyncio
-import threading
-import time
+"""
+This module contains tasks that are executed periodically / once.
+"""
+
+# import asyncio
+# import threading
+# import time
 from typing import Optional
 
 from loguru import logger
@@ -9,6 +13,8 @@ import pymongo
 from src.components.config import BackendConfig
 from src.components import datamodels, config
 from src.components.utils import get_k8s_client
+
+
 # from src.components.events import (
 #     PodTimeoutEvent
 # )
@@ -18,6 +24,10 @@ from src.components.utils import get_k8s_client
 
 
 def check_and_create_admin_user(opt: BackendConfig) -> Optional[Exception]:
+    """
+    Check if admin user exists in DB, if not, create one.
+    """
+
     # establish MongoDB connection
     _db_url = f'mongodb://{opt.db_username}:{opt.db_password}@{opt.db_host}:{opt.db_port}'
     logger.info(f"connecting to MongoDB at {_db_url}")
@@ -44,7 +54,7 @@ def check_and_create_admin_user(opt: BackendConfig) -> Optional[Exception]:
                 uid=global_doc["uid_counter"],
                 username=opt.bootstrap_admin_username,
                 password=opt.bootstrap_admin_password,
-                role=datamodels.RoleEnum.super_admin,
+                role=datamodels.UserRoleEnum.super_admin,
             )
             col.insert_one(super_admin_user.model_dump())
         return None
@@ -54,6 +64,10 @@ def check_and_create_admin_user(opt: BackendConfig) -> Optional[Exception]:
 
 
 def check_kubernetes_connection(opt: BackendConfig) -> Optional[Exception]:
+    """
+    Check if the connection to Kubernetes cluster is valid.
+    """
+    
     logger.info(f"connecting to K8S cluster at {opt.k8s_host}:{opt.k8s_port}")
 
     v1 = get_k8s_client(opt.k8s_host, opt.k8s_port, opt.k8s_ca_cert, opt.k8s_token, debug=False).CoreV1Api()
@@ -63,7 +77,6 @@ def check_kubernetes_connection(opt: BackendConfig) -> Optional[Exception]:
         logger.exception(e)
         return e
     return None
-
 
 # async def scan_pods(opt: BackendConfig, stop_ev: threading.Event = None) -> None:
 #     while True:

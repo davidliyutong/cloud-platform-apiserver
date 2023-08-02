@@ -1,3 +1,7 @@
+"""
+This file defines the types of the request and response of the apiserver.
+"""
+
 from typing import List, Optional, Dict, Any
 
 from pydantic import BaseModel, EmailStr, field_validator
@@ -6,47 +10,75 @@ import src.components.datamodels as datamodels
 
 
 class ListRequestBaseModel(BaseModel):
-    index_start: int = -1
-    index_end: int = -1
-    extra_query_filter: str = ''
+    """
+    Base model for list request
+    """
+    index_start: int = -1  # -1 means start from the beginning
+    index_end: int = -1  # -1 means end at the end
+    extra_query_filter: str = ''  # mongodb query filter in json format
 
 
 class ResponseBaseModel(BaseModel):
-    description: str = ""
-    status: int
-    message: str
+    """
+    Base model for response
+    """
+    description: str = ""  # description of the response
+    status: int  # status code of the response
+    message: str  # message of the response
 
 
 class UserListRequest(ListRequestBaseModel):
+    """
+    List request for users
+    """
     pass
 
 
 class UserListResponse(ResponseBaseModel):
+    """
+    List response for users
+    """
     total_users: int = 0
     users: List[datamodels.UserModel] = []
 
 
 class UserCreateRequest(BaseModel):
+    """
+    Create request for users
+    """
     username: str
     password: str
     email: Optional[str]
-    role: str
-    quota: Optional[Dict[str, Any]] = None
+    role: str  # see datamodels.RoleEnum
+    quota: Optional[Dict[str, Any]] = None  # resource quota
 
 
 class UserCreateResponse(ResponseBaseModel):
+    """
+    Create response for users
+    """
     user: datamodels.UserModel = None
 
 
 class UserGetRequest(BaseModel):
+    """
+    Get request for users
+    """
     username: str
 
 
 class UserGetResponse(UserCreateResponse):
+    """
+    Get response for users, the same as create response
+    """
     pass
 
 
 class UserUpdateRequest(BaseModel):
+    """
+    Update request for users, all fields except username are optional.
+    None means no change.
+    """
     username: str
     password: Optional[str] = None
     status: Optional[str] = None
@@ -56,27 +88,46 @@ class UserUpdateRequest(BaseModel):
 
 
 class UserUpdateResponse(UserGetResponse):
+    """
+    Update response for users, the same as get response
+    """
     pass
 
 
 class UserDeleteRequest(UserGetRequest):
+    """
+    Delete request for users, the same as get request
+    """
     pass
 
 
 class UserDeleteResponse(UserGetResponse):
+    """
+    Delete response for users, the same as get response
+    """
     pass
 
 
 class TemplateListRequest(ListRequestBaseModel):
+    """
+    List request for templates
+    """
     pass
 
 
 class TemplateListResponse(ResponseBaseModel):
+    """
+    List response for templates
+    """
     total_templates: int = 0
     templates: List[datamodels.TemplateModel] = []
 
 
 class TemplateCreateRequest(BaseModel):
+    """
+    Create request for templates.
+    fields and defaults are optional and not yet used.
+    """
     name: str
     description: str
     image_ref: str
@@ -87,18 +138,30 @@ class TemplateCreateRequest(BaseModel):
 
 
 class TemplateCreateResponse(ResponseBaseModel):
+    """
+    Create response for templates
+    """
     template: datamodels.TemplateModel = None
 
 
 class TemplateGetRequest(BaseModel):
+    """
+    Get request for templates
+    """
     template_id: str
 
 
 class TemplateGetResponse(TemplateCreateResponse):
+    """
+    Get response for templates, the same as create response
+    """
     pass
 
 
 class TemplateUpdateRequest(BaseModel):
+    """
+    Update request for templates, all fields except template_id are optional.
+    """
     template_id: str
     name: str = None
     description: str = None
@@ -109,34 +172,53 @@ class TemplateUpdateRequest(BaseModel):
 
 
 class TemplateUpdateResponse(TemplateGetResponse):
+    """
+    Update response for templates, the same as get response
+    """
     pass
 
 
 class TemplateDeleteRequest(TemplateGetRequest):
+    """
+    Delete request for templates, the same as get request
+    """
     pass
 
 
 class TemplateDeleteResponse(TemplateGetResponse):
+    """
+    Delete response for templates, the same as get response
+    """
     pass
 
 
 class PodListRequest(ListRequestBaseModel):
+    """
+    List request for pods
+    """
     pass
 
 
 class PodListResponse(ResponseBaseModel):
+    """
+    List response for pods
+    """
     total_pods: int = 0
     pods: List[datamodels.PodModel] = []
 
 
 class PodCreateRequest(BaseModel):
+    """
+    Create request for pods. values is the values for the template (not used).
+    timeout_s is the timeout for the pod to run. max is 86400 seconds (24 hours).
+    """
     name: str
     description: str
     template_ref: str
     cpu_lim_m_cpu: int
     mem_lim_mb: int
     storage_lim_mb: int
-    username: str
+    username: Optional[str] = None
     timeout_s: Optional[int] = None
     values: Optional[Dict[str, Any]] = None
 
@@ -170,18 +252,31 @@ class PodCreateRequest(BaseModel):
 
 
 class PodCreateResponse(ResponseBaseModel):
+    """
+    Create response for pods
+    """
     pod: datamodels.PodModel = None
 
 
 class PodGetRequest(BaseModel):
+    """
+    Get request for pods
+    """
     pod_id: str
 
 
 class PodGetResponse(PodCreateResponse):
+    """
+    Get response for pods, the same as create response
+    """
     pass
 
 
 class PodUpdateRequest(BaseModel):
+    """
+    Update request for pods, all fields except pod_id are optional.
+    target_status is the target status for the pod to reach. Can be either running or stopped.
+    """
     pod_id: Optional[str]
     name: Optional[str] = None
     description: Optional[str] = None
@@ -210,12 +305,21 @@ class PodUpdateRequest(BaseModel):
 
 
 class PodUpdateResponse(PodGetResponse):
+    """
+    Update response for pods, the same as get response
+    """
     pass
 
 
 class PodDeleteRequest(PodGetRequest):
+    """
+    Delete request for pods, the same as get request
+    """
     pass
 
 
 class PodDeleteResponse(PodGetResponse):
+    """
+    Delete response for pods, the same as get response
+    """
     pass

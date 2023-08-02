@@ -1,3 +1,6 @@
+"""
+Authentication module
+"""
 import base64
 
 from hashlib import sha256
@@ -14,6 +17,10 @@ from src.apiserver.service import get_root_service
 
 
 async def authenticate(req: request.Request):
+    """
+    Authenticate user by username and password
+    """
+
     logger.debug(f"{req.path} invoked")
     username = req.json.get("username", None)
     password = req.json.get("password", None)
@@ -21,10 +28,14 @@ async def authenticate(req: request.Request):
     if not username or not password:
         raise exceptions.AuthenticationFailed(str(errors.empty_username_or_password))
 
+    # get user from database
     user, err = await get_root_service().user_service.repo.get(username)
+
+    # check user status
     if user is None or user.status not in [datamodels.UserStatusEnum.active]:
         raise exceptions.AuthenticationFailed(str(err))
     else:
+        # compare password
         password_hashed = sha256(password.encode()).hexdigest()
         if secrets.compare_digest(
                 password_hashed.encode('utf-8'),
@@ -36,60 +47,67 @@ async def authenticate(req: request.Request):
 
 
 class MyJWTConfig(Configuration):
+    # -------------- access token field name -------------------------
     access_token_name = "token"
 
+    # -------------- authorization_header_prefix ---------------------
+    # [Description] The prefix of the authorization header
+    # [Default] 'Bearer:'
     authorization_header_prefix = "Bearer:"
 
     # -------------- url_prefix ---------------------
-    # [描述] 获取授权的路由地址
-    # [默认] '/auth'
+    # [Description] Route address for obtaining authorization
+    # [Default] '/auth'
     url_prefix = '/v1/auth/jwt'
 
+    # -------------- path_to_authenticate ---------------------
     path_to_authenticate = '/login'
     path_to_refresh = '/refresh'
 
     # -------------- secret -------------------------
-    # [描述] 加密密码
-    # [默认] 'This is a big secret. Shhhhh
-    # [建议] 该密码是 JWT 的安全核心所在，需要保密，尽量使用更长更复杂的密码
+    # [Description] Encryption Password
+    # [Default] 'This is a big secret. Shhhhh
+    # [Suggestion] This password is the security core of JWT, it should be kept secret, and more complex passwords \
+    # are recommended
     secret = base64.encodebytes(secrets.token_bytes(32))
 
     # -------------- expiration_delta ----------------------
-    # [描述] 过期时间，单位为秒
-    # [默认] 30 分钟，即：60 * 30
-    # [建议] 该时间不宜过长，同时建议开启 refresh_token_enabled 以便自动更新 token
-    expiration_delta = 60 * 60  # 改为 60 分钟过期
+    # [Description] Expiration time, in seconds
+    # [Default] 30 minutes, that is: 60 * 30
+    # [Suggestion] This time should not be too long, and it is recommended to enable refresh_token_enabled to \
+    # automatically update the token
+    expiration_delta = 60 * 60  # Changed to expire in 60 minutes
 
     # refresh_token_name = 'refresh_token'
-    # refresh_token_enabled = True  # 开启 refresh_token 功能
+    # refresh_token_enabled = True  # Enable refresh_token function
 
     # -------------- cookie_set ---------------------
-    # [描述] 是否将获取到的 token 信息写入到 cookie
-    # [默认] False，即不写入cookie
-    # 只有该项为 True，其它 cookie 相关设置才会起效。
+    # [Description] Whether to write the obtained token information into the cookie
+    # [Default] False, that is, do not write into cookies
+    # Only when this item is True, other cookie-related settings will take effect.
     # cookie_set = True
 
     # -------------- cookie_access_token_name ---------------
-    # [描述] cookie 中存储 token 的名称。
-    # [默认] 'access_token'
+    # [Description] The name of token stored in the cookie.
+    # [Default] 'access_token'
     # cookie_access_token_name = "token"
 
     #  -------------- cookie_access_token_name ---------------
-    # [描述] 包含用户 id 的用户对象的键或属性，这里对应 User 类的用户唯一标识
-    # [默认] 'user_id'
+    # [Description] The key or attribute of the user object containing the user id, here corresponds to the unique \
+    # identifier of the User class
+    # [Default] 'user_id'
     user_id = "username"
 
-    refresh_token_enabled = True  # 开启 refresh_token 功能
+    refresh_token_enabled = True  # Enable refresh_token function
 
-    claim_iat = True  # 显示签发时间，JWT的默认保留字段，在 sanic-jwt 中默认不显示该项
+    claim_iat = True  # Show issuance time, the default reserved field of JWT, not displayed by default in sanic-jwt
 
 
 class MyJWTAuthentication(Authentication):
-
-    # 从 payload 中解析用户信息，然后返回查找到的用户
-    # request: request
-    # kwargs: payload
     async def retrieve_user(self, req, **kwargs):
+        """
+        Parse the user information from the payload, and then return the found user
+        """
         user_id_attribute = self.config.user_id()
         if 'payload' in kwargs.keys():
             user_id = kwargs['payload'].get(user_id_attribute)
@@ -101,39 +119,57 @@ class MyJWTAuthentication(Authentication):
         else:
             raise exceptions.AuthenticationFailed(str(errors.invalid_token))
 
-    # 拓展 payload
+    # Extend payload
     async def extend_payload(self, payload, *args, **kwargs):
-        # 可以获取 User 中的一些属性添加到 payload 中
-        # 注意：payload 信息是公开的，这里不要添加敏感信息
-        user_id_attribute = self.config.user_id()
-        user_id = payload.get(user_id_attribute)
-        user, _ = await get_root_service().user_service.repo.get(user_id)
-        payload.update({'email': user.email, 'role': user.role, 'uid': user.uid})  # 比如添加性别属性
+        """
+        Some properties can be obtained from User and added to the payload
+        Note: Payload information is public, do not add sensitive information here
+        """
+
+        user_id_attribute = self.config.user_id()  # should be 'username'
+        user_id = payload.get(user_id_attribute)  # username of user
+        user, _ = await get_root_service().user_service.repo.get(user_id)  # get user from database
+        payload.update({'email': user.email, 'role': user.role, 'uid': user.uid})  # For example, add gender attribute
         return payload
 
     async def extract_payload(self, req, verify=True, *args, **kwargs):
+        """
+        Extract the payload from the request. (Do Nothing)
+        """
         return await super().extract_payload(req, verify)
 
 
 class MyJWTResponse(Responses):
     @staticmethod
     async def get_access_token_output(req, user, config, instance):
+        """
+        Get the output of the access_token. This will be the response of the login interface
+        """
         access_token = await instance.ctx.auth.generate_access_token(user)
 
-        output = {"description": "", "status": 200, "message": "success", config.access_token_name(): access_token}
+        output = {
+            "description": "",
+            "status": 200,
+            "message": "success",
+            config.access_token_name(): access_token
+        }
 
         return access_token, output
 
-    # 自定义异常返回信息
+    # Custom exception return information
     @staticmethod
     def exception_response(req: request.Request, exception: exceptions):
-        # sanic-jwt.exceptions 下面定义的异常类型：
-        # AuthenticationFailed
-        # MissingAuthorizationHeader
-        # MissingAuthorizationCookie
-        # InvalidAuthorizationHeader
-        # MissingRegisteredClaim
-        # Unauthorized
+        """
+        Exception types defined under sanic-jwt.exceptions:
+        - AuthenticationFailed
+        - MissingAuthorizationHeader
+        - MissingAuthorizationCookie
+        - InvalidAuthorizationHeader
+        - MissingRegisteredClaim
+        - Unauthorized
+        """
+
+        # No need to modify
         msg = str(exception)
         if exception.status_code == 500:
             msg = str(exception)
@@ -152,7 +188,13 @@ class MyJWTResponse(Responses):
         return response.json(result, status=exception.status_code)
 
 
-async def retrieve_refresh_token(req, user_id, *args, **kwargs):
+async def retrieve_refresh_token(*args, **kwargs):
+    """
+    Get the refresh_token from the request (Do Nothing)
+    Notice: the refresh_token should be read in the database and compare with the one in the request. Here we just \
+    return the refresh_token in the request and skip the comparison
+    """
+    req, user_id = kwargs['request'], kwargs['user_id']
     _ = f'refresh_token_{user_id}'
     token_str = req.json.get('refresh_token', None)
     if token_str is None:
@@ -162,5 +204,9 @@ async def retrieve_refresh_token(req, user_id, *args, **kwargs):
 
 
 async def store_refresh_token(user_id, refresh_token, *args, **kwargs):
+    """
+    Store the refresh_token in the request (Do Nothing)
+    Notice: the refresh_token should be stored in the database
+    """
     _ = f'refresh_token_{user_id}={refresh_token}'
     return

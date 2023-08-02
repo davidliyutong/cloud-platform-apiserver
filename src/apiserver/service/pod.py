@@ -1,3 +1,7 @@
+"""
+Pod service
+"""
+
 import json
 from typing import Tuple
 
@@ -20,11 +24,20 @@ class PodService(ServiceInterface):
     async def get(self,
                   app: Sanic,
                   req: PodGetRequest) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
+        """
+        Get pod.
+        """
+
         return await self.repo.get(pod_id=req.pod_id)
 
     async def list(self,
                    app: Sanic,
                    req: PodListRequest) -> Tuple[int, List[datamodels.PodModel], Optional[Exception]]:
+        """
+        List pods.
+        """
+
+        # build query filter from json string
         if req.extra_query_filter != "":
             try:
                 query_filter = json.loads(req.extra_query_filter)
@@ -40,6 +53,10 @@ class PodService(ServiceInterface):
     async def create(self,
                      app: Sanic,
                      req: PodCreateRequest) -> Tuple[datamodels.PodModel, Optional[Exception]]:
+        """
+        Create a pod.
+        """
+
         pod, err = await self.repo.create(
             name=req.name,
             description=req.description,
@@ -52,10 +69,13 @@ class PodService(ServiceInterface):
             values=req.values,
         )
 
+        # if success, trigger pod create event
         if err is None:
             await app.add_task(
-                handle_pod_create_update_event(self.parent,
-                                               PodCreateUpdateEvent(pod_id=pod.pod_id, username=pod.username))
+                handle_pod_create_update_event(
+                    self.parent,
+                    PodCreateUpdateEvent(pod_id=pod.pod_id, username=pod.username)
+                )
             )
 
         return pod, err
@@ -63,6 +83,10 @@ class PodService(ServiceInterface):
     async def update(self,
                      app: Sanic,
                      req: PodUpdateRequest) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
+        """
+        Update a pod.
+        """
+
         pod, err = await self.repo.update(
             pod_id=req.pod_id,
             name=req.name,
@@ -71,6 +95,8 @@ class PodService(ServiceInterface):
             timeout_s=req.timeout_s,
             target_status=req.target_status,
         )
+
+        # if success and target_status is pending, trigger pod create event
         if err is None and pod.resource_status == datamodels.ResourceStatusEnum.pending:
             await app.add_task(
                 handle_pod_create_update_event(
@@ -84,7 +110,13 @@ class PodService(ServiceInterface):
     async def delete(self,
                      app: Sanic,
                      req: PodDeleteRequest) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
+        """
+        Delete a pod.
+        """
+
         pod, err = await self.repo.delete(pod_id=req.pod_id)
+
+        # if success, trigger pod delete event
         if err is None:
             await app.add_task(
                 handle_pod_delete_event(self.parent, PodDeleteEvent(pod_id=pod.pod_id, username=pod.username))

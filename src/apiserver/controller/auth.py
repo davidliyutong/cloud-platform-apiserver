@@ -195,7 +195,7 @@ async def token_refresh(request):
 
     else:
         payload = _get_payload(user, datetime.timedelta(minutes=60))
-        secret = request.app.config.get('JWT_SECRET')#
+        secret = request.app.config.get('JWT_SECRET')  #
         access_token = jwt.encode(payload, secret, algorithm=_algorithm)
 
         return json_response(

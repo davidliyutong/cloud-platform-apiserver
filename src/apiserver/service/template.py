@@ -1,3 +1,7 @@
+"""
+Template service
+"""
+
 import json
 from typing import Tuple
 
@@ -20,11 +24,19 @@ class TemplateService(ServiceInterface):
     async def get(self,
                   app: Sanic,
                   req: TemplateGetRequest) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
+        """
+        Get template.
+        """
         return await self.repo.get(template_id=req.template_id)
 
     async def list(self,
                    app: Sanic,
                    req: UserListRequest) -> Tuple[int, List[datamodels.TemplateModel], Optional[Exception]]:
+        """
+        List templates.
+        """
+
+        # build query filter from json string
         if req.extra_query_filter != "":
             try:
                 query_filter = json.loads(req.extra_query_filter)
@@ -40,6 +52,10 @@ class TemplateService(ServiceInterface):
     async def create(self,
                      app: Sanic,
                      req: TemplateCreateRequest) -> Tuple[datamodels.TemplateModel, Optional[Exception]]:
+        """
+        Create a template.
+        """
+
         template, err = await self.repo.create(name=req.name,
                                                description=req.description,
                                                image_ref=req.image_ref,
@@ -47,6 +63,7 @@ class TemplateService(ServiceInterface):
                                                fields=req.fields,
                                                defaults=req.defaults)
 
+        # if success, trigger template create event
         if err is None:
             await app.add_task(handle_template_create_event(
                 self.parent,
@@ -58,6 +75,10 @@ class TemplateService(ServiceInterface):
     async def update(self,
                      app: Sanic,
                      req: TemplateUpdateRequest) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
+        """
+        Update a template.
+        """
+
         template, err = await self.repo.update(template_id=req.template_id,
                                                name=req.name,
                                                description=req.description,
@@ -65,6 +86,8 @@ class TemplateService(ServiceInterface):
                                                template_str=req.template_str,
                                                fields=req.fields,
                                                defaults=req.defaults)
+
+        # if success and target_status is pending, trigger template update event
         if err is None and template.resource_status == datamodels.ResourceStatusEnum.pending:
             await app.add_task(handle_template_update_event(
                 self.parent,
@@ -76,7 +99,13 @@ class TemplateService(ServiceInterface):
     async def delete(self,
                      app: Sanic,
                      req: TemplateDeleteRequest) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
+        """
+        Delete a template.
+        """
+
         template, err = await self.repo.delete(template_id=req.template_id)
+
+        # if success, trigger template delete event
         if err is None:
             await app.add_task(handle_template_delete_event(
                 self.parent,

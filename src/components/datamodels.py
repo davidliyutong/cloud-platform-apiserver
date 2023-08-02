@@ -1,3 +1,7 @@
+"""
+Data models for the project
+"""
+
 import datetime
 import uuid
 from hashlib import sha256
@@ -21,16 +25,25 @@ template_collection_name = config.CONFIG_TEMPLATE_COLLECTION_NAME
 
 
 class GlobalModel(BaseModel):
+    """
+    Global model, used to store global settings in the database
+    """
     uid_counter: int = 0
 
 
-class RoleEnum(str, Enum):
+class UserRoleEnum(str, Enum):
+    """
+    User role enum, used to define user roles
+    """
     super_admin = "super_admin"
     admin = "admin"
     user = "user"
 
 
 class FieldTypeEnum(str, Enum):
+    """
+    Field type enum, used to define field types
+    """
     string = "str"
     integer = "int"
     float = "float"
@@ -40,12 +53,18 @@ class FieldTypeEnum(str, Enum):
 
 
 class ResourceStatusEnum(str, Enum):
+    """
+    Resource status enum, used to define resource status. (for error recovery)
+    """
     committed = "committed"
     deleted = "deleted"
     pending = "pending"
 
 
 class PodStatusEnum(str, Enum):
+    """
+    Pod status enum, used to define pod status.
+    """
     pending = "pending"  # current
     creating = "creating"  # current (unused)
     running = "running"  # current | target
@@ -56,11 +75,17 @@ class PodStatusEnum(str, Enum):
 
 
 class UserStatusEnum(str, Enum):
+    """
+    User status enum, used to define user status.
+    """
     active = "active"
     inactive = "inactive"
 
 
 class QuotaModel(BaseModel):
+    """
+    Quota model, used to define user quota
+    """
     committed: bool = False
     m_cpu: int
     memory_mb: int
@@ -71,6 +96,9 @@ class QuotaModel(BaseModel):
 
 
 class UserModel(BaseModel):
+    """
+    User model, used to define user
+    """
     resource_status: ResourceStatusEnum = ResourceStatusEnum.pending
     uid: int
     uuid: Optional[UUID4]
@@ -78,9 +106,9 @@ class UserModel(BaseModel):
     status: UserStatusEnum = UserStatusEnum.active
     email: Optional[EmailStr]
     password: SecretStr
-    htpasswd: Optional[SecretStr] = None
-    role: RoleEnum
-    owned_pod_ids: List[UUID4]
+    htpasswd: Optional[SecretStr] = None  # used for htpasswd authentication
+    role: UserRoleEnum
+    owned_pod_ids: List[UUID4]  # not used
     quota: Optional[QuotaModel]
 
     @field_validator("uuid")
@@ -107,7 +135,7 @@ class UserModel(BaseModel):
             return v.get_secret_value()
 
     @field_serializer('role')
-    def serialize_role(self, v: RoleEnum, _info):
+    def serialize_role(self, v: UserRoleEnum, _info):
         return v.value
 
     @field_serializer('status')
@@ -125,7 +153,7 @@ class UserModel(BaseModel):
             uid: int,
             username: str,
             password: str,
-            role: RoleEnum,
+            role: UserRoleEnum,
             email: Optional[str] = None,
             quota: Optional[Dict[str, Any]] = None):
         return cls(
@@ -142,14 +170,17 @@ class UserModel(BaseModel):
 
 
 class TemplateModel(BaseModel):
+    """
+    Template model, used to define template
+    """
     resource_status: ResourceStatusEnum = ResourceStatusEnum.pending
     template_id: UUID4
     name: str
     description: str
     image_ref: str
     template_str: str
-    fields: Optional[Dict[str, FieldTypeEnum]]
-    defaults: Optional[Dict[str, Any]]
+    fields: Optional[Dict[str, FieldTypeEnum]]  # not used
+    defaults: Optional[Dict[str, Any]]  # not used
 
     @field_validator("template_id")
     def uuid_must_be_valid(cls, v):
@@ -190,6 +221,8 @@ class TemplateModel(BaseModel):
             defaults=defaults,
         )
 
+    # example values to test if template is valid
+    # attention: strong dependency on project design
     __EXAMPLE_VALUES__ = {
         "POD_LABEL": config.CONFIG_K8S_POD_LABEL_FMT.format("test_id"),
         "POD_ID": "test_id",
@@ -217,6 +250,9 @@ class TemplateModel(BaseModel):
 
 
 class PodModel(BaseModel):
+    """
+    Pod model, used to define pod
+    """
     resource_status: ResourceStatusEnum = ResourceStatusEnum.pending
     pod_id: str
     name: str
@@ -247,9 +283,21 @@ class PodModel(BaseModel):
     def serialize_created_at(self, v: datetime.datetime, _info):
         return v.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
+    @field_validator('started_at')
+    def validate_started_at(cls, v: Union[str, datetime.datetime]):
+        if isinstance(v, str):
+            v = datetime.datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%fZ")
+        return v
+
     @field_serializer('started_at')
     def serialize_started_at(self, v: datetime.datetime, _info):
         return v.timestamp()
+
+    @field_validator('accessed_at')
+    def validate_accessed_at(cls, v: Union[str, datetime.datetime]):
+        if isinstance(v, str):
+            v = datetime.datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%fZ")
+        return v
 
     @field_serializer('accessed_at')
     def serialize_accessed_at(self, v: datetime.datetime, _info):
@@ -257,6 +305,10 @@ class PodModel(BaseModel):
 
     @property
     def values(self):
+        """
+        values used to render template
+        """
+
         return {
             "POD_LABEL": config.CONFIG_K8S_POD_LABEL_FMT.format(self.pod_id),
             "POD_ID": self.pod_id,

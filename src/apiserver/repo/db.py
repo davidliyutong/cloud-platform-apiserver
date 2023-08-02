@@ -1,3 +1,7 @@
+"""
+Repo is a class that provides methods to access the database
+"""
+
 from typing import Dict
 
 from kubernetes import client
@@ -6,7 +10,7 @@ from src.components.utils import singleton
 
 
 @singleton
-class Repo:
+class DBRepo:
     """
     About motor's doc: https://github.com/mongodb/motor
     """
@@ -23,7 +27,7 @@ class Repo:
         self.options = options
 
     def get_db_client(self) -> AsyncIOMotorClient:
-        # motor
+        # motor uri
         self.motor_uri = 'mongodb://{account}{host}:{port}'.format(
             account='{username}:{password}@'.format(
                 username=self.options['DB_USERNAME'],
@@ -34,6 +38,7 @@ class Repo:
 
     def get_db(self, db: str) -> AsyncIOMotorDatabase:
         """
+        Get Database
         :param db: database name
         :return: the motor db instance
         """
@@ -44,6 +49,8 @@ class Repo:
 
     def get_db_collection(self, db_name: str, collection: str) -> AsyncIOMotorCollection:
         """
+        Get Collection
+
         :param db_name: database name
         :param collection: collection name
         :return: the motor collection instance

@@ -1,3 +1,6 @@
+"""
+This module contains all logging related functions.
+"""
 import sys
 from datetime import timedelta, datetime, time
 from typing import Set
@@ -8,6 +11,10 @@ import logging
 
 
 class Rotator:
+    """
+    Rotator is a class that can be used to rotate log files.
+    """
+
     def __init__(self, *, size, at):
         now = datetime.now()
         self._size_limit = size
@@ -30,6 +37,9 @@ LOGGER_LVL_SET: Set[str] = {'info', 'debug', 'error', 'warning'}
 
 
 def create_log_file(log_root, lvl):
+    """
+    Create a log file with the given level.s
+    """
     if not osp.exists(log_root):
         os.makedirs(log_root, exist_ok=True)
     path_to_log = f"{log_root}/{lvl}.log"
@@ -39,6 +49,10 @@ def create_log_file(log_root, lvl):
 
 
 class InterceptHandler(logging.Handler):
+    """
+    InterceptHandler is a class that can be used to intercept log messages and redirect them to loguru.
+    """
+
     def __init__(self, level=logging.INFO):
         super().__init__(level)
 
@@ -50,6 +64,9 @@ class InterceptHandler(logging.Handler):
 
 # 修改 create_logger
 def create_logger(log_root: str = "./logs", debug: bool = False):
+    """
+    Create and configure project level logger
+    """
     # supress kubernetes logs
     if not debug:
         logging.getLogger("kubernetes").setLevel(logging.WARNING)

@@ -1,3 +1,7 @@
+"""
+Configuration Component
+"""
+
 from pydantic import BaseModel
 from vyper import Vyper
 import argparse

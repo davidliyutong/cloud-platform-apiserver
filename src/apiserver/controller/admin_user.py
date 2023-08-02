@@ -1,3 +1,7 @@
+"""
+This module implements the admin user controller.
+"""
+
 import http
 
 from loguru import logger
@@ -23,14 +27,21 @@ bp = Blueprint('admin_user', url_prefix="/admin/users", version=1)
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def list(request):
+    """
+    List all users.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
+    # parse query args
     if request.query_args is None:
         req = UserListRequest()
     else:
         req = UserListRequest(**{k: v for (k, v) in request.query_args})
+
+    # list users
     count, users, err = await get_root_service().user_service.list(request.app, req)
 
+    # return response
     if err is not None:
         return json_response(
             UserListResponse(
@@ -60,8 +71,12 @@ async def list(request):
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def create(request):
+    """
+    Create a user.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
+    # parse request body
     if request.json is None:
         return json_response(
             UserCreateResponse(
@@ -71,6 +86,7 @@ async def create(request):
             status=http.HTTPStatus.BAD_REQUEST
         )
     else:
+        # validate request body
         try:
             req = UserCreateRequest(**request.json)
         except Exception as e:
@@ -81,8 +97,11 @@ async def create(request):
                 ).model_dump(),
                 status=http.HTTPStatus.BAD_REQUEST
             )
+
+        # create user
         user, err = await get_root_service().user_service.create(request.app, req)
 
+        # return response
         if err is not None:
             return json_response(
                 UserCreateResponse(
@@ -109,8 +128,12 @@ async def create(request):
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def get(request, username: str):
+    """
+    Get a user.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
+    # check username param in url
     if username is None or username == "":
         return json_response(
             UserGetResponse(
@@ -120,8 +143,11 @@ async def get(request, username: str):
             status=http.HTTPStatus.BAD_REQUEST
         )
     else:
+        # get user
         req = UserGetRequest(username=username)
         user, err = await get_root_service().user_service.get(request.app, req)
+
+        # return response
         if err is not None:
             return json_response(
                 UserGetResponse(
@@ -150,9 +176,12 @@ async def get(request, username: str):
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def update(request, username: str):
+    """
+    Update a user.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
-    body = request.json
+    # check username param in url
     if username is None or username == "":
         return json_response(
             UserUpdateResponse(
@@ -162,9 +191,14 @@ async def update(request, username: str):
             status=http.HTTPStatus.BAD_REQUEST
         )
     else:
-        body.update({"username": username})
+        body = request.json
         req = UserUpdateRequest(**body)
+        req.username = username  # set username to request
+
+        # update user
         user, err = await get_root_service().user_service.update(request.app, req)
+
+        # return response
         if err is not None:
             return json_response(
                 UserUpdateResponse(
@@ -190,8 +224,12 @@ async def update(request, username: str):
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def delete(request, username: str):
+    """
+    Delete a user. This will mark the user as deleted.
+    """
     logger.debug(f"{request.method} {request.path} invoked")
 
+    # check username param in url
     if username is None or username == "":
         return json_response(
             UserDeleteResponse(
@@ -201,8 +239,11 @@ async def delete(request, username: str):
             status=http.HTTPStatus.BAD_REQUEST
         )
     else:
+        # delete user
         req = UserDeleteRequest(username=username)
         deleted_user, err = await get_root_service().user_service.delete(request.app, req)
+
+        # return response
         if err is not None:
             return json_response(
                 UserDeleteResponse(
