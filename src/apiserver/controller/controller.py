@@ -1,5 +1,6 @@
 import http
 
+from loguru import logger
 from sanic import Sanic
 from sanic.response import json as json_response
 
@@ -22,6 +23,4 @@ async def health(_):
 
 @app.main_process_start
 async def main_process_start(application):
-    logger = create_logger("./logs/apiserver")
-    logger.info(f"creating sanic application: {application}")
-    logger.info("main process start")
+    logger.info(f"sanic application: {application} started")

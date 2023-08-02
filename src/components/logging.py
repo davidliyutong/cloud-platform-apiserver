@@ -1,3 +1,4 @@
+import sys
 from datetime import timedelta, datetime, time
 from typing import Set
 from loguru import logger
@@ -38,26 +39,45 @@ def create_log_file(log_root, lvl):
 
 
 class InterceptHandler(logging.Handler):
+    def __init__(self, level=logging.INFO):
+        super().__init__(level)
+
     def emit(self, record):
         # Retrieve context where the logging call occurred, this happens to be in the 6th frame upward
         logger_opt = logger.opt(depth=6, exception=record.exc_info)
-        logger_opt.log(record.levelno, record.getMessage())
+        logger_opt.log(record.levelname, record.getMessage())
 
 
 # 修改 create_logger
-def create_logger(log_root: str = "./logs"):
-    logging.getLogger("kubernetes").setLevel(logging.WARNING)
+def create_logger(log_root: str = "./logs", debug: bool = False):
+    # supress kubernetes logs
+    if not debug:
+        logging.getLogger("kubernetes").setLevel(logging.WARNING)
+        logging.getLogger("kubernetes").propagate = False
+    else:
+        pass
 
-    logging.getLogger("kubernetes").propagate = False
-
-    # ----------------- 添加这两行，替换 Sanic 默认 logger 配置
+    # replace sanic logger with loguru
     logging.getLogger("sanic.root").handlers.clear()
+    logging.getLogger("sanic.server").handlers.clear()
     logging.basicConfig(handlers=[InterceptHandler()], level=0)
 
-    # Rotate file if over 500 MB or at midnight every day
+    # rotate file if over 500 MB or at midnight every day
     rotator = Rotator(size=5e+8, at=time(0, 0, 0))
 
-    for lvl in LOGGER_LVL_SET:
+    # remove default logger and add stderr logger
+    logger.remove()
+    if not debug:
+        logger.add(sys.stderr, level="INFO")
+    else:
+        logger.add(sys.stderr, level="DEBUG")
+
+    # add file loggers
+    if not debug:
+        s = set([x for x in list(LOGGER_LVL_SET) if x != 'debug'])
+    else:
+        s = LOGGER_LVL_SET
+    for lvl in s:
         logger.add(create_log_file(log_root, lvl), rotation=rotator.should_rotate, level=lvl.upper())
 
     return logger

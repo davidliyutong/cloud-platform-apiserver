@@ -7,6 +7,7 @@ from sanic import Sanic
 
 from src.apiserver.server import apiserver_prepare_run, apiserver_check_option
 from src.components.config import BackendConfig, CONFIG_DEFAULT_CONFIG_PATH
+from src.components.logging import create_logger
 
 Sanic.start_method = 'fork'
 
@@ -14,6 +15,7 @@ opt: BackendConfig = BackendConfig()
 
 if __name__ == '__main__':
     global logger
+    _ = create_logger("./logs/apiserver")
 
 
     @click.group()

@@ -194,7 +194,7 @@ class BackendConfig(BaseModel):
     def to_sanic_config(self):
         # >>> Define Values >>>
         return {
-            # "DEBUG": self.debug,
+            "DEBUG": self.debug,
             "API_NUMWORKERS": self.api_num_workers,
             "API_HOST": self.api_host,
             "API_PORT": self.api_port,
