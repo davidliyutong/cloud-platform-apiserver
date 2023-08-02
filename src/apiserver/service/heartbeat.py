@@ -10,5 +10,5 @@ class HeartbeatService(ServiceInterface):
         self._db: Dict[str, datetime.datetime] = {}
 
     async def ping(self, key: str) -> Optional[Exception]:
-        self._db[key] = datetime.datetime.now()
+        self._db[key] = datetime.datetime.utcnow()
         return None

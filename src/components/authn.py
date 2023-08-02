@@ -2,13 +2,11 @@ import base64
 
 from hashlib import sha256
 import secrets
-from typing import Optional, Tuple, Any, Dict
 
 import src.components.datamodels as datamodels
 import src.components.errors as errors
 
-from src.apiserver.repo import Repo
-from sanic import request, response, Sanic
+from sanic import request, response
 from sanic_jwt import Configuration, Responses, exceptions, Authentication
 from loguru import logger
 

@@ -111,12 +111,13 @@ class PodRepo:
     async def update(
             self,
             pod_id: str,
-            name: str = None,
-            description: str = None,
-            username: str = None,
-            timeout_s: int = None,
+            name: Optional[str] = None,
+            description: Optional[str] = None,
+            username: Optional[str] = None,
+            timeout_s: Optional[int] = None,
             target_status: Optional[datamodels.PodStatusEnum] = None,
-            started_at: datetime.datetime = None,  # hidden argument
+            started_at: Optional[datetime.datetime] = None,  # hidden argument
+            accessed_at: Optional[datetime.datetime] = None,  # hidden argument
             current_status: Optional[datamodels.PodStatusEnum] = None,  # hidden argument
     ) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
         try:
@@ -136,6 +137,7 @@ class PodRepo:
 
                 # only controller can change the following fields
                 pod['started_at'] = started_at if started_at is not None else pod['started_at']
+                pod['accessed_at'] = accessed_at if accessed_at is not None else pod['accessed_at']
                 pod['current_status'] = current_status if current_status is not None else pod['current_status']
 
                 # if username or target_status is changed, then set resource_status to pending

@@ -196,9 +196,11 @@ async def handle_pod_create_update_event(srv: Optional['src.apiserver.service.Ro
         return err
 
     # update pod's status
+    _now = datetime.datetime.utcnow()
     _, err = await srv.pod_service.repo.update(
         pod_id=pod.pod_id,
-        started_at=datetime.datetime.now(),
+        started_at=_now,
+        accessed_at=_now,
         current_status=pod.target_status,  # FIXME: might cause trouble
     )
     if err is not None:

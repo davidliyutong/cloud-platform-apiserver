@@ -228,6 +228,7 @@ class PodModel(BaseModel):
     username: str
     created_at: datetime.datetime
     started_at: datetime.datetime
+    accessed_at: datetime.datetime
     timeout_s: int
     current_status: PodStatusEnum
     target_status: PodStatusEnum
@@ -248,6 +249,10 @@ class PodModel(BaseModel):
 
     @field_serializer('started_at')
     def serialize_started_at(self, v: datetime.datetime, _info):
+        return v.timestamp()
+
+    @field_serializer('accessed_at')
+    def serialize_accessed_at(self, v: datetime.datetime, _info):
         return v.timestamp()
 
     @property
@@ -281,8 +286,9 @@ class PodModel(BaseModel):
             mem_lim_mb=mem_lim_mb,
             storage_lim_mb=storage_lim_mb,
             username=username,
-            created_at=datetime.datetime.now(),
+            created_at=datetime.datetime.utcnow(),
             started_at=datetime.datetime.fromtimestamp(0),
+            accessed_at=datetime.datetime.fromtimestamp(0),
             timeout_s=timeout_s,
             current_status=PodStatusEnum.pending,
             target_status=PodStatusEnum.running,
