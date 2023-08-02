@@ -20,8 +20,8 @@
 - **description**: name, string, mutable
 - **image_ref**: reference of image, string, mutable
 - **template_ref**: unique id of template, uuid, immutable 
-- **cpu_lim_m_cpu**: limit of cpu, integer, mutable
-- **mem_lim_mb**: limit of memory, integer, mutable
+- **cpu_lim_m_cpu**: limit of cpu, integer, immutable
+- **mem_lim_mb**: limit of memory, integer, immutable
 - **storage_lim_mb**: limit of storage, integer, immutable
 - **username**: username of owner, string, immutable
 - **created_at**: timestamp, date, immutable, autogen

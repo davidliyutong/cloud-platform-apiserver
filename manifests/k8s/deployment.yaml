@@ -1,0 +1,180 @@
+# MongoDB StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: clpl
+spec:
+  serviceName: "mongodb"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:6.0.6
+          resources:
+            limits:
+              cpu: "4000m"
+              memory: "4096Mi"
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: clpl # CHANGE ME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: clpl # CHANGE ME
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongodb-data
+              mountPath: /data/db
+      volumes:
+      - name: mongodb-data
+        persistentVolumeClaim:
+          claimName: mongodb-pvc
+---
+# MongoDB Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: clpl
+spec:
+  ports:
+    - port: 27017
+      targetPort: 27017
+  selector:
+    app: mongodb
+---
+# MongoDB PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pvc
+  namespace: clpl
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi # CHANGE ME
+---
+# apiserver StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: apiserver
+  namespace: clpl
+spec:
+  serviceName: "apiserver"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apiserver
+  template:
+    metadata:
+      labels:
+        app: apiserver
+    spec:
+      serviceAccountName: clpl-admin
+      containers:
+        - name: apiserver
+          image: davidliyutong/clpl-apiserver:latest
+          resources:
+            limits:
+              cpu: "4000m"
+              memory: "4096Mi"
+          env:
+            - name: CLPL_API_NUMWORKERS
+              value: "4" # CHANGE ME
+            - name: CLPL_DEBUG
+              value: "0" # CHANGE ME
+            - name: CLPL_DB_HOST
+              value: mongodb.clpl.svc.cluster.local # CHANGE ME
+            - name: CLPL_DB_PORT
+              value: "27017" # CHANGE ME
+            - name: CLPL_DB_USERNAME
+              value: clpl # CHANGE ME
+            - name: CLPL_DB_PASSWORD
+              value: clpl # CHANGE ME
+            - name: CLPL_CONFIG_TOKENSECRET
+              value: top-secret # CHANGE ME
+            - name: CLPL_CONFIG_CODEHOSTNAME
+              value: ${{ CONFIG_CODE_HOSTNAME }} # CHANGE ME
+            - name: CLPL_CONFIG_CODETLSSECRET
+              value: ${{ CONFIG_CODE_TLS_SECRET }} # CHANGE ME
+            - name: CLPL_CONFIG_VNCHOSTNAME
+              value: ${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME
+            - name: CLPL_CONFIG_VNCTLSSECRET
+              value: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGE ME
+            - name: CLPL_K8S_HOST
+              value: "10.96.0.1" # CHANGE ME
+            - name: CLPL_K8S_PORT
+              value: "6443" # CHANGE ME
+            - name: CLPL_K8S_CACERT
+              value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt # CHANGE ME
+            - name: CLPL_K8S_TOKEN
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token # CHANGE ME
+
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: apiserver-creds
+              mountPath: /root
+      volumes:
+      - name: apiserver-creds
+        persistentVolumeClaim:
+          claimName: apiserver-pvc
+---
+# apiserver Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: apiserver
+  namespace: clpl
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: apiserver
+---
+# apiserver PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: apiserver-pvc
+  namespace: clpl
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi # CHANGE ME
+---
+# apiserver Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apiserver
+  namespace: clpl
+spec:
+  rules:
+    - host: apiserver.${{ DOMAIN }} # CHANGE ME
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: apiserver
+                port:
+                  number: 8080
+  tls:
+    - hosts:
+        - apiserver.${{ DOMAIN }} # CHANGE ME
+      secretName: ${{ APISERVER_TLS_SECRET }} # CHANGE ME

@@ -60,7 +60,7 @@ class APIServerConfig(BaseModel):
     bootstrap_admin_password: str = "admin"
 
     config_token_secret: str = None
-    config_jwt_expire_s: int = 3600
+    config_token_expire_s: int = 3600
     config_code_hostname: str = None
     config_code_tls_secret: str = None
     config_vnc_hostname: str = None
@@ -98,11 +98,11 @@ class APIServerConfig(BaseModel):
         self.bootstrap_admin_username = str(d["bootstrap"]["adminUsername"])
 
         self.config_token_secret = str(d["config"]["tokenSecret"])
-        self.config_jwt_expire_s = int(d["config"]["jwtExpireS"])
-        self.config_code_hostname = str(d["config"]["code"]["hostname"])
-        self.config_code_tls_secret = str(d["config"]["code"]["tlsSecret"])
-        self.config_vnc_hostname = str(d["config"]["vnc"]["hostname"])
-        self.config_vnc_tls_secret = str(d["config"]["vnc"]["tlsSecret"])
+        self.config_token_expire_s = int(d["config"]["tokenExpireS"])
+        self.config_code_hostname = str(d["config"]["codeHostname"])
+        self.config_code_tls_secret = str(d["config"]["codeTLSSecret"])
+        self.config_vnc_hostname = str(d["config"]["vncHostname"])
+        self.config_vnc_tls_secret = str(d["config"]["vncTLSSecret"])
         # <<< Define Values <<<
         return self
 
@@ -138,11 +138,11 @@ class APIServerConfig(BaseModel):
         self.bootstrap_admin_username = v.get_string("bootstrap.adminUsername")
 
         self.config_token_secret = v.get_string("config.tokenSecret")
-        self.config_jwt_expire_s = v.get_int("config.jwtExpireS")
-        self.config_code_hostname = v.get_string("config.code.hostname")
-        self.config_code_tls_secret = v.get_string("config.code.tlsSecret")
-        self.config_vnc_hostname = v.get_string("config.vnc.hostname")
-        self.config_vnc_tls_secret = v.get_string("config.vnc.tlsSecret")
+        self.config_token_expire_s = v.get_int("config.tokenExpireS")
+        self.config_code_hostname = v.get_string("config.codeHostname")
+        self.config_code_tls_secret = v.get_string("config.codeTLSSecret")
+        self.config_vnc_hostname = v.get_string("config.vncHostname")
+        self.config_vnc_tls_secret = v.get_string("config.vncTLSSecret")
         # <<< Define Values <<<
 
         return self
@@ -184,15 +184,11 @@ class APIServerConfig(BaseModel):
             },
             "config": {
                 "tokenSecret": self.config_token_secret,
-                "jwtExpireS": self.config_jwt_expire_s,
-                "code": {
-                    "hostname": self.config_code_hostname,
-                    "tlsSecret": self.config_code_tls_secret,
-                },
-                "vnc": {
-                    "hostname": self.config_vnc_hostname,
-                    "tlsSecret": self.config_vnc_tls_secret,
-                }
+                "tokenExpireS": self.config_token_expire_s,
+                "codeHostname": self.config_code_hostname,
+                "codeTLSSecret": self.config_code_tls_secret,
+                "vncHostname": self.config_vnc_hostname,
+                "vncTLSSecret": self.config_vnc_tls_secret,
             }
         }
         # <<< Define Values <<<
@@ -219,15 +215,15 @@ class APIServerConfig(BaseModel):
             "K8S_PORT": self.k8s_port,
             "K8S_CACERT": self.k8s_ca_cert,
             "K8S_TOKEN": self.k8s_token,
-            "K8S_VERIFYSSL": self.k8s_verify_ssl,
+            "K8S_VERIFY_SSL": self.k8s_verify_ssl,
             "BOOTSTRAP_ADMIN_USERNAME": self.bootstrap_admin_username,
             "BOOTSTRAP_ADMIN_PASSWORD": self.bootstrap_admin_password,
             "CONFIG_TOKEN_SECRET": self.config_token_secret,
-            "CONFIG_JWTEXPIRES": self.config_jwt_expire_s,
+            "CONFIG_TOKEN_EXPIRE_S": self.config_token_expire_s,
             "CONFIG_CODE_HOSTNAME": self.config_code_hostname,
-            "CONFIG_CODE_TLSSECRET": self.config_code_tls_secret,
+            "CONFIG_CODE_TLS_SECRET": self.config_code_tls_secret,
             "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
-            "CONFIG_VNC_TLSSECRET": self.config_vnc_tls_secret,
+            "CONFIG_VNC_TLS_SECRET": self.config_vnc_tls_secret,
         }
         # <<< Define Values <<<
 
@@ -266,11 +262,11 @@ class APIServerConfig(BaseModel):
         v.set_default("bootstrap.adminPassword", _DEFAULT.bootstrap_admin_password)
 
         v.set_default("config.tokenSecret", _DEFAULT.config_token_secret)
-        v.set_default("config.jwtExpires", _DEFAULT.config_jwt_expire_s)
-        v.set_default("config.code.hostname", _DEFAULT.config_code_hostname)
-        v.set_default("config.code.tlsSecret", _DEFAULT.config_code_tls_secret)
-        v.set_default("config.vnc.hostname", _DEFAULT.config_vnc_hostname)
-        v.set_default("config.vnc.tlsSecret", _DEFAULT.config_vnc_tls_secret)
+        v.set_default("config.tokenExpireS", _DEFAULT.config_token_expire_s)
+        v.set_default("config.codeHostname", _DEFAULT.config_code_hostname)
+        v.set_default("config.codeTLSSecret", _DEFAULT.config_code_tls_secret)
+        v.set_default("config.vncHostname", _DEFAULT.config_vnc_hostname)
+        v.set_default("config.vncTLSSecret", _DEFAULT.config_vnc_tls_secret)
         # <<< Set Default Values <<<
 
         return v
@@ -310,11 +306,11 @@ class APIServerConfig(BaseModel):
         parser.add_argument("--bootstrap.adminPassword", type=str, help="bootstrap admin password")
 
         parser.add_argument("--config.tokenSecret", type=str, help="config tokenSecret")
-        parser.add_argument("--config.jwtExpires", type=int, help="config jwtExpires")
-        parser.add_argument("--config.code.hostname", type=str, help="config code hostname")
-        parser.add_argument("--config.code.tlsSecret", type=str, help="config code tlsSecret")
-        parser.add_argument("--config.vnc.hostname", type=str, help="config vnc hostname")
-        parser.add_argument("--config.vnc.tlsSecret", type=str, help="config vnc tlsSecret")
+        parser.add_argument("--config.tokenExpireS", type=int, help="config tokenExpireS")
+        parser.add_argument("--config.codeHostname", type=str, help="config code hostname")
+        parser.add_argument("--config.codeTLSSecret", type=str, help="config code tlsSecret")
+        parser.add_argument("--config.vncHostname", type=str, help="config vnc hostname")
+        parser.add_argument("--config.vncTLSSecret", type=str, help="config vnc tlsSecret")
         # <<< Set Default Values <<<
 
         return parser
@@ -374,13 +370,15 @@ class APIServerConfig(BaseModel):
         v.bind_env("bootstrap.adminPassword")
 
         v.bind_env("config.tokenSecret")
-        v.bind_env("config.jwtExpires")
-        v.bind_env("config.code.hostname")
-        v.bind_env("config.code.tlsSecret")
-        v.bind_env("config.vnc.hostname")
-        v.bind_env("config.vnc.tlsSecret")
+        v.bind_env("config.tokenExpireS")
+        v.bind_env("config.codeHostname")
+        v.bind_env("config.codeTLSSecret")
+        v.bind_env("config.vncHostname")
+        v.bind_env("config.vncTLSSecret")
         # <<< Set Env Values <<<
 
+        x = cls()
+        x.from_vyper(v)
         logger.debug(f"watcher config: {cls().from_vyper(v).to_dict()}")
 
         return v, None
@@ -408,7 +406,7 @@ class APIServerConfig(BaseModel):
     def k8s_config_values(self):
         return {
             "CONFIG_CODE_HOSTNAME": self.config_code_hostname,
-            "CONFIG_CODE_TLSSECRET": self.config_code_tls_secret,
+            "CONFIG_CODE_TLS_SECRET": self.config_code_tls_secret,
             "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
-            "CONFIG_VNC_TLSSECRET": self.config_vnc_tls_secret,
+            "CONFIG_VNC_TLS_SECRET": self.config_vnc_tls_secret,
         }

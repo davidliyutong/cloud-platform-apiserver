@@ -9,7 +9,7 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: ${{ POD_STORAGE_LIM }} # CHANGEME Storage Limit
+      storage: ${{ POD_STORAGE_LIM }} # CHANGE ME Storage Limit
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -28,7 +28,7 @@ spec:
         k8s-app: ${{ POD_LABEL }}
     spec:
       containers:
-      - image: ${{ POD_IMAGE_REF }} # CHANGEME
+      - image: ${{ POD_IMAGE_REF }} # CHANGE ME
         imagePullPolicy: Always
         name: container-0
         ports:
@@ -38,7 +38,7 @@ spec:
         - containerPort: 80
           name: 80tcp
           protocol: TCP
-        resources: # CHANGEME
+        resources: # CHANGE ME
           limits:
             cpu: ${{ POD_CPU_LIM }}
             memory: ${{ POD_MEM_LIM }}
@@ -94,9 +94,9 @@ metadata:
     nginx.ingress.kubernetes.io/auth-type: basic
   name: clpl-ingress-${{ POD_ID }}
 spec:
-  ingressClassName: nginx # CHANGEME
+  ingressClassName: nginx # CHANGE ME
   rules:
-  - host: ${{ POD_ID }}.${{ CONFIG_CODE_HOSTNAME }} # CHANGEME
+  - host: ${{ POD_ID }}.${{ CONFIG_CODE_HOSTNAME }} # CHANGE ME
     http:
       paths:
       - backend:
@@ -106,7 +106,7 @@ spec:
               number: 3000
         path: /
         pathType: Prefix
-  - host: ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGEME
+  - host: ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME
     http:
       paths:
       - backend:
@@ -118,8 +118,8 @@ spec:
         pathType: Prefix
   tls:
   - hosts:
-    - ${{ POD_ID }}.${{ CONFIG_CODE_HOSTNAME }} # CHANGEME hostname
-    secretName: ${{ CONFIG_CODE_TLS_SECRET }} # CHANGEME TLS Secret
+    - ${{ POD_ID }}.${{ CONFIG_CODE_HOSTNAME }} # CHANGE ME hostname
+    secretName: ${{ CONFIG_CODE_TLS_SECRET }} # CHANGE ME TLS Secret
   - hosts:
-    - ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGEME hostname
-    secretName: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGEME TLS Secret
+    - ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME hostname
+    secretName: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGE ME TLS Secret

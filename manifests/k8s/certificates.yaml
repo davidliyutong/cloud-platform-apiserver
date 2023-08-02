@@ -2,7 +2,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: coder-${{ DOMAIN_LABEL }}-tls
-  namespace: ${{ NAMESPACE }}
+  namespace: clpl
 spec:
   secretName: coder-${{ DOMAIN_LABEL }}-tls
   dnsNames:
@@ -15,11 +15,24 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: vnc-${{ DOMAIN_LABEL }}-tls
-  namespace: ${{ NAMESPACE }}
+  namespace: clpl
 spec:
   secretName: vnc-${{ DOMAIN_LABEL }}-tls
   dnsNames:
   - "*.vnc.${{ DOMAIN }}"
+  issuerRef:
+    name: letsencrypt-cf-dns
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: apiserver-${{ DOMAIN_LABEL }}-tls
+  namespace: clpl
+spec:
+  secretName: apiserver-${{ DOMAIN_LABEL }}-tls
+  dnsNames:
+  - "apiserver.${{ DOMAIN }}"
   issuerRef:
     name: letsencrypt-cf-dns
     kind: ClusterIssuer

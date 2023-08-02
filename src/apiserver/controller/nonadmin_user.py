@@ -110,6 +110,9 @@ async def update(request, username: str):
         body = request.json
         req = UserUpdateRequest(**body)
         req.username = username
+        req.status = None
+        req.quota = None
+        req.role = None
 
         # update user
         user, err = await get_root_service().user_service.update(request.app, req)

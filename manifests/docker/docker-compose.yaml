@@ -3,6 +3,7 @@ services:
   mongodb:
     image: mongo:6.0.6
     hostname: mongodb
+    container_name: mongodb
     restart: always
     ports:
       - "27017:27017"
@@ -28,16 +29,16 @@ services:
     environment:
       - CLPL_API_NUMWORKERS=-1
       - CLPL_DEBUG=0
-      - CLPL_DB_HOST=mongodb
-      - CLPL_DB_PORT=27017
-      - CLPL_DB_USERNAME=clpl
-      - CLPL_DB_PASSWORD=clpl
-      - CLPL_CONFIG_CODE_HOSTNAME=code.example.com
-      - CLPL_CONFIG_CODE_TLSSECRET=code-tls-secret
+      - CLPL_DB_HOST=mongodb # match mongodb host
+      - CLPL_DB_PORT=27017 # match mongodb port
+      - CLPL_DB_USERNAME=clpl # match mongodb username
+      - CLPL_DB_PASSWORD=clpl # match mongodb password
       - CLPL_CONFIG_TOKENSECRET=top-secret
-      - CLPL_CONFIG_VNC_HOSTNAME=vnc.example.com
-      - CLPL_CONFIG_VNC_TLSSECRET=vnc-tls-secret
-      - CLPL_K8S_HOST=127.0.0.1
+      - CLPL_CONFIG_CODEHOSTNAME=coder.example.com # CHANGE ME
+      - CLPL_CONFIG_CODETLSSECRET=code-tls-secret # CHANGE ME
+      - CLPL_CONFIG_VNCHOSTNAME=vnc.example.com # CHANGE ME
+      - CLPL_CONFIG_VNCTLSSECRET=vnc-tls-secret # CHANGE ME
+      - CLPL_K8S_HOST=10.96.0.1 # CHANGE ME
       - CLPL_K8S_PORT=6443
       - CLPL_K8S_CACERT=/mnt/creds/ca.crt
       - CLPL_K8S_TOKEN=/mnt/creds/token

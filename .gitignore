@@ -4,6 +4,7 @@
 
 # Logs, Temp Data
 logs
+tmp
 
 # Python
 *.pyc

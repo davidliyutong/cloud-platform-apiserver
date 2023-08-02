@@ -151,6 +151,14 @@ async def get(request, pod_id: str):
         # get pod
         req = PodGetRequest(pod_id=pod_id)
         pod, err = await get_root_service().pod_service.get(request.app, req)
+        if err is not None:
+            return json_response(
+                PodGetResponse(
+                    status=http.HTTPStatus.NOT_FOUND,
+                    message=str(err)
+                ).model_dump(),
+                status=http.HTTPStatus.NOT_FOUND
+            )
 
         # reject if pod does not belong to current user
         # attention: request.ctx.user['username'] is set in authn.validate_role()
