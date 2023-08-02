@@ -23,7 +23,7 @@ bp = Blueprint("admin_template", url_prefix="/admin/templates", version=1)
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def list(request):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     if request.query_args is None:
         req = TemplateListRequest()
@@ -60,7 +60,7 @@ async def list(request):
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def create(request):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     if request.json is None:
         return json_response(
@@ -109,7 +109,7 @@ async def create(request):
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def get(request, template_id: str):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     if template_id is None or template_id == "":
         return json_response(
@@ -150,7 +150,7 @@ async def get(request, template_id: str):
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def update(request, template_id: str):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     body = request.json
     if template_id is None or template_id == "":
@@ -190,7 +190,7 @@ async def update(request, template_id: str):
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def delete(request, template_id: str):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     if template_id is None or template_id == "":
         return json_response(

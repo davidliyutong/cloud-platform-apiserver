@@ -12,7 +12,7 @@ from .common import ServiceInterface
 from .handler import handle_template_create_event, handle_template_update_event, handle_template_delete_event
 
 
-class AdminTemplateService(ServiceInterface):
+class TemplateService(ServiceInterface):
     def __init__(self, template_repo: TemplateRepo):
         super().__init__()
         self.repo = template_repo
@@ -40,7 +40,7 @@ class AdminTemplateService(ServiceInterface):
     async def create(self,
                      app: Sanic,
                      req: TemplateCreateRequest) -> Tuple[datamodels.TemplateModel, Optional[Exception]]:
-        template, err = await self.repo.create(template_name=req.template_name,
+        template, err = await self.repo.create(name=req.name,
                                                description=req.description,
                                                image_ref=req.image_ref,
                                                template_str=req.template_str,
@@ -50,7 +50,7 @@ class AdminTemplateService(ServiceInterface):
         if err is None:
             await app.add_task(handle_template_create_event(
                 self.parent,
-                TemplateCreateEvent(template_id=template.template_id))
+                TemplateCreateEvent(template_id=str(template.template_id)))
             )
 
         return template, err
@@ -59,16 +59,16 @@ class AdminTemplateService(ServiceInterface):
                      app: Sanic,
                      req: TemplateUpdateRequest) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
         template, err = await self.repo.update(template_id=req.template_id,
-                                               template_name=req.template_name,
+                                               name=req.name,
                                                description=req.description,
                                                image_ref=req.image_ref,
                                                template_str=req.template_str,
                                                fields=req.fields,
                                                defaults=req.defaults)
-        if err is None:
+        if err is None and template.resource_status == datamodels.ResourceStatusEnum.pending:
             await app.add_task(handle_template_update_event(
                 self.parent,
-                TemplateUpdateEvent(template_id=template.template_id))
+                TemplateUpdateEvent(template_id=str(template.template_id)))
             )
 
         return template, err
@@ -80,7 +80,7 @@ class AdminTemplateService(ServiceInterface):
         if err is None:
             await app.add_task(handle_template_delete_event(
                 self.parent,
-                TemplateDeleteEvent(template_id=template.template_id))
+                TemplateDeleteEvent(template_id=str(template.template_id)))
             )
 
         return template, err

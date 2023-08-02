@@ -24,7 +24,7 @@ bp = Blueprint("nonadmin_pod", url_prefix="/pods", version=1)
 @protected()
 @authn.validate_role()
 async def list(request):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     if request.query_args is None:
         req = PodListRequest()
@@ -62,7 +62,7 @@ async def list(request):
 @protected()
 @authn.validate_role()
 async def create(request):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     if request.json is None:
         return json_response(
@@ -113,7 +113,7 @@ async def create(request):
 @protected()
 @authn.validate_role()
 async def get(request, pod_id: str):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     if pod_id is None or pod_id == "":
         return json_response(
@@ -163,7 +163,7 @@ async def get(request, pod_id: str):
 @protected()
 @authn.validate_role()
 async def update(request, pod_id: str):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     body = request.json
     if pod_id is None or pod_id == "":
@@ -223,7 +223,7 @@ async def update(request, pod_id: str):
 @protected()
 @authn.validate_role()
 async def delete(request, pod_id: str):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     if pod_id is None or pod_id == "":
         return json_response(

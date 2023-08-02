@@ -21,7 +21,7 @@ bp = Blueprint("nonadmin_template", url_prefix="/templates", version=1)
 @openapi.response(200, {"application/json": TemplateListResponse.model_json_schema()})
 @protected()
 async def list(request):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     if request.query_args is None:
         req = TemplateListRequest()
@@ -54,7 +54,7 @@ async def list(request):
 @openapi.response(200, {"application/json": TemplateGetResponse.model_json_schema()})
 @protected()
 async def get(request, template_id: str):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     if template_id is None or template_id == "":
         return json_response(

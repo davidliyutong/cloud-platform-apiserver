@@ -20,7 +20,7 @@ bp = Blueprint("nonadmin_user", url_prefix="/users", version=1)
 @protected()
 @authn.validate_role()
 async def get(request, username: str):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     if username is None or username == "":
         return json_response(
@@ -69,7 +69,7 @@ async def get(request, username: str):
 @protected()
 @authn.validate_role()
 async def update(request, username: str):
-    logger.debug(f"{request.path} invoked")
+    logger.debug(f"{request.method} {request.path} invoked")
 
     body = request.json
     if username is None or username == "":

@@ -1,3 +1,4 @@
+import datetime
 import json
 from typing import List, Tuple, Optional, Dict, Any
 
@@ -46,10 +47,12 @@ class PodRepo:
         else:
             return datamodels.PodModel(**res), None
 
-    async def list(self,
-                   index_start: int = -1,
-                   index_end: int = -1,
-                   extra_query_filter: Dict[str, Any] = None) -> Tuple[int, List[datamodels.PodModel], Optional[Exception]]:
+    async def list(
+            self,
+            index_start: int = -1,
+            index_end: int = -1,
+            extra_query_filter: Dict[str, Any] = None
+    ) -> Tuple[int, List[datamodels.PodModel], Optional[Exception]]:
 
         try:
             collection = self.db.get_db_collection(datamodels.database_name, datamodels.pod_collection_name)
@@ -62,7 +65,7 @@ class PodRepo:
             query_filter = {} if extra_query_filter is None else extra_query_filter
 
             res = []
-            cursor = collection.find(query_filter).sort('uid', pymongo.ASCENDING)
+            cursor = collection.find(query_filter).sort('name', pymongo.ASCENDING)
             async for document in cursor:
                 res.append(datamodels.PodModel(**document))
             return num_document, res[_start:_end], None
@@ -112,7 +115,9 @@ class PodRepo:
             description: str = None,
             username: str = None,
             timeout_s: int = None,
-            target_status: Optional[datamodels.PodStatusEnum] = None
+            target_status: Optional[datamodels.PodStatusEnum] = None,
+            started_at: datetime.datetime = None,  # hidden argument
+            current_status: Optional[datamodels.PodStatusEnum] = None,  # hidden argument
     ) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
         try:
             collection = self.db.get_db_collection(datamodels.database_name, datamodels.pod_collection_name)
@@ -128,8 +133,21 @@ class PodRepo:
                 pod['username'] = username if username is not None else pod['username']
                 pod['timeout_s'] = timeout_s if timeout_s is not None else pod['timeout_s']
                 pod['target_status'] = target_status if target_status is not None else pod['target_status']
-                pod['resource_status'] = datamodels.ResourceStatusEnum.pending.value
+
+                # only controller can change the following fields
+                pod['started_at'] = started_at if started_at is not None else pod['started_at']
+                pod['current_status'] = current_status if current_status is not None else pod['current_status']
+
+                # if username or target_status is changed, then set resource_status to pending
+                if any([
+                    username is not None,
+                    target_status is not None,
+                ]):
+                    pod['resource_status'] = datamodels.ResourceStatusEnum.pending.value
+
+                # check if the profile is valid
                 pod_model = datamodels.PodModel(**pod)  # check if the pod model is valid
+
             except Exception as e:
                 logger.error(f"update pod {pod} wrong profile: {e} ")
                 return None, errors.wrong_pod_profile

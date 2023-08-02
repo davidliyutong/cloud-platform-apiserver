@@ -7,12 +7,12 @@ from sanic import Sanic
 from src.apiserver.controller.types import *
 from src.apiserver.repo import PodRepo
 from src.components import datamodels, errors
-from src.components.events import PodCreateEvent, PodUpdateEvent, PodDeleteEvent
+from src.components.events import PodCreateUpdateEvent, PodDeleteEvent
 from .common import ServiceInterface
-from .handler import handle_pod_create_event, handle_pod_update_event, handle_pod_delete_event
+from .handler import handle_pod_create_update_event, handle_pod_delete_event
 
 
-class AdminPodService(ServiceInterface):
+class PodService(ServiceInterface):
     def __init__(self, pod_repo: PodRepo):
         super().__init__()
         self.repo = pod_repo
@@ -54,7 +54,8 @@ class AdminPodService(ServiceInterface):
 
         if err is None:
             await app.add_task(
-                handle_pod_create_event(self.parent, PodCreateEvent(pod_id=pod.pod_id, username=pod.username))
+                handle_pod_create_update_event(self.parent,
+                                               PodCreateUpdateEvent(pod_id=pod.pod_id, username=pod.username))
             )
 
         return pod, err
@@ -70,9 +71,12 @@ class AdminPodService(ServiceInterface):
             timeout_s=req.timeout_s,
             target_status=req.target_status,
         )
-        if err is None:
+        if err is None and pod.resource_status == datamodels.ResourceStatusEnum.pending:
             await app.add_task(
-                handle_pod_update_event(self.parent, PodUpdateEvent(pod_id=pod.pod_id, username=pod.username))
+                handle_pod_create_update_event(
+                    self.parent,
+                    PodCreateUpdateEvent(pod_id=pod.pod_id, username=pod.username)
+                )
             )
 
         return pod, err

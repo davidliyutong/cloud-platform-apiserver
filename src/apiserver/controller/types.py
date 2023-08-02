@@ -77,7 +77,7 @@ class TemplateListResponse(ResponseBaseModel):
 
 
 class TemplateCreateRequest(BaseModel):
-    template_name: str
+    name: str
     description: str
     image_ref: str
     template_str: str
@@ -100,7 +100,7 @@ class TemplateGetResponse(TemplateCreateResponse):
 
 class TemplateUpdateRequest(BaseModel):
     template_id: str
-    template_name: str = None
+    name: str = None
     description: str = None
     image_ref: str = None
     template_str: str = None
@@ -199,8 +199,13 @@ class PodUpdateRequest(BaseModel):
 
     @field_validator('target_status')
     def target_status_must_be_valid(cls, v):
+        if isinstance(v, str):
+            v = datamodels.PodStatusEnum(v)
         if v is not None and v not in datamodels.PodStatusEnum:
             raise ValueError('target_status must be valid PodStatusEnum')
+
+        if v not in [datamodels.PodStatusEnum.running, datamodels.PodStatusEnum.stopped]:
+            raise ValueError('target_status must be valid')
         return v
 
 

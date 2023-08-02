@@ -134,7 +134,12 @@ class UserRepo:
                 user['email'] = email if email is not None else user['email']
                 user['role'] = datamodels.RoleEnum(role) if role is not None else user['role']
                 user['quota'] = quota if quota is not None else user['quota']
-                user['resource_status'] = datamodels.ResourceStatusEnum.pending.value
+
+                # if password is changed, then set resource_status to pending
+                if any([
+                    password is not None,
+                ]):
+                    user['resource_status'] = datamodels.ResourceStatusEnum.pending.value
                 user_model = datamodels.UserModel(**user)  # check if the user model is valid
             except Exception as e:
                 logger.error(f"update user {username} wrong profile: {e}")

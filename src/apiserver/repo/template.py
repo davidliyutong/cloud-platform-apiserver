@@ -71,7 +71,7 @@ class TemplateRepo:
 
     async def create(
             self,
-            template_name: str,
+            name: str,
             description: str,
             image_ref: str,
             template_str: str,
@@ -82,7 +82,7 @@ class TemplateRepo:
             collection = self.db.get_db_collection(datamodels.database_name, datamodels.template_collection_name)
 
             template = datamodels.TemplateModel.new(
-                template_name=template_name,
+                name=name,
                 description=description,
                 image_ref=image_ref,
                 template_str=template_str,
@@ -104,7 +104,7 @@ class TemplateRepo:
     async def update(
             self,
             template_id: str,
-            template_name: Optional[str],
+            name: Optional[str],
             description: Optional[str],
             image_ref: Optional[str],
             template_str: Optional[str],
@@ -119,7 +119,7 @@ class TemplateRepo:
             template = await collection.find_one({'template_id': template_id})
 
             try:
-                template['template_name'] = template_name if template_name is not None else template['template_name']
+                template['name'] = name if name is not None else template['name']
                 template['description'] = description if description is not None else template['description']
                 template['image_ref'] = image_ref if image_ref is not None else template['image_ref']
                 template['template_str'] = template_str if template_str is not None else template['template_str']
@@ -138,7 +138,7 @@ class TemplateRepo:
                 logger.error(f"update template unknown error: {template_id}")
                 return None, errors.unknown_error
             else:
-                return template, None
+                return template_model, None
 
         except Exception as e:
             logger.error(f"get_collection error: {e}")

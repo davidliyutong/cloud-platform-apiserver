@@ -2,7 +2,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   labels:
-    k8s-app: apps.clpl-${{ POD_ID }}
+    k8s-app: ${{ POD_LABEL }}
   name: clpl-pvc-${{ POD_ID }}
 spec:
   accessModes:
@@ -15,17 +15,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    k8s-app: apps.clpl-${{ POD_ID }}
+    k8s-app: ${{ POD_LABEL }}
   name: clpl-${{ POD_ID }}
 spec:
-  replicas: 1
+  replicas: ${{ POD_REPLICAS }}
   selector:
     matchLabels:
-      k8s-app: apps.clpl-${{ POD_ID }}
+      k8s-app: ${{ POD_LABEL }}
   template:
     metadata:
       labels:
-        k8s-app: apps.clpl-${{ POD_ID }}
+        k8s-app: ${{ POD_LABEL }}
     spec:
       containers:
       - image: ${{ POD_IMAGE_REF }} # CHANGEME
@@ -65,7 +65,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    k8s-app: apps.clpl-${{ POD_ID }}
+    k8s-app: ${{ POD_LABEL }}
   name: clpl-svc-${{ POD_ID }}
 spec:
   ports:
@@ -78,7 +78,7 @@ spec:
     protocol: TCP
     targetPort: 80
   selector:
-    k8s-app: apps.clpl-${{ POD_ID }}
+    k8s-app: ${{ POD_LABEL }}
   sessionAffinity: None
   type: ClusterIP
 ---
@@ -86,7 +86,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   labels:
-    k8s-app: apps.clpl-${{ POD_ID }}
+    k8s-app: ${{ POD_LABEL }}
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "40960M"
     nginx.ingress.kubernetes.io/auth-realm: Enter your credentials

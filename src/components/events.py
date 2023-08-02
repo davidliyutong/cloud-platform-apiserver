@@ -44,12 +44,8 @@ class PodBaseEvent(BaseModel):
     username: str
 
 
-class PodCreateEvent(PodBaseEvent):
-    type: str = "pod_create_event"
-
-
-class PodUpdateEvent(PodBaseEvent):
-    type: str = "pod_update_event"
+class PodCreateUpdateEvent(PodBaseEvent):
+    type: str = "pod_create_update_event"
 
 
 class PodDeleteEvent(PodBaseEvent):
@@ -83,10 +79,8 @@ def event_deserialize(payload: Union[bytes, str]) -> Tuple[Optional[BaseModel], 
         return TemplateUpdateEvent(**payload), None
     elif payload['type'] == 'template_delete_event':
         return TemplateDeleteEvent(**payload), None
-    elif payload['type'] == 'pod_create_event':
-        return PodCreateEvent(**payload), None
-    elif payload['type'] == 'pod_update_event':
-        return PodUpdateEvent(**payload), None
+    elif payload['type'] == 'pod_create_update_event':
+        return PodCreateUpdateEvent(**payload), None
     elif payload['type'] == 'pod_delete_event':
         return PodDeleteEvent(**payload), None
     elif payload['type'] == 'pod_timeout_event':

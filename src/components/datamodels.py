@@ -10,7 +10,7 @@ from typing import List, Optional, Dict, Any, Union
 
 from enum import Enum
 
-from src.components.utils import parse_template_str
+from src.components.utils import render_template_str
 import src.components.config as config
 
 database_name = config.CONFIG_PROJECT_NAME
@@ -46,13 +46,13 @@ class ResourceStatusEnum(str, Enum):
 
 
 class PodStatusEnum(str, Enum):
-    pending = "pending"
-    creating = "creating"
-    running = "running"
-    stopped = "stopped"
-    deleting = "deleting"
-    failed = "failed"
-    unknown = "unknown"
+    pending = "pending"  # current
+    creating = "creating"  # current (unused)
+    running = "running"  # current | target
+    stopped = "stopped"  # current | target
+    deleting = "deleting"  # current (unused)
+    failed = "failed"  # current
+    unknown = "unknown"  # current
 
 
 class UserStatusEnum(str, Enum):
@@ -144,7 +144,7 @@ class UserModel(BaseModel):
 class TemplateModel(BaseModel):
     resource_status: ResourceStatusEnum = ResourceStatusEnum.pending
     template_id: UUID4
-    template_name: str
+    name: str
     description: str
     image_ref: str
     template_str: str
@@ -174,7 +174,7 @@ class TemplateModel(BaseModel):
 
     @classmethod
     def new(cls,
-            template_name: str,
+            name: str,
             description: str,
             image_ref: str,
             template_str: str,
@@ -182,7 +182,7 @@ class TemplateModel(BaseModel):
             defaults: Optional[Dict[str, Any]]):
         return cls(
             template_id=uuid.uuid4(),
-            template_name=template_name,
+            name=name,
             description=description,
             image_ref=image_ref,
             template_str=template_str,
@@ -191,11 +191,13 @@ class TemplateModel(BaseModel):
         )
 
     __EXAMPLE_VALUES__ = {
+        "POD_LABEL": config.CONFIG_K8S_POD_LABEL_FMT.format("test_id"),
         "POD_ID": "test_id",
         "POD_IMAGE_REF": "davidliyutong/code-server-speit:latest",
         "POD_CPU_LIM": "2000m",
         "POD_MEM_LIM": "4096Mi",
         "POD_STORAGE_LIM": "10Mi",
+        "POD_REPLICAS": "1",
         "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format("username"),
         "CONFIG_CODE_HOSTNAME": "code.example.org",
         "CONFIG_CODE_TLS_SECRET": "code-tls-secret",
@@ -204,8 +206,14 @@ class TemplateModel(BaseModel):
     }
 
     def verify(self) -> bool:
-        template_str, used_keys, _ = parse_template_str(self.template_str, self.__EXAMPLE_VALUES__)
+        template_str, used_keys, _ = render_template_str(self.template_str, self.__EXAMPLE_VALUES__)
         return len(set(used_keys)) == len(self.__EXAMPLE_VALUES__)
+
+    @property
+    def values(self):
+        return {
+            'POD_IMAGE_REF': self.image_ref,
+        }
 
 
 class PodModel(BaseModel):
@@ -242,13 +250,16 @@ class PodModel(BaseModel):
     def serialize_started_at(self, v: datetime.datetime, _info):
         return v.timestamp()
 
-    def render(self):
+    @property
+    def values(self):
         return {
+            "POD_LABEL": config.CONFIG_K8S_POD_LABEL_FMT.format(self.pod_id),
             "POD_ID": self.pod_id,
             "POD_CPU_LIM": str(self.cpu_lim_m_cpu) + "m",
             "POD_MEM_LIM": str(self.mem_lim_mb) + "Mi",
             "POD_STORAGE_LIM": str(self.storage_lim_mb) + "Mi",
             "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format(self.username),
+            "POD_REPLICAS": "1" if self.target_status == PodStatusEnum.running else "0",
         }
 
     @classmethod
@@ -271,8 +282,8 @@ class PodModel(BaseModel):
             storage_lim_mb=storage_lim_mb,
             username=username,
             created_at=datetime.datetime.now(),
-            started_at=datetime.datetime.now(),
+            started_at=datetime.datetime.fromtimestamp(0),
             timeout_s=timeout_s,
-            current_status=PodStatusEnum.pending.value,
+            current_status=PodStatusEnum.pending,
             target_status=PodStatusEnum.running,
         )

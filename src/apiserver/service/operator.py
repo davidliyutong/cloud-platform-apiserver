@@ -1,11 +1,242 @@
-from typing import Optional
+import base64
+import io
+from typing import Optional, Tuple
 
+import kubernetes
+import yaml
 from kubernetes import client
+from kubernetes.client import ApiException, V1LabelSelector
+from loguru import logger
 
 from .common import ServiceInterface
+from src.components import errors
+from src.components.config import (
+    CONFIG_K8S_CREDENTIAL_FMT,
+    CONFIG_K8S_POD_LABEL_FMT,
+    CONFIG_K8S_POD_LABEL_KEY,
+    CONFIG_PROJECT_NAMESPACE,
+    CONFIG_K8S_SERVICE_FMT
+)
 
 
 class K8SOperatorService(ServiceInterface):
-    def __init__(self, v1: Optional[client.CoreV1Api]):
+
+    def __init__(self, c: Optional[client]):
         super().__init__()
-        self.v1 = v1
+        self.client = c
+        self.v1 = self.client.CoreV1Api()
+        self.app_v1 = self.client.AppsV1Api()
+        self.networking_v1 = self.client.NetworkingV1Api()
+        self._resource_function_map = {
+            'Deployment': {
+                'create': self.app_v1.create_namespaced_deployment,
+                'patch': self.app_v1.patch_namespaced_deployment,
+                'get': self.app_v1.read_namespaced_deployment,
+                'delete': self.app_v1.delete_namespaced_deployment,
+                'list': self.app_v1.list_namespaced_deployment,
+            },
+            'Service': {
+                'create': self.v1.create_namespaced_service,
+                'patch': self.v1.patch_namespaced_service,
+                'get': self.v1.read_namespaced_service,
+                'delete': self.v1.delete_namespaced_service,
+                'list': self.v1.list_namespaced_service,
+            },
+            'Ingress': {
+                'create': self.networking_v1.create_namespaced_ingress,
+                'patch': self.networking_v1.patch_namespaced_ingress,
+                'get': self.networking_v1.read_namespaced_ingress,
+                'delete': self.networking_v1.delete_namespaced_ingress,
+                'list': self.networking_v1.list_namespaced_ingress,
+            },
+            'PersistentVolumeClaim': {
+                'create': self.v1.create_namespaced_persistent_volume_claim,
+                'patch': self.v1.patch_namespaced_persistent_volume_claim,
+                'get': self.v1.read_namespaced_persistent_volume_claim,
+                'delete': self.v1.delete_namespaced_persistent_volume_claim,
+                'list': self.v1.list_namespaced_persistent_volume_claim,
+            },
+        }
+
+    async def is_secret_exists(self, secret_name: str) -> Tuple[Optional[bool], Optional[Exception]]:
+        try:
+            ret = self.v1.read_namespaced_secret(
+                secret_name,
+                CONFIG_PROJECT_NAMESPACE
+            )
+            if ret is not None:
+                return True, None
+            else:
+                return False, None
+        except ApiException as e:
+            if e.reason == 'Not Found':
+                return False, None
+            else:
+                logger.exception(e)
+                return False, e
+
+    async def is_pod_exists(self, pod_id: str) -> Tuple[Optional[bool], Optional[Exception]]:
+        try:
+            ret = self.v1.read_namespaced_service(
+                CONFIG_K8S_SERVICE_FMT.format(pod_id),
+                CONFIG_PROJECT_NAMESPACE
+            )
+            if ret is not None:
+                return False, None
+            else:
+                return False, None
+        except ApiException as e:
+            if e.reason == 'Not Found':
+                return False, None
+            else:
+                logger.exception(e)
+                return False, e
+
+    async def create_or_update_user_credentials(self, username: str, htpasswd: bytes) -> Optional[Exception]:
+        secret_name = CONFIG_K8S_CREDENTIAL_FMT.format(username)
+        secret_exists, err = await self.is_secret_exists(secret_name)
+        if err is not None:
+            return err
+
+        if secret_exists:
+            try:
+                ret = self.v1.patch_namespaced_secret(
+                    secret_name,
+                    CONFIG_PROJECT_NAMESPACE,
+                    kubernetes.client.V1Secret(
+                        api_version="v1",
+                        kind="Secret",
+                        data={
+                            "auth": base64.b64encode(htpasswd).decode()
+                        },
+                        metadata=kubernetes.client.V1ObjectMeta(
+                            name=CONFIG_K8S_CREDENTIAL_FMT.format(username),
+                            namespace=CONFIG_PROJECT_NAMESPACE
+                        )
+                    )
+                )
+                if ret is None:
+                    return errors.k8s_failed_to_update
+            except ApiException as e:
+                logger.exception(e)
+                return errors.k8s_failed_to_update
+        else:
+            try:
+                ret = self.v1.create_namespaced_secret(
+                    CONFIG_PROJECT_NAMESPACE,
+                    kubernetes.client.V1Secret(
+                        api_version="v1",
+                        kind="Secret",
+                        data={
+                            "auth": base64.b64encode(htpasswd).decode()
+                        },
+                        metadata=kubernetes.client.V1ObjectMeta(
+                            name=CONFIG_K8S_CREDENTIAL_FMT.format(username),
+                            namespace=CONFIG_PROJECT_NAMESPACE
+                        )
+                    )
+                )
+                if ret is None:
+                    return errors.k8s_failed_to_create
+            except ApiException as e:
+                logger.exception(e)
+                return errors.k8s_failed_to_update
+
+        return None
+
+    async def delete_user_credential(self, username: str) -> Optional[Exception]:
+        secret_name = CONFIG_K8S_CREDENTIAL_FMT.format(username)
+        secret_exists, err = await self.is_secret_exists(secret_name)
+        if err is not None:
+            return err
+
+        if secret_exists:
+            try:
+                ret = self.v1.delete_namespaced_secret(
+                    secret_name,
+                    CONFIG_PROJECT_NAMESPACE,
+                )
+                if ret is None:
+                    logger.warning(f"failed to delete k8s secret {CONFIG_K8S_CREDENTIAL_FMT.format(username)}")
+                    return errors.k8s_failed_to_delete
+                else:
+                    return None
+            except ApiException as e:
+                logger.exception(e)
+                return errors.k8s_failed_to_update
+        else:
+            return None
+
+    async def create_or_update_pod(self, pod_id: str, template_str: str) -> Optional[Exception]:
+        try:
+            resources = yaml.safe_load_all(io.StringIO(template_str))
+        except Exception as e:
+            logger.exception(e)
+            return e
+
+        try:
+            for resource in resources:
+                err = await self._apply_k8s_resource(resource)
+                if err is not None:
+                    return err
+        except Exception as e:
+            logger.exception(e)
+            return e
+
+        logger.info(f"pod {pod_id} created or updated successfully")
+        return None
+
+    async def delete_pod(self, pod_id: str) -> Optional[Exception]:
+        pod_label = CONFIG_K8S_POD_LABEL_FMT.format(pod_id)
+        try:
+            for _, col in self._resource_function_map.items():
+                resources = col['list'](
+                    CONFIG_PROJECT_NAMESPACE,
+                    label_selector=f"{CONFIG_K8S_POD_LABEL_KEY}={pod_label}"
+                )
+                for resource in resources.items:
+                    col['delete'](resource.metadata.name, CONFIG_PROJECT_NAMESPACE)
+
+        except ApiException as e:
+            logger.exception(e)
+            return e
+
+        except Exception as e:
+            logger.exception(e)
+            return e
+
+        logger.info(f"pod {pod_id} deleted successfully")
+        return None
+
+    async def _apply_k8s_resource(self, resource: dict) -> Optional[Exception]:
+        """
+        apply k8s resource
+        """
+
+        kind = resource['kind']
+        try:
+            self._resource_function_map[kind]['get'](resource['metadata']['name'], CONFIG_PROJECT_NAMESPACE)
+            exists = True
+        except ApiException as e:
+            if e.reason == 'Not Found':
+                exists = False
+            else:
+                logger.exception(e)
+                return e
+
+        if exists:
+            try:
+                self._resource_function_map[kind]['patch'](
+                    resource['metadata']['name'],
+                    CONFIG_PROJECT_NAMESPACE,
+                    resource
+                )
+            except ApiException as e:
+                logger.exception(e)
+                return e
+        else:
+            try:
+                self._resource_function_map[kind]['create'](CONFIG_PROJECT_NAMESPACE, resource)
+            except ApiException as e:
+                logger.exception(e)
+                return e

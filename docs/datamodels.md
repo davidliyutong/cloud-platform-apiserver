@@ -32,7 +32,7 @@
 
 ## Template
 
-- **template_name**: name, str, immutable(user)
+- **name**: name, str, immutable(user)
 - **description**: description, str, immutable(user)
 - **template_id**: unique id, uuid, immutable, autogen
 - **image_ref**: reference to which image, string, mutable

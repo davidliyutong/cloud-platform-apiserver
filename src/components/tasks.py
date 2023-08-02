@@ -8,13 +8,13 @@ import pymongo
 
 from src.components.config import BackendConfig
 from src.components import datamodels, config
-from src.components.utils import get_k8s_api
-from src.components.events import (
-    PodTimeoutEvent
-)
-from src.apiserver.service.handler import (
-    handle_pod_timeout_event
-)
+from src.components.utils import get_k8s_client
+# from src.components.events import (
+#     PodTimeoutEvent
+# )
+# from src.apiserver.service.handler import (
+#     handle_pod_timeout_event
+# )
 
 
 def check_and_create_admin_user(opt: BackendConfig) -> Optional[Exception]:
@@ -56,18 +56,17 @@ def check_and_create_admin_user(opt: BackendConfig) -> Optional[Exception]:
 def check_kubernetes_connection(opt: BackendConfig) -> Optional[Exception]:
     logger.info(f"connecting to K8S cluster at {opt.k8s_host}:{opt.k8s_port}")
 
-    v1 = get_k8s_api(opt.k8s_host, opt.k8s_port, opt.k8s_ca_cert, opt.k8s_token, debug=False)
+    v1 = get_k8s_client(opt.k8s_host, opt.k8s_port, opt.k8s_ca_cert, opt.k8s_token, debug=False).CoreV1Api()
     try:
         _ = v1.list_namespaced_pod(namespace=config.CONFIG_PROJECT_NAME)
     except Exception as e:
         logger.exception(e)
-        logger.error("failed to list pods in namespace, check kubernetes connection or cluster configuration")
         return e
     return None
 
 
-async def scan_pods(opt: BackendConfig, stop_ev: threading.Event = None) -> None:
-    while True:
-        await asyncio.sleep(10)
-        if stop_ev is not None and stop_ev.is_set():
-            break
+# async def scan_pods(opt: BackendConfig, stop_ev: threading.Event = None) -> None:
+#     while True:
+#         await asyncio.sleep(10)
+#         if stop_ev is not None and stop_ev.is_set():
+#             break

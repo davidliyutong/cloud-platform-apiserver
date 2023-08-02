@@ -23,8 +23,8 @@ def singleton(cls):
     return instance
 
 
-def parse_template_str(template_str: str,
-                       kv: Optional[Dict[str, Any]] = None) -> Tuple[Optional[str], List[str], Optional[Exception]]:
+def render_template_str(template_str: str,
+                        kv: Optional[Dict[str, Any]] = None) -> Tuple[Optional[str], List[str], Optional[Exception]]:
     used_keys = []
 
     def replace(match):
@@ -43,12 +43,12 @@ def parse_template_str(template_str: str,
     return template_str, used_keys, None
 
 
-def get_k8s_api(host: str,
-                port: int,
-                ca_cert_path: str,
-                token_path: str,
-                verify_ssl: bool = False,
-                debug: bool = False) -> client.CoreV1Api:
+def get_k8s_client(host: str,
+                   port: int,
+                   ca_cert_path: str,
+                   token_path: str,
+                   verify_ssl: bool = False,
+                   debug: bool = False) -> client:
     api_server = f"https://{host}:{str(port)}"
     ca_cert_path = ca_cert_path
     token_path = token_path
@@ -63,9 +63,8 @@ def get_k8s_api(host: str,
     configuration.debug = debug
     configuration.api_key = {"authorization": "Bearer " + token}
     client.Configuration.set_default(configuration)
-    v1 = client.CoreV1Api()
 
-    return v1
+    return client
 
 
 def parse_bearer(bearer_str: Optional[str]) -> Tuple[Optional[str], Optional[Exception]]:

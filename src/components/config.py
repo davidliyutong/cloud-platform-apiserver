@@ -19,9 +19,14 @@ CONFIG_USER_COLLECTION_NAME = "clpl_users"
 CONFIG_POD_COLLECTION_NAME = "clpl_pods"
 CONFIG_TEMPLATE_COLLECTION_NAME = "clpl_templates"
 CONFIG_K8S_CREDENTIAL_FMT = "{}-basic-auth"
+CONFIG_K8S_POD_LABEL_FMT = "apps.clpl-{}"
+CONFIG_K8S_POD_LABEL_KEY = "k8s-app"
+CONFIG_K8S_SERVICE_FMT = "clpl-svc-{}"
 
 
 class BackendConfig(BaseModel):
+    debug: bool = False
+
     api_num_workers: int = 4
     api_host: str = "0.0.0.0"
     api_port: int = 8080
@@ -43,6 +48,7 @@ class BackendConfig(BaseModel):
     k8s_port: int = 6443
     k8s_ca_cert: str = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
     k8s_token: str = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    k8s_verify_ssl: bool = False
 
     bootstrap_admin_username: str = "admin"
     bootstrap_admin_password: str = "admin"
@@ -57,6 +63,8 @@ class BackendConfig(BaseModel):
     @logger.catch
     def from_dict(self, d: Dict[str, Any]):
         # >>> Define Values >>>
+        self.debug = bool(d["debug"])
+
         self.api_num_workers = int(d["api"]["numWorkers"])
         self.api_host = str(d["api"]["host"])
         self.api_port = int(d["api"]["port"])
@@ -78,6 +86,7 @@ class BackendConfig(BaseModel):
         self.k8s_port = int(d["k8s"]["port"])
         self.k8s_ca_cert = str(d["k8s"]["caCert"])
         self.k8s_token = str(d["k8s"]["token"])
+        self.k8s_verify_ssl = bool(d["k8s"]["verifySSL"])
 
         self.bootstrap_admin_password = str(d["bootstrap"]["adminPassword"])
         self.bootstrap_admin_username = str(d["bootstrap"]["adminUsername"])
@@ -94,6 +103,8 @@ class BackendConfig(BaseModel):
     @logger.catch
     def from_vyper(self, v: Vyper):
         # >>> Define Values >>>
+        self.debug = v.get_bool("debug")
+
         self.api_num_workers = v.get_int("api.numWorkers")
         self.api_host = v.get_string("api.host")
         self.api_port = v.get_int("api.port")
@@ -115,6 +126,7 @@ class BackendConfig(BaseModel):
         self.k8s_port = v.get_int("k8s.port")
         self.k8s_ca_cert = v.get_string("k8s.caCert")
         self.k8s_token = v.get_string("k8s.token")
+        self.k8s_verify_ssl = v.get_bool("k8s.verifySSL")
 
         self.bootstrap_admin_password = v.get_string("bootstrap.adminPassword")
         self.bootstrap_admin_username = v.get_string("bootstrap.adminUsername")
@@ -132,6 +144,7 @@ class BackendConfig(BaseModel):
     def to_dict(self):
         # >>> Define Values >>>
         return {
+            "debug": self.debug,
             "api": {
                 "numWorkers": self.api_num_workers,
                 "host": self.api_host,
@@ -157,6 +170,7 @@ class BackendConfig(BaseModel):
                 "port": self.k8s_port,
                 "caCert": self.k8s_ca_cert,
                 "token": self.k8s_token,
+                "verifySSL": self.k8s_verify_ssl,
             },
             "bootstrap": {
                 "adminUsername": self.bootstrap_admin_username,
@@ -180,6 +194,7 @@ class BackendConfig(BaseModel):
     def to_sanic_config(self):
         # >>> Define Values >>>
         return {
+            # "DEBUG": self.debug,
             "API_NUMWORKERS": self.api_num_workers,
             "API_HOST": self.api_host,
             "API_PORT": self.api_port,
@@ -198,6 +213,7 @@ class BackendConfig(BaseModel):
             "K8S_PORT": self.k8s_port,
             "K8S_CACERT": self.k8s_ca_cert,
             "K8S_TOKEN": self.k8s_token,
+            "K8S_VERIFYSSL": self.k8s_verify_ssl,
             "BOOTSTRAP_ADMIN_USERNAME": self.bootstrap_admin_username,
             "BOOTSTRAP_ADMIN_PASSWORD": self.bootstrap_admin_password,
             "CONFIG_TOKEN_SECRET": self.config_token_secret,
@@ -215,6 +231,8 @@ class BackendConfig(BaseModel):
         _DEFAULT: cls = cls()
 
         # >>> Set Default Values >>>
+        v.set_default("debug", _DEFAULT.debug)
+
         v.set_default("api.numWorkers", _DEFAULT.api_num_workers)
         v.set_default("api.host", _DEFAULT.api_host)
         v.set_default("api.port", _DEFAULT.api_port)
@@ -236,6 +254,7 @@ class BackendConfig(BaseModel):
         v.set_default("k8s.port", _DEFAULT.k8s_port)
         v.set_default("k8s.caCert", _DEFAULT.k8s_ca_cert)
         v.set_default("k8s.token", _DEFAULT.k8s_token)
+        v.set_default("k8s.verifySSL", _DEFAULT.k8s_verify_ssl)
 
         v.set_default("bootstrap.adminUsername", _DEFAULT.bootstrap_admin_username)
         v.set_default("bootstrap.adminPassword", _DEFAULT.bootstrap_admin_password)
@@ -256,6 +275,8 @@ class BackendConfig(BaseModel):
         parser.add_argument("--config", type=str, help="config file path", default=None)
 
         # >>> Set Default Values >>>
+        parser.add_argument("--debug", type=bool, help="debug")
+
         parser.add_argument("--api.numWorkers", type=int, help="api num workers")
         parser.add_argument("--api.host", type=str, help="api host")
         parser.add_argument("--api.port", type=int, help="api port")
@@ -277,6 +298,7 @@ class BackendConfig(BaseModel):
         parser.add_argument("--k8s.port", type=int, help="k8s port")
         parser.add_argument("--k8s.caCert", type=str, help="k8s caCert")
         parser.add_argument("--k8s.token", type=str, help="k8s token")
+        parser.add_argument("--k8s.verifySSL", type=bool, help="k8s verifySSL")
 
         parser.add_argument("--bootstrap.adminUsername", type=str, help="bootstrap admin username")
         parser.add_argument("--bootstrap.adminPassword", type=str, help="bootstrap admin password")
@@ -317,6 +339,8 @@ class BackendConfig(BaseModel):
         v.bind_args(vars(args))
 
         # >>> Set Env Values >>>
+        v.bind_env("debug")
+
         v.bind_env("api.numWorkers")
         v.bind_env("api.host")
         v.bind_env("api.port")
@@ -338,6 +362,7 @@ class BackendConfig(BaseModel):
         v.bind_env("k8s.port")
         v.bind_env("k8s.caCert")
         v.bind_env("k8s.token")
+        v.bind_env("k8s.verifySSL")
 
         v.bind_env("bootstrap.adminUsername")
         v.bind_env("bootstrap.adminPassword")
@@ -372,3 +397,12 @@ class BackendConfig(BaseModel):
             yaml.dump(_VALUE, f, default_flow_style=False)
 
         return None
+
+    @property
+    def k8s_config_values(self):
+        return {
+            "CONFIG_CODE_HOSTNAME": self.config_code_hostname,
+            "CONFIG_CODE_TLSSECRET": self.config_code_tls_secret,
+            "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
+            "CONFIG_VNC_TLSSECRET": self.config_vnc_tls_secret,
+        }

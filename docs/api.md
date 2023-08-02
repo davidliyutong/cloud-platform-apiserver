@@ -302,7 +302,7 @@ Create template. Payload is a template. Limited to admins.
 
     ```json
     {
-        "template_name": "",
+        "name": "",
         "description": "",
         "image_ref": "",
         "template_str": "",
@@ -365,7 +365,7 @@ Modify template. Payload is new template profile. Limited to admins.
     ```json
     { 
         "template_id": "",
-        "template_name": "",
+        "name": "",
         "image_ref": "",
         "template_str": "", 
         "fields": {},

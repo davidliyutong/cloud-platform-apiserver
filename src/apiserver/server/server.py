@@ -1,6 +1,7 @@
 import base64
 import secrets
 
+import shortuuid
 from loguru import logger
 from sanic import Sanic
 from src.apiserver.controller import controller_app
@@ -27,7 +28,7 @@ from src.apiserver.controller.nonadmin_user import bp as nonadmin_user_bp
 from src.apiserver.controller.heartbeat import bp as heartbeat_bp
 
 from src.components.tasks import check_and_create_admin_user, check_kubernetes_connection  # check_rabbitmq_connection
-from src.components.utils import get_k8s_api
+from src.components.utils import get_k8s_client
 
 _service: RootService
 
@@ -46,6 +47,9 @@ def apiserver_check_option(opt: BackendConfig) -> BackendConfig:
 def apiserver_prepare_run(opt: BackendConfig) -> Sanic:
     controller_app.ctx.opt = opt
 
+    # Set shortuuid alphabet
+    shortuuid.set_alphabet('abcdefghijklmnopqrstuvwxyz0123456789')
+
     # establish MongoDB connection, check and create admin user
     err = check_and_create_admin_user(opt)
     if err is not None:
@@ -55,7 +59,7 @@ def apiserver_prepare_run(opt: BackendConfig) -> Sanic:
     # check Kubernetes connection
     err = check_kubernetes_connection(opt)
     if err is not None:
-        logger.exception(err)
+        logger.error("failed to list pods in namespace, check kubernetes connection or cluster configuration")
         exit(1)
 
     # install JWT authentication
@@ -81,14 +85,14 @@ def apiserver_prepare_run(opt: BackendConfig) -> Sanic:
     controller_app.config.update({'JWT_SECRET': controller_app.ctx.auth.config.secret._value})
     controller_app.config.update({'JWT_ALGORITHM': controller_app.ctx.auth.config.algorithm._value})
 
-
     # create services
     repo = Repo(opt.to_sanic_config())
     _ = new_root_service(
+        opt,
         UserRepo(repo),
         TemplateRepo(repo),
         PodRepo(repo),
-        get_k8s_api(opt.k8s_host, opt.k8s_port, opt.k8s_ca_cert, opt.k8s_token)
+        get_k8s_client(opt.k8s_host, opt.k8s_port, opt.k8s_ca_cert, opt.k8s_token, opt.k8s_verify_ssl, opt.debug)
     )
 
     return controller_app

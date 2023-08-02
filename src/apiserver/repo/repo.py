@@ -2,7 +2,7 @@ from typing import Dict
 
 from kubernetes import client
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorCollection
-from src.components.utils import singleton, get_k8s_api
+from src.components.utils import singleton
 
 
 @singleton
@@ -53,12 +53,3 @@ class Repo:
             self._db_collection[collection_key] = self.get_db(db_name)[collection]
 
         return self._db_collection[collection_key]
-
-    async def get_k8s_api(self):
-        if self._v1 is None:
-            self._v1 = get_k8s_api(self.options['K8S_HOST'],
-                                   self.options['K8S_PORT'],
-                                   self.options['K8S_CACERT'],
-                                   self.options['K8S_TOKEN'])
-
-        return self._v1

@@ -23,7 +23,7 @@ async def sender(ws: WebsocketImplProtocol, username: str):
             await handle_user_heartbeat_event(srv, ev)
             await asyncio.sleep(60)
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
             break
 
 
@@ -38,7 +38,7 @@ async def user_heartbeat_ws(request, ws):
         try:
             payload = jwt.decode(token, request.app.config.get('JWT_SECRET'), algorithms='HS256')
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
             return http.HTTPStatus.UNAUTHORIZED
         username = payload.get('username')
         if username is None:

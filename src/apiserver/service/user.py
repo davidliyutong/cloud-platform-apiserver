@@ -12,7 +12,7 @@ from .common import ServiceInterface
 from .handler import handle_user_create_event, handle_user_update_event, handle_user_delete_event
 
 
-class AdminUserService(ServiceInterface):
+class UserService(ServiceInterface):
 
     def __init__(self, user_repo: UserRepo):
         super().__init__()
@@ -60,7 +60,7 @@ class AdminUserService(ServiceInterface):
                                            role=req.role,
                                            quota=req.quota)
 
-        if err is None:
+        if err is None and user.resource_status == datamodels.ResourceStatusEnum.pending:
             await app.add_task(handle_user_update_event(self.parent, UserUpdateEvent(username=user.username)))
 
         return user, err
