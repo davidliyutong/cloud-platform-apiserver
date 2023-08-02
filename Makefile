@@ -4,16 +4,18 @@ MACHINE := $(shell uname -m)
 
 build.docker.native:
 	docker build -t davidliyutong/clpl-apiserver:${GIT_VERSION} -f manifests/docker/Dockerfile .
-	docker tag davidliyutong/clpl-apiserver:${GIT_VERSION} davidliyutong/clpl-apiserver:${MACHINE}-latest
+	docker tag davidliyutong/clpl-apiserver:${GIT_VERSION} davidliyutong/clpl-apiserver:latest
 
 build.docker.buildx:
-	docker buildx build --platform=linux/amd64,linux/arm64 -t davidliyutong/clpl-apiserver:latest -f manifests/docker/Dockerfile .
 	docker buildx build --platform=linux/amd64,linux/arm64 -t davidliyutong/clpl-apiserver:${GIT_VERSION} -f manifests/docker/Dockerfile .
+	docker buildx build --platform=linux/amd64,linux/arm64 -t davidliyutong/clpl-apiserver:latest -f manifests/docker/Dockerfile .
+
 
 
 push.docker.buildx:
-	docker buildx build --push --platform=linux/amd64,linux/arm64 -t davidliyutong/clpl-apiserver:latest -f manifests/docker/Dockerfile .
 	docker buildx build --push --platform=linux/amd64,linux/arm64 -t davidliyutong/clpl-apiserver:${GIT_VERSION} -f manifests/docker/Dockerfile .
+	docker buildx build --push --platform=linux/amd64,linux/arm64 -t davidliyutong/clpl-apiserver:latest -f manifests/docker/Dockerfile .
+
 
 
 test.docker:
