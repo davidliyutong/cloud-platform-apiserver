@@ -14,12 +14,12 @@ from .pod import PodService
 from .operator import K8SOperatorService
 from .heartbeat import HeartbeatService
 from src.apiserver.repo import UserRepo, TemplateRepo, PodRepo
-from src.components.config import BackendConfig
+from src.components.config import APIServerConfig
 
 
 @dataclasses.dataclass
 class RootService(ServiceInterface):
-    opt: BackendConfig
+    opt: APIServerConfig
     auth_basic_service: ServiceInterface = None
     user_service: UserService = None
     template_service: TemplateService = None
@@ -50,7 +50,7 @@ class RootService(ServiceInterface):
 _service: Optional[RootService] = None
 
 
-def new_root_service(opt: BackendConfig,
+def new_root_service(opt: APIServerConfig,
                      user_repo: UserRepo,
                      template_repo: TemplateRepo,
                      pod_repo: PodRepo,

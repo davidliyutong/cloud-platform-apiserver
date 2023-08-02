@@ -12,7 +12,7 @@ from src.apiserver.controller import controller_app
 from src.apiserver.service import RootService
 from src.apiserver.repo import DBRepo, UserRepo, TemplateRepo, PodRepo
 from src.apiserver.service.service import new_root_service
-from src.components.config import BackendConfig
+from src.components.config import APIServerConfig
 from sanic_jwt import initialize
 from src.components.authn import (
     MyJWTConfig,
@@ -37,7 +37,7 @@ from src.components.utils import get_k8s_client
 _service: RootService
 
 
-def apiserver_check_option(opt: BackendConfig) -> BackendConfig:
+def apiserver_check_option(opt: APIServerConfig) -> APIServerConfig:
     """
     Check and set default values for options
     """
@@ -51,7 +51,7 @@ def apiserver_check_option(opt: BackendConfig) -> BackendConfig:
     return opt
 
 
-def apiserver_prepare_run(opt: BackendConfig) -> Sanic:
+def apiserver_prepare_run(opt: APIServerConfig) -> Sanic:
     """
     Prepare to run the server
     """

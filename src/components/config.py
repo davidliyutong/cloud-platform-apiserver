@@ -12,8 +12,10 @@ from loguru import logger
 import yaml
 
 CONFIG_HOME_PATH = os.path.expanduser('~')
-CONFIG_CONFIG_NAME = "backend"
+CONFIG_CONFIG_NAME = "apiserver"
 CONFIG_PROJECT_NAME = "clpl"
+CONFIG_LOG_PATH_KEY = CONFIG_PROJECT_NAME.upper() + "_LOG_PATH"
+CONFIG_LOG_PATH_DEFAULT = "./logs/apiserver"
 CONFIG_DEFAULT_CONFIG_SEARCH_PATH = osp.join(CONFIG_HOME_PATH, ".config", CONFIG_PROJECT_NAME)
 CONFIG_DEFAULT_CONFIG_PATH = osp.join(CONFIG_DEFAULT_CONFIG_SEARCH_PATH, f"{CONFIG_CONFIG_NAME}.yaml")
 CONFIG_PROJECT_NAMESPACE = "clpl"
@@ -28,7 +30,7 @@ CONFIG_K8S_POD_LABEL_KEY = "k8s-app"
 CONFIG_K8S_SERVICE_FMT = "clpl-svc-{}"
 
 
-class BackendConfig(BaseModel):
+class APIServerConfig(BaseModel):
     debug: bool = False
 
     api_num_workers: int = 4

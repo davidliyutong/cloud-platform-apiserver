@@ -1,13 +1,20 @@
+GIT_VERSION := $(shell git describe --tags --always)
+MACHINE := $(shell uname -m)
 .PHONY: build.docker.x86
 
 build.docker.native:
-	docker build -t davidliyutong/clpl-backend:$(shell uname -m)-latest -f manifests/docker/Dockerfile .
+	docker build -t davidliyutong/clpl-apiserver:${GIT_VERSION} -f manifests/docker/Dockerfile .
+	docker tag davidliyutong/clpl-apiserver:${GIT_VERSION} davidliyutong/clpl-apiserver:${MACHINE}-latest
 
-build.docker.buildx-amd64:
-	docker buildx build --platform=linux/amd64 -t davidliyutong/clpl-backend:latest -f manifests/docker/Dockerfile .
+build.docker.buildx:
+	docker buildx build --platform=linux/amd64,linux/arm64 -t davidliyutong/clpl-apiserver:latest -f manifests/docker/Dockerfile .
+	docker buildx build --platform=linux/amd64,linux/arm64 -t davidliyutong/clpl-apiserver:${GIT_VERSION} -f manifests/docker/Dockerfile .
 
-push.docker.buildx-amd64:
-	docker buildx build --push --platform=linux/amd64 -t davidliyutong/clpl-backend:latest -f manifests/docker/Dockerfile .
+
+push.docker.buildx:
+	docker buildx build --push --platform=linux/amd64,linux/arm64 -t davidliyutong/clpl-apiserver:latest -f manifests/docker/Dockerfile .
+	docker buildx build --push --platform=linux/amd64,linux/arm64 -t davidliyutong/clpl-apiserver:${GIT_VERSION} -f manifests/docker/Dockerfile .
+
 
 test.docker:
-	docker run --rm -it --net=host -p 8080:8080 davidliyutong/clpl-backend:$(shell uname -m)-latest
+	docker run --rm -it --net=host -p 8080:8080 davidliyutong/clpl-apiserver:latest

@@ -10,7 +10,7 @@ from typing import Optional
 from loguru import logger
 import pymongo
 
-from src.components.config import BackendConfig
+from src.components.config import APIServerConfig
 from src.components import datamodels, config
 from src.components.utils import get_k8s_client
 
@@ -23,7 +23,7 @@ from src.components.utils import get_k8s_client
 # )
 
 
-def check_and_create_admin_user(opt: BackendConfig) -> Optional[Exception]:
+def check_and_create_admin_user(opt: APIServerConfig) -> Optional[Exception]:
     """
     Check if admin user exists in DB, if not, create one.
     """
@@ -63,11 +63,11 @@ def check_and_create_admin_user(opt: BackendConfig) -> Optional[Exception]:
         return e
 
 
-def check_kubernetes_connection(opt: BackendConfig) -> Optional[Exception]:
+def check_kubernetes_connection(opt: APIServerConfig) -> Optional[Exception]:
     """
     Check if the connection to Kubernetes cluster is valid.
     """
-    
+
     logger.info(f"connecting to K8S cluster at {opt.k8s_host}:{opt.k8s_port}")
 
     v1 = get_k8s_client(opt.k8s_host, opt.k8s_port, opt.k8s_ca_cert, opt.k8s_token, debug=False).CoreV1Api()
@@ -78,7 +78,7 @@ def check_kubernetes_connection(opt: BackendConfig) -> Optional[Exception]:
         return e
     return None
 
-# async def scan_pods(opt: BackendConfig, stop_ev: threading.Event = None) -> None:
+# async def scan_pods(opt: APIServerConfig, stop_ev: threading.Event = None) -> None:
 #     while True:
 #         await asyncio.sleep(10)
 #         if stop_ev is not None and stop_ev.is_set():

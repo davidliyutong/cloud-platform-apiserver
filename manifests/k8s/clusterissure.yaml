@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${{ API_TOKEN_SECRET_NAME }}
+  namespace: cert-manager
+type: Opaque
+stringData:
+  api-token: ${{ API_TOKEN }}
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ${{ ISSUER_NAME }}# letsencrypt-cf-dns
+spec:
+  acme:
+    privateKeySecretRef:
+      name: ${{ ISSUER_NAME }}
+    server: https://acme-v02.api.letsencrypt.org/directory
+    solvers:
+      - dns01:
+          cloudflare:
+          # email: ${{ EMAIL }} # Replace with cloudflare email account, not necessary for API Token method but necessary for API Keys method
+          apiTokenSecretRef:
+            key: api-token
+            name: ${{ API_TOKEN_SECRET_NAME }} # reference of Secret that saves cloudflare api token

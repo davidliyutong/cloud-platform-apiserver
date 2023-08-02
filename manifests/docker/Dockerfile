@@ -1,4 +1,5 @@
-FROM python:3.11-slim-bullseye
+# FROM python:3.11-slim-bullseye
+FROM python:3.11-bookworm
 WORKDIR /opt/app
 ENV PYTHONPATH "${PYTHONPATH}:/opt/app"
 

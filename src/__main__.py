@@ -1,4 +1,5 @@
 import multiprocessing as mp
+import os
 import sys
 
 import click
@@ -6,16 +7,18 @@ from loguru import logger
 from sanic import Sanic
 
 from src.apiserver.server import apiserver_prepare_run, apiserver_check_option
-from src.components.config import BackendConfig, CONFIG_DEFAULT_CONFIG_PATH
+from src.components.config import APIServerConfig, CONFIG_DEFAULT_CONFIG_PATH
 from src.components.logging import create_logger
 
 Sanic.start_method = 'fork'
 
-opt: BackendConfig = BackendConfig()
+opt: APIServerConfig = APIServerConfig()
 
 if __name__ == '__main__':
     global logger
-    _ = create_logger("./logs/apiserver")
+    # attention: CLPL_LOG_PATH depends on project name
+    log_path = os.environ.get('CLPL_LOG_PATH', "./logs/apiserver")
+    _ = create_logger(log_path)
 
 
     @click.group()
@@ -28,16 +31,16 @@ if __name__ == '__main__':
     @click.pass_context
     def init(ctx):
         """
-        Initialize the backend server with default configuration and environment variables
+        Initialize the apiserver with default configuration and environment variables
         """
         import sys
         argv = sys.argv[2:]  # remove the first two arguments
         logger.info("init with args: {}", argv)
 
         # parse the cli arguments
-        args = BackendConfig.get_cli_parser().parse_args(argv)
+        args = APIServerConfig.get_cli_parser().parse_args(argv)
         # we need a default config, then patch it with the arguments
-        v = BackendConfig.get_default_config()
+        v = APIServerConfig.get_default_config()
 
         # if config file path is specified in cli arguments , load it with vyper
         if args.config is not None:
@@ -55,7 +58,7 @@ if __name__ == '__main__':
         v.bind_args(vars(args))
 
         # finally, save the config to the specified path
-        err = BackendConfig.save_config(v, path=save_path)
+        err = APIServerConfig.save_config(v, path=save_path)
         if err is not None:
             logger.error(err)
         return None
@@ -66,8 +69,8 @@ if __name__ == '__main__':
     def serve(ctx):
         global opt
         # parse the cli arguments using vyper, then build option from vyper
-        v, err = BackendConfig.load_config(argv=sys.argv[2:])
-        opt = BackendConfig().from_vyper(v)
+        v, err = APIServerConfig.load_config(argv=sys.argv[2:])
+        opt = APIServerConfig().from_vyper(v)
         logger.info(f"running option: {opt.to_dict()}")  # TODO: adapt logging level to DEBUG variable
 
         # prepare and run the server
