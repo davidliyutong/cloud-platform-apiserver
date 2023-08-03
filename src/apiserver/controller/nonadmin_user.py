@@ -19,8 +19,16 @@ bp = Blueprint("nonadmin_user", url_prefix="/users", version=1)
 
 
 @bp.get("/<username:str>", name="nonadmin_user_get")
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": UserGetResponse.model_json_schema()})
+@openapi.definition(
+    response=[
+        openapi.definitions.Response(
+            {'application/json': UserGetResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
+    ]
+)
 @protected()
 @authn.validate_role()
 async def get(request, username: str):
@@ -76,10 +84,16 @@ async def get(request, username: str):
 
 @bp.put("/<username:str>", name="nonadmin_user_update")
 @openapi.definition(
-    body={'application/json': UserUpdateRequest.model_json_schema()},
+    body={'application/json': UserUpdateRequest.model_json_schema(ref_template="#/components/schemas/{model}")},
+    response=[
+        openapi.definitions.Response(
+            {'application/json': UserUpdateResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True)
+    ]
 )
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": UserUpdateResponse.model_json_schema()})
 @protected()
 @authn.validate_role()
 async def update(request, username: str):

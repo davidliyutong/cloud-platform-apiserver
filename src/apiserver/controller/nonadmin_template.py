@@ -18,11 +18,19 @@ bp = Blueprint("nonadmin_template", url_prefix="/templates", version=1)
 
 
 @bp.get("/", name="nonadmin_template_list")
-@openapi.parameter("index_start", int, location="query", required=False)
-@openapi.parameter("index_end", int, location="query", required=False)
-@openapi.parameter("extra_query_filter", str, location="query", required=False)
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": TemplateListResponse.model_json_schema()})
+@openapi.definition(
+    response=[
+        openapi.definitions.Response(
+            {'application/json': TemplateListResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
+        openapi.definitions.Parameter("index_start", int, location="query", required=False),
+        openapi.definitions.Parameter("index_end", int, location="query", required=False),
+        openapi.definitions.Parameter("extra_query_filter", str, location="query", required=False)
+    ]
+)
 @protected()
 async def list(request):
     """
@@ -60,8 +68,16 @@ async def list(request):
 
 
 @bp.get("/<template_id:str>", name="nonadmin_template_get")
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": TemplateGetResponse.model_json_schema()})
+@openapi.definition(
+    response=[
+        openapi.definitions.Response(
+            {'application/json': TemplateGetResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
+    ]
+)
 @protected()
 async def get(request, template_id: str):
     """

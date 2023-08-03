@@ -99,11 +99,11 @@ def parse_basic(basic_str: Optional[str]) -> Tuple[Optional[Tuple[str, str]], Op
     Parse basic auth header
     """
     basic_auth_split = basic_str.split(' ')
-    if len(basic_auth_split) < 2:
+    if len(basic_auth_split) != 2:
         return None, errors.header_malformed
     basic_auth = str(base64.b64decode(basic_auth_split[-1]), encoding='utf-8')
     username_password = basic_auth.split(':')
-    if len(username_password) < 2:
+    if len(username_password) != 2:
         return None, errors.header_malformed
 
-    return tuple(*username_password), None
+    return (username_password[0], username_password[1]), None

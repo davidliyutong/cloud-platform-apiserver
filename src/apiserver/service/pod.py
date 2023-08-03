@@ -86,6 +86,10 @@ class PodService(ServiceInterface):
         """
         Update a pod.
         """
+        if req.username is not None:
+            user, err = await self.parent.user_service.repo.get(username=req.username)
+            if err is not None:
+                return None, err
 
         pod, err = await self.repo.update(
             pod_id=req.pod_id,

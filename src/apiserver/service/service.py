@@ -7,8 +7,9 @@ from typing import Optional
 
 from kubernetes import client
 
-from .common import ServiceInterface
+from .common import RootServiceInterface
 from .user import UserService
+from .auth import AuthService
 from .template import TemplateService
 from .pod import PodService
 from .operator import K8SOperatorService
@@ -18,9 +19,9 @@ from src.components.config import APIServerConfig
 
 
 @dataclasses.dataclass
-class RootService(ServiceInterface):
+class RootService(RootServiceInterface):
     opt: APIServerConfig
-    auth_basic_service: ServiceInterface = None
+    auth_service: AuthService = None
     user_service: UserService = None
     template_service: TemplateService = None
     pod_service: PodService = None
@@ -28,8 +29,8 @@ class RootService(ServiceInterface):
     heartbeat_service: HeartbeatService = None
 
     def __post_init__(self):
-        if self.auth_basic_service is not None:
-            self.auth_basic_service.parent = self
+        if self.auth_service is not None:
+            self.auth_service.parent = self
 
         if self.user_service is not None:
             self.user_service.parent = self
@@ -58,7 +59,7 @@ def new_root_service(opt: APIServerConfig,
     global _service
     _service = RootService(
         opt=opt,
-        auth_basic_service=ServiceInterface(),
+        auth_service=AuthService(user_repo),
         user_service=UserService(user_repo),
         template_service=TemplateService(template_repo),
         pod_service=PodService(pod_repo),

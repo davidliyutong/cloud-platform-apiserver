@@ -19,11 +19,19 @@ bp = Blueprint("admin_pod", url_prefix="/admin/pods", version=1)
 
 
 @bp.get("/", name="admin_pod_list")
-@openapi.parameter("index_start", int, location="query", required=False)
-@openapi.parameter("index_end", int, location="query", required=False)
-@openapi.parameter("extra_query_filter", str, location="query", required=False)
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": PodListResponse.model_json_schema()})
+@openapi.definition(
+    response=[
+        openapi.definitions.Response(
+            {'application/json': PodListResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
+        openapi.definitions.Parameter("index_start", int, location="query", required=False),
+        openapi.definitions.Parameter("index_end", int, location="query", required=False),
+        openapi.definitions.Parameter("extra_query_filter", str, location="query", required=False)
+    ]
+)
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def list(request):
@@ -64,10 +72,16 @@ async def list(request):
 
 @bp.post("/", name="admin_pod_create")
 @openapi.definition(
-    body={'application/json': PodCreateRequest.model_json_schema()},
+    body={'application/json': PodCreateRequest.model_json_schema(ref_template="#/components/schemas/{model}")},
+    response=[
+        openapi.definitions.Response(
+            {'application/json': PodCreateResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
+    ]
 )
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": PodCreateResponse.model_json_schema()})
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def create(request):
@@ -124,8 +138,16 @@ async def create(request):
 
 
 @bp.get("/<pod_id:str>", name="admin_pod_get")
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": PodGetResponse.model_json_schema()})
+@openapi.definition(
+    response=[
+        openapi.definitions.Response(
+            {'application/json': PodGetResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
+    ]
+)
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def get(request, pod_id: str):
@@ -170,10 +192,16 @@ async def get(request, pod_id: str):
 
 @bp.put("/<pod_id:str>", name="admin_pod_update")
 @openapi.definition(
-    body={'application/json': PodUpdateRequest.model_json_schema()},
+    body={'application/json': PodUpdateRequest.model_json_schema(ref_template="#/components/schemas/{model}")},
+    response=[
+        openapi.definitions.Response(
+            {'application/json': PodUpdateResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True)
+    ]
 )
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": PodUpdateResponse.model_json_schema()})
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def update(request, pod_id: str):
@@ -220,8 +248,16 @@ async def update(request, pod_id: str):
 
 
 @bp.delete("/<pod_id:str>", name="admin_pod_delete")
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": PodDeleteResponse.model_json_schema()})
+@openapi.definition(
+    response=[
+        openapi.definitions.Response(
+            {'application/json': PodDeleteResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True)
+    ]
+)
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def delete(request, pod_id: str):

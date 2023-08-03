@@ -200,8 +200,8 @@ async def handle_pod_create_update_event(srv: Optional['src.apiserver.service.Ro
     user, err = await srv.user_service.repo.get(ev.username)
     if any([
         err is not None,
-        user.status != UserStatusEnum.active,
-        user.resource_status == ResourceStatusEnum.deleted,
+        user is not None and user.status != UserStatusEnum.active,
+        user is not None and user.resource_status == ResourceStatusEnum.deleted,
     ]):
         logger.error(f"handle_pod_create_update_event failed to get user {ev.username}: {err}")
         return err
@@ -210,7 +210,7 @@ async def handle_pod_create_update_event(srv: Optional['src.apiserver.service.Ro
     pod, err = await srv.pod_service.repo.get(ev.pod_id)
     if any([
         err is not None,
-        pod.resource_status == ResourceStatusEnum.deleted,
+        pod is not None and pod.resource_status == ResourceStatusEnum.deleted,
     ]):
         logger.error(f"handle_pod_create_update_event failed to get pod {ev.pod_id}: {err}")
         return err

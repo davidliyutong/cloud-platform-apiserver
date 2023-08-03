@@ -49,7 +49,7 @@ def validate_role(role: Optional[Iterable[str]] = None):
 
             except Exception as e:
                 # logging the error
-                logger.exception(str(e))
+                logger.debug(str(e))
                 return json_response(
                     {
                         'description': '',

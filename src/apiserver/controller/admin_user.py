@@ -19,11 +19,19 @@ bp = Blueprint('admin_user', url_prefix="/admin/users", version=1)
 
 
 @bp.get("/", name="admin_user_list")
-@openapi.parameter("index_start", int, location="query", required=False)
-@openapi.parameter("index_end", int, location="query", required=False)
-@openapi.parameter("extra_query_filter", str, location="query", required=False)
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": UserListResponse.model_json_schema()})
+@openapi.definition(
+    response=[
+        openapi.definitions.Response(
+            {'application/json': UserListResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
+        openapi.definitions.Parameter("index_start", int, location="query", required=False),
+        openapi.definitions.Parameter("index_end", int, location="query", required=False),
+        openapi.definitions.Parameter("extra_query_filter", str, location="query", required=False)
+    ]
+)
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def list(request):
@@ -64,10 +72,16 @@ async def list(request):
 
 @bp.post("/", name="admin_user_create")
 @openapi.definition(
-    body={'application/json': UserCreateRequest.model_json_schema()},
+    body={'application/json': UserCreateRequest.model_json_schema(ref_template="#/components/schemas/{model}")},
+    response=[
+        openapi.definitions.Response(
+            {'application/json': UserCreateResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
+    ]
 )
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": UserCreateResponse.model_json_schema()})
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def create(request):
@@ -123,8 +137,17 @@ async def create(request):
 
 
 @bp.get("/<username:str>", name="admin_user_get")
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": UserGetResponse.model_json_schema()})
+@openapi.response(200, {"application/json": UserGetResponse.model_json_schema(ref_template="#/components/schemas/{model}")})
+@openapi.definition(
+    response=[
+        openapi.definitions.Response(
+            {'application/json': UserGetResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
+    ]
+)
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def get(request, username: str):
@@ -169,10 +192,16 @@ async def get(request, username: str):
 
 @bp.put("/<username:str>", name="admin_user_update")
 @openapi.definition(
-    body={'application/json': UserUpdateRequest.model_json_schema()},
+    body={'application/json': UserUpdateRequest.model_json_schema(ref_template="#/components/schemas/{model}")},
+    response=[
+        openapi.definitions.Response(
+            {'application/json': UserUpdateResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True)
+    ]
 )
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": UserUpdateResponse.model_json_schema()})
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def update(request, username: str):
@@ -219,8 +248,16 @@ async def update(request, username: str):
 
 
 @bp.delete("/<username:str>", name="admin_user_delete")
-@openapi.parameter("Authorization", str, location="header", required=True)
-@openapi.response(200, {"application/json": UserDeleteResponse.model_json_schema()})
+@openapi.definition(
+    response=[
+        openapi.definitions.Response(
+            {'application/json': UserDeleteResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
+            status=200)
+    ],
+    parameter=[
+        openapi.definitions.Parameter("Authorization", str, location="header", required=True)
+    ]
+)
 @protected()
 @authn.validate_role(role=("admin", "super_admin"))
 async def delete(request, username: str):

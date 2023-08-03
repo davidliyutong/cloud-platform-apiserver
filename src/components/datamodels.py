@@ -345,3 +345,19 @@ class PodModel(BaseModel):
             current_status=PodStatusEnum.pending,
             target_status=PodStatusEnum.running,
         )
+
+
+from sanic_ext import openapi
+
+# attention: registrate components
+openapi.component(PodModel)
+openapi.component(UserRoleEnum)
+openapi.component(FieldTypeEnum)
+openapi.component(ResourceStatusEnum)
+openapi.component(PodStatusEnum)
+openapi.component(PodStatusEnum)
+openapi.component(UserStatusEnum)
+openapi.component(QuotaModel)
+openapi.component(UserModel)
+openapi.component(TemplateModel)
+openapi.component(PodModel)

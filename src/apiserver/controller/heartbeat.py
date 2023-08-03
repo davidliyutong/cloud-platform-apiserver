@@ -34,7 +34,11 @@ async def sender(ws: WebsocketImplProtocol, username: str):
 
 
 @bp.websocket("/user", name="heartbeat_user")
-@openapi.parameter("token", str, location="query", required=True)
+@openapi.definition(
+    parameter=[
+        openapi.definitions.Parameter("token", str, location="query", required=True),
+    ]
+)
 async def user_heartbeat_ws(request, ws: WebsocketImplProtocol):
     """
     User heartbeat websocket. The serve will send a 'ping' message to the client every 60 seconds.
