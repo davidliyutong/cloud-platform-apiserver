@@ -81,6 +81,14 @@ def apiserver_prepare_run(opt: APIServerConfig) -> Sanic:
                responses_class=MyJWTResponse,
                retrieve_refresh_token=retrieve_refresh_token,
                store_refresh_token=store_refresh_token)
+    controller_app.ext.openapi.add_security_scheme(
+        "token",
+        "http",
+        bearer_format="JWT",
+        scheme="bearer",
+        location="header",
+        name="Authorization"
+    )
 
     # attach Blueprint to context
     controller_app.blueprint(admin_pod_bp)

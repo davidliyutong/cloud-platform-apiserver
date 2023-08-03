@@ -291,7 +291,7 @@ class PodModel(BaseModel):
 
     @field_serializer('started_at')
     def serialize_started_at(self, v: datetime.datetime, _info):
-        return v.timestamp()
+        return v.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
     @field_validator('accessed_at')
     def validate_accessed_at(cls, v: Union[str, datetime.datetime]):
@@ -301,7 +301,7 @@ class PodModel(BaseModel):
 
     @field_serializer('accessed_at')
     def serialize_accessed_at(self, v: datetime.datetime, _info):
-        return v.timestamp()
+        return v.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
     @property
     def values(self):

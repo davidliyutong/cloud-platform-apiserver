@@ -25,9 +25,7 @@ bp = Blueprint("nonadmin_user", url_prefix="/users", version=1)
             {'application/json': UserGetResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
             status=200)
     ],
-    parameter=[
-        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
-    ]
+    secured={"token": []}
 )
 @protected()
 @authn.validate_role()
@@ -90,9 +88,7 @@ async def get(request, username: str):
             {'application/json': UserUpdateResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
             status=200)
     ],
-    parameter=[
-        openapi.definitions.Parameter("Authorization", str, location="header", required=True)
-    ]
+    secured={"token": []}
 )
 @protected()
 @authn.validate_role()

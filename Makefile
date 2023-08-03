@@ -19,5 +19,3 @@ test.docker:
 
 task.generate_client:
 	openapi-generator-cli generate -g python -i http://127.0.0.1:8080/docs/openapi.json --skip-validate-spec -o python-client
-	# openapi-python-generator http://127.0.0.1:8080/docs/openapi.json src/client
-	# openapi-python-client generate --url http://127.0.0.1:8080/docs/openapi.json

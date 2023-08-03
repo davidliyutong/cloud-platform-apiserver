@@ -63,9 +63,7 @@ _bad_request_response = json_response(
             {"application/json": _unauthorized_response}, status=401
         ),
     ],
-    parameter=[
-        openapi.definitions.Parameter("Authorization", str, location="header", required=True)
-    ],
+    secured={"token": []}
 )
 async def basic(request):
     """
@@ -92,9 +90,7 @@ async def basic(request):
             {"application/json": _unauthorized_response}, status=401
         ),
     ],
-    parameter=[
-        openapi.definitions.Parameter("Authorization", str, location="header", required=True)
-    ],
+    secured={"token": []}
 )
 async def basic_user(request, username):
     """
@@ -165,10 +161,7 @@ async def token_login(request):
             {"application/json": _unauthorized_response}, status=401
         ),
     ],
-    parameter=[
-        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
-
-    ]
+    secured={"token": []}
 )
 async def token_refresh(request):
     """

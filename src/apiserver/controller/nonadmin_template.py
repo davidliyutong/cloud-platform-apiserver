@@ -25,11 +25,11 @@ bp = Blueprint("nonadmin_template", url_prefix="/templates", version=1)
             status=200)
     ],
     parameter=[
-        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
         openapi.definitions.Parameter("index_start", int, location="query", required=False),
         openapi.definitions.Parameter("index_end", int, location="query", required=False),
         openapi.definitions.Parameter("extra_query_filter", str, location="query", required=False)
-    ]
+    ],
+    secured={"token": []}
 )
 @protected()
 async def list(request):
@@ -74,9 +74,7 @@ async def list(request):
             {'application/json': TemplateGetResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
             status=200)
     ],
-    parameter=[
-        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
-    ]
+    secured={"token": []}
 )
 @protected()
 async def get(request, template_id: str):

@@ -53,7 +53,7 @@ class MyJWTConfig(Configuration):
     # -------------- authorization_header_prefix ---------------------
     # [Description] The prefix of the authorization header
     # [Default] 'Bearer:'
-    authorization_header_prefix = "Bearer:"
+    authorization_header_prefix = "Bearer"
 
     # -------------- url_prefix ---------------------
     # [Description] Route address for obtaining authorization

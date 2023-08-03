@@ -88,7 +88,7 @@ def parse_bearer(bearer_str: Optional[str]) -> Tuple[Optional[str], Optional[Exc
     if len(bearer_str) == 0 or bearer_str is None:
         return None, errors.header_missing
     authorization_header_split = bearer_str.split(' ')
-    if len(authorization_header_split) != 2:
+    if len(authorization_header_split) != 2 or authorization_header_split[0] != 'Bearer':
         return None, errors.header_malformed
 
     return authorization_header_split[1], None
@@ -99,7 +99,7 @@ def parse_basic(basic_str: Optional[str]) -> Tuple[Optional[Tuple[str, str]], Op
     Parse basic auth header
     """
     basic_auth_split = basic_str.split(' ')
-    if len(basic_auth_split) != 2:
+    if len(basic_auth_split) != 2 or basic_auth_split[0] != 'Basic':
         return None, errors.header_malformed
     basic_auth = str(base64.b64decode(basic_auth_split[-1]), encoding='utf-8')
     username_password = basic_auth.split(':')

@@ -27,11 +27,11 @@ bp = Blueprint("nonadmin_pod", url_prefix="/pods", version=1)
             status=200)
     ],
     parameter=[
-        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
         openapi.definitions.Parameter("index_start", int, location="query", required=False),
         openapi.definitions.Parameter("index_end", int, location="query", required=False),
         openapi.definitions.Parameter("extra_query_filter", str, location="query", required=False)
-    ]
+    ],
+    secured={"token": []}
 )
 @protected()
 @authn.validate_role()
@@ -82,9 +82,7 @@ async def list(request):
             {'application/json': PodCreateResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
             status=200)
     ],
-    parameter=[
-        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
-    ]
+    secured={"token": []}
 )
 @protected()
 @authn.validate_role()
@@ -148,9 +146,7 @@ async def create(request):
             {'application/json': PodGetResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
             status=200)
     ],
-    parameter=[
-        openapi.definitions.Parameter("Authorization", str, location="header", required=True),
-    ]
+    secured={"token": []}
 )
 @protected()
 @authn.validate_role()
@@ -221,9 +217,7 @@ async def get(request, pod_id: str):
             {'application/json': PodUpdateResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
             status=200)
     ],
-    parameter=[
-        openapi.definitions.Parameter("Authorization", str, location="header", required=True)
-    ]
+    secured={"token": []}
 )
 @protected()
 @authn.validate_role()
@@ -300,9 +294,7 @@ async def update(request, pod_id: str):
             {'application/json': PodDeleteResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
             status=200)
     ],
-    parameter=[
-        openapi.definitions.Parameter("Authorization", str, location="header", required=True)
-    ]
+    secured={"token": []}
 )
 @protected()
 @authn.validate_role()
