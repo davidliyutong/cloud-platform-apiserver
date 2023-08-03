@@ -46,11 +46,12 @@ class UserRepo:
         else:
             return datamodels.UserModel(**res), None
 
-    async def list(self,
-                   index_start: int = -1,
-                   index_end: int = -1,
-                   extra_query_filter: Dict[str, Any] = None) -> Tuple[
-        int, List[datamodels.UserModel], Optional[Exception]]:
+    async def list(
+            self,
+            index_start: int = -1,
+            index_end: int = -1,
+            extra_query_filter: Dict[str, Any] = None
+    ) -> Tuple[int, List[datamodels.UserModel], Optional[Exception]]:
         """
         List users.
         """

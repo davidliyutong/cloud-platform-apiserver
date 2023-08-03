@@ -1,26 +1,56 @@
 """
 This module contains tasks that are executed periodically / once.
 """
-
-# import asyncio
-# import threading
-# import time
-from typing import Optional
+import asyncio
+import datetime
+from typing import Optional, Tuple, List
 
 from loguru import logger
+from sanic import Sanic
 import pymongo
+from motor.motor_asyncio import AsyncIOMotorClient
 
+from src.apiserver.controller.types import PodUpdateRequest
+from src.apiserver.service import get_root_service
+from src.apiserver.service.handler import (
+    handle_user_update_event,
+    handle_user_delete_event,
+    handle_template_update_event,
+    handle_template_delete_event,
+    handle_pod_create_update_event,
+    handle_pod_delete_event
+)
 from src.components.config import APIServerConfig
 from src.components import datamodels, config
+from src.components.datamodels import PodModel, PodStatusEnum
+from src.components.events import (
+    UserUpdateEvent,
+    UserDeleteEvent,
+    TemplateUpdateEvent,
+    TemplateDeleteEvent,
+    PodCreateUpdateEvent,
+    PodDeleteEvent
+)
 from src.components.utils import get_k8s_client
 
 
-# from src.components.events import (
-#     PodTimeoutEvent
-# )
-# from src.apiserver.service.handler import (
-#     handle_pod_timeout_event
-# )
+def get_mongo_db_connection(opt: APIServerConfig) -> pymongo.MongoClient:
+    """
+    Get MongoDB connection
+    """
+    _db_uri = f'mongodb://{opt.db_username}:{opt.db_password}@{opt.db_host}:{opt.db_port}'
+    logger.debug(f"connecting to MongoDB at {_db_uri}")
+    conn = pymongo.MongoClient(_db_uri, connect=True)
+    return conn
+
+
+def get_async_mongo_db_connection(opt: APIServerConfig) -> AsyncIOMotorClient:
+    """
+    Get MongoDB connection Async
+    """
+    _db_uri = f'mongodb://{opt.db_username}:{opt.db_password}@{opt.db_host}:{opt.db_port}'
+    logger.debug(f"connecting to MongoDB at {_db_uri}")
+    return AsyncIOMotorClient(_db_uri)
 
 
 def check_and_create_admin_user(opt: APIServerConfig) -> Optional[Exception]:
@@ -29,9 +59,7 @@ def check_and_create_admin_user(opt: APIServerConfig) -> Optional[Exception]:
     """
 
     # establish MongoDB connection
-    _db_url = f'mongodb://{opt.db_username}:{opt.db_password}@{opt.db_host}:{opt.db_port}'
-    logger.info(f"connecting to MongoDB at {_db_url}")
-    conn = pymongo.MongoClient(_db_url, connect=True)
+    conn = get_mongo_db_connection(opt)
 
     # check global collection
     col = conn[opt.db_database][datamodels.global_collection_name]
@@ -63,6 +91,29 @@ def check_and_create_admin_user(opt: APIServerConfig) -> Optional[Exception]:
         return e
 
 
+async def set_crash_flag(opt: APIServerConfig, flag: bool) -> Optional[Exception]:
+    conn = get_async_mongo_db_connection(opt)
+    col = conn[opt.db_database][datamodels.global_collection_name]
+    try:
+        logger.info(f"setting crash flag to {flag}")
+        await col.update_one({"_id": "global"}, {"$set": {"flag_crashed": flag}})
+    except Exception as e:
+        logger.exception(e)
+        return e
+
+
+async def get_crash_flag(opt: APIServerConfig) -> Tuple[bool, Optional[Exception]]:
+    conn = get_async_mongo_db_connection(opt)
+    col = conn[opt.db_database][datamodels.global_collection_name]
+    try:
+        doc = await col.find_one({"_id": "global"})
+        logger.info(f"crash flag is {bool(doc['flag_crashed'])}")
+        return bool(doc["flag_crashed"]), None
+    except Exception as e:
+        logger.exception(e)
+        return True, e
+
+
 def check_kubernetes_connection(opt: APIServerConfig) -> Optional[Exception]:
     """
     Check if the connection to Kubernetes cluster is valid.
@@ -78,8 +129,94 @@ def check_kubernetes_connection(opt: APIServerConfig) -> Optional[Exception]:
         return e
     return None
 
-# async def scan_pods(opt: APIServerConfig, stop_ev: threading.Event = None) -> None:
-#     while True:
-#         await asyncio.sleep(10)
-#         if stop_ev is not None and stop_ev.is_set():
-#             break
+
+async def recover_from_crash(app: Sanic) -> Tuple[bool, Optional[Exception]]:
+    """
+    Recover from crash.
+    """
+    logger.info("recovering from crash...")
+    srv = get_root_service()
+
+    tasks = []
+    # query database
+    _uncommitted_users = srv.user_service.repo.list(extra_query_filter={"resource_status": "pending"})
+    _deleted_users = srv.user_service.repo.list(extra_query_filter={"resource_status": "deleted"})
+    _uncommitted_templates = srv.template_service.repo.list(extra_query_filter={"resource_status": "pending"})
+    _deleted_templates = srv.template_service.repo.list(extra_query_filter={"resource_status": "deleted"})
+    _uncommitted_pods = srv.pod_service.repo.list(extra_query_filter={"resource_status": "pending"})
+    _deleted_pods = srv.pod_service.repo.list(extra_query_filter={"resource_status": "deleted"})
+
+    # wait until complete
+    _, uncommitted_users, _ = await _uncommitted_users
+    logger.info(f"uncommitted users: {uncommitted_users}")
+    _, deleted_users, _ = await _deleted_users
+    logger.info(f"deleted users: {deleted_users}")
+    _, uncommitted_templates, _ = await _uncommitted_templates
+    logger.info(f"uncommitted templates: {uncommitted_templates}")
+    _, deleted_templates, _ = await _deleted_templates
+    logger.info(f"deleted templates: {deleted_templates}")
+    _, uncommitted_pods, _ = await _uncommitted_pods
+    logger.info(f"uncommitted pods: {uncommitted_pods}")
+    _, deleted_pods, _ = await _deleted_pods
+
+    loop = asyncio.get_running_loop()
+
+    # check users
+    for user in uncommitted_users:
+        tasks.append(loop.create_task(handle_user_update_event(srv, UserUpdateEvent(username=user.username))))
+    for user in deleted_users:
+        tasks.append(loop.create_task(handle_user_delete_event(srv, UserDeleteEvent(username=user.username))))
+
+    # check templates
+    for template in uncommitted_templates:
+        tasks.append(loop.create_task(
+            handle_template_update_event(srv, TemplateUpdateEvent(template_id=template.template_id))
+        ))
+    for template in deleted_templates:
+        tasks.append(loop.create_task(
+            handle_template_delete_event(srv, TemplateDeleteEvent(template_id=template.template_id))
+        ))
+
+    # check pods
+    for pod in uncommitted_pods:
+        tasks.append(loop.create_task(
+            handle_pod_create_update_event(srv, PodCreateUpdateEvent(pod_id=pod.pod_id, username=pod.username))
+        ))
+    for pod in deleted_pods:
+        tasks.append(loop.create_task(
+            handle_pod_delete_event(srv, PodDeleteEvent(pod_id=pod.pod_id, username=pod.username))
+        ))
+
+    # wait until complete
+    await asyncio.gather(*tasks)
+
+    return True, None
+
+
+async def scan_pods(app: Sanic) -> None:
+    running_pods: List[PodModel]
+    logger.info("pod scanning task started")
+    await asyncio.sleep(5)  # delay for a short while
+    while True:
+        try:
+            srv = get_root_service()
+            _, running_pods, _ = await srv.pod_service.repo.list(extra_query_filter={"current_status": "running"})
+            now = datetime.datetime.utcnow()
+
+            # filter timeouted pods
+            out_pods = filter(
+                lambda pod: pod.accessed_at + datetime.timedelta(seconds=pod.timeout_s) < now,
+                running_pods
+            )
+
+            # shut-em down
+            tasks = [srv.pod_service.update(app, PodUpdateRequest(pod_id=pod.pod_id, target_status=PodStatusEnum.stopped)) for pod in out_pods]
+            await asyncio.gather(*tasks)
+            logger.info(f"pod scanning task looped, {len(tasks)} pods stopped")
+        except asyncio.CancelledError:
+            logger.info("pod scanning task cancelled")
+            break
+        except Exception as e:
+            logger.exception(e)
+
+        await asyncio.sleep(config.CONFIG_SCAN_POD_INTERVAL_S)

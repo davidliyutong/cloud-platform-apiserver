@@ -135,16 +135,17 @@ table lists all the parameters.
 
 # TODO
 
-- Client library
 - Frontend
 - Quota
-- Pod AutoStop (Timers)
-- Error Recovery
-- Graceful Shutdown
 - CLI client
 - Audit
 - OIDC
 - LDAP
+- Find Out why shutdown print error message
+- ~~Pod AutoStop (Timers)~~
+- ~~Error Recovery~~
+- ~~Graceful Shutdown~~
+- ~~Client library~~
 - ~~Comments~~
 - ~~Documentation about deploy~~
 - ~~K8S manifests~~

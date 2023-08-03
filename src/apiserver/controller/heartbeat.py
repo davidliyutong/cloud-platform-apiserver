@@ -13,6 +13,7 @@ from sanic_ext import openapi
 
 from src.apiserver.service import get_root_service
 from src.apiserver.service.handler import handle_user_heartbeat_event
+from src.components import config
 from src.components.events import UserHeartbeatEvent
 
 bp = Blueprint("heartbeat", url_prefix="/heartbeat", version=1)
@@ -27,7 +28,7 @@ async def sender(ws: WebsocketImplProtocol, username: str):
             # send ping message
             await ws.send('ping')
             await handle_user_heartbeat_event(srv, ev)  # update user's heartbeat timestamp
-            await asyncio.sleep(60)  # wait for 60 seconds
+            await asyncio.sleep(config.CONFIG_HEARTBEAT_INTERVAL_S)  # wait for 120 seconds
         except Exception as e:
             logger.error(f"connection closed: {e}")
             break

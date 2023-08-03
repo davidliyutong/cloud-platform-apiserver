@@ -9,6 +9,8 @@ from sanic import Sanic
 from src.apiserver.server import apiserver_prepare_run, apiserver_check_option
 from src.components.config import APIServerConfig, CONFIG_DEFAULT_CONFIG_PATH
 from src.components.logging import create_logger
+from src.components.tasks import set_crash_flag, get_crash_flag
+from src.components.utils import DelayedKeyboardInterrupt
 
 Sanic.start_method = 'fork'
 
@@ -68,19 +70,25 @@ if __name__ == '__main__':
     @click.pass_context
     def serve(ctx):
         global opt
-        # parse the cli arguments using vyper, then build option from vyper
-        v, err = APIServerConfig.load_config(argv=sys.argv[2:])
-        opt = APIServerConfig().from_vyper(v)
-        logger.info(f"running option: {opt.to_dict()}")  # TODO: adapt logging level to DEBUG variable
+        with DelayedKeyboardInterrupt():
+            # parse the cli arguments using vyper, then build option from vyper
+            v, err = APIServerConfig.load_config(argv=sys.argv[2:])
+            opt = APIServerConfig().from_vyper(v)
+            logger.info(f"running option: {opt.to_dict()}")  # TODO: adapt logging level to DEBUG variable
 
-        # prepare and run the server
-        app = apiserver_prepare_run(apiserver_check_option(opt))
-        app.config.update_config(opt.to_sanic_config())
-        app.run(host=opt.api_host,
-                port=opt.api_port,
-                access_log=opt.api_access_log,
-                workers=opt.api_num_workers if opt.api_access_log > 0 else mp.cpu_count(),
-                auto_reload=False)
+            # prepare and run the server
+            app = apiserver_prepare_run(apiserver_check_option(opt))
+            app.config.update_config(opt.to_sanic_config())
+
+        try:
+            app.run(host=opt.api_host,
+                    port=opt.api_port,
+                    access_log=opt.api_access_log,
+                    workers=opt.api_num_workers if opt.api_access_log > 0 else mp.cpu_count(),
+                    auto_reload=False)
+        except KeyboardInterrupt as _:
+            logger.info("KeyboardInterrupt, terminating workers")
+            sys.exit(1)
 
 
     cli()

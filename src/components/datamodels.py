@@ -29,6 +29,7 @@ class GlobalModel(BaseModel):
     Global model, used to store global settings in the database
     """
     uid_counter: int = 0
+    flag_crashed: bool = False  # record if last run crashed
 
 
 class UserRoleEnum(str, Enum):

@@ -6,6 +6,9 @@ import base64
 from functools import wraps
 from typing import Optional, Dict, Any, Tuple, List
 import re
+import signal
+
+from loguru import logger
 from kubernetes import client
 
 from src.components import errors
@@ -107,3 +110,23 @@ def parse_basic(basic_str: Optional[str]) -> Tuple[Optional[Tuple[str, str]], Op
         return None, errors.header_malformed
 
     return (username_password[0], username_password[1]), None
+
+
+class DelayedKeyboardInterrupt:
+    """
+    Shield code from KeyboardInterrupt
+    """
+    signal_received = None
+
+    def __enter__(self):
+        self.signal_received = None
+        self.old_handler = signal.signal(signal.SIGINT, self.handler)
+
+    def handler(self, sig, frame):
+        self.signal_received = (sig, frame)
+        logger.debug('SIGINT received. Delaying KeyboardInterrupt.')
+
+    def __exit__(self, type, value, traceback):
+        signal.signal(signal.SIGINT, self.old_handler)
+        if self.signal_received:
+            self.old_handler(*self.signal_received)

@@ -157,7 +157,7 @@ class PodRepo:
 
                 # only controller can change the following fields
                 pod['started_at'] = started_at if started_at is not None else pod['started_at']
-                pod['accessed_at'] = accessed_at if accessed_at is not None else pod['accessed_at']
+                pod['accessed_at'] = accessed_at if accessed_at is not None else datetime.datetime.utcnow() # auto
                 pod['current_status'] = current_status if current_status is not None else pod['current_status']
 
                 # if username or target_status is changed, then set resource_status to pending
