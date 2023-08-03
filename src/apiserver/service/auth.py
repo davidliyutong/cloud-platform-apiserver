@@ -2,18 +2,17 @@
 This module implements auth related service
 """
 
-from typing import Tuple, Optional
-
-from src.apiserver.repo import UserRepo
 import datetime
 import secrets
 from hashlib import sha256
+from typing import Tuple, Optional
 
 import jwt
-from pydantic import BaseModel
 from loguru import logger
+from pydantic import BaseModel
 
 from src.apiserver.controller.types import ResponseBaseModel
+from src.apiserver.repo import UserRepo
 from src.apiserver.service import ServiceInterface
 from src.components import errors
 from src.components.datamodels import UserModel, UserStatusEnum

@@ -7,7 +7,6 @@ import http
 from loguru import logger
 from sanic import Blueprint
 from sanic.response import json as json_response
-from sanic.response import text
 from sanic_ext import openapi
 from sanic_jwt import protected
 

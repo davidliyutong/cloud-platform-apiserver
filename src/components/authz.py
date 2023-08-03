@@ -4,10 +4,11 @@ Authorization Decorator
 
 import http
 from functools import wraps
-from sanic.response import json as json_response
-import jwt
 from typing import Iterable, Optional
+
+import jwt
 from loguru import logger
+from sanic.response import json as json_response
 
 from src.components.utils import parse_bearer
 

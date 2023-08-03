@@ -5,10 +5,10 @@ import asyncio
 import datetime
 from typing import Optional, Tuple, List
 
-from loguru import logger
-from sanic import Sanic
 import pymongo
+from loguru import logger
 from motor.motor_asyncio import AsyncIOMotorClient
+from sanic import Sanic
 
 from src.apiserver.controller.types import PodUpdateRequest
 from src.apiserver.service import get_root_service
@@ -20,8 +20,8 @@ from src.apiserver.service.handler import (
     handle_pod_create_update_event,
     handle_pod_delete_event
 )
-from src.components.config import APIServerConfig
 from src.components import datamodels, config
+from src.components.config import APIServerConfig
 from src.components.datamodels import PodModel, PodStatusEnum
 from src.components.events import (
     UserUpdateEvent,
@@ -210,7 +210,9 @@ async def scan_pods(app: Sanic) -> None:
             )
 
             # shut-em down
-            tasks = [srv.pod_service.update(app, PodUpdateRequest(pod_id=pod.pod_id, target_status=PodStatusEnum.stopped)) for pod in out_pods]
+            tasks = [
+                srv.pod_service.update(app, PodUpdateRequest(pod_id=pod.pod_id, target_status=PodStatusEnum.stopped))
+                for pod in out_pods]
             await asyncio.gather(*tasks)
             logger.info(f"pod scanning task looped, {len(tasks)} pods stopped")
         except asyncio.CancelledError:

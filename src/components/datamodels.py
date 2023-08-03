@@ -4,18 +4,17 @@ Data models for the project
 
 import datetime
 import uuid
+from enum import Enum
 from hashlib import sha256
-import bcrypt
-import shortuuid
-
-from pydantic import BaseModel, UUID4, EmailStr, SecretStr
-from pydantic import field_validator, field_serializer
 from typing import List, Optional, Dict, Any, Union
 
-from enum import Enum
+import bcrypt
+import shortuuid
+from pydantic import BaseModel, UUID4, EmailStr, SecretStr
+from pydantic import field_validator, field_serializer
 
-from src.components.utils import render_template_str
 import src.components.config as config
+from src.components.utils import render_template_str
 
 database_name = config.CONFIG_PROJECT_NAME
 global_collection_name = config.CONFIG_GLOBAL_COLLECTION_NAME

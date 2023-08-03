@@ -9,14 +9,14 @@ from typing import Optional, Union
 from loguru import logger
 from pydantic import BaseModel
 
-from src.components.datamodels import PodStatusEnum, UserStatusEnum, ResourceStatusEnum
+import src.apiserver.service
+from src.components.datamodels import UserStatusEnum, ResourceStatusEnum
 from src.components.events import (
     TemplateCreateEvent, TemplateUpdateEvent, TemplateDeleteEvent,
     UserCreateEvent, UserUpdateEvent, UserDeleteEvent,
-    PodCreateUpdateEvent, PodDeleteEvent, PodTimeoutEvent,
+    PodCreateUpdateEvent, PodDeleteEvent,
     UserHeartbeatEvent
 )
-import src.apiserver.service
 from src.components.utils import render_template_str
 
 
@@ -282,8 +282,3 @@ async def handle_user_heartbeat_event(srv: Optional['src.apiserver.service.RootS
     if err is not None:
         logger.error(f"handle_user_heartbeat_event failed to list pods: {err}")
         return err
-
-# async def handle_pod_timeout_event(srv: Optional['src.apiserver.service.RootService'],
-#                                    ev: Union[PodTimeoutEvent, BaseModel]) -> Optional[Exception]:
-#     # TODO: handle pod timeout
-#     pass

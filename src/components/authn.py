@@ -2,17 +2,15 @@
 Authentication module
 """
 import base64
-
-from hashlib import sha256
 import secrets
+from hashlib import sha256
+
+from loguru import logger
+from sanic import request, response
+from sanic_jwt import Configuration, Responses, exceptions, Authentication
 
 import src.components.datamodels as datamodels
 import src.components.errors as errors
-
-from sanic import request, response
-from sanic_jwt import Configuration, Responses, exceptions, Authentication
-from loguru import logger
-
 from src.apiserver.service import get_root_service
 
 

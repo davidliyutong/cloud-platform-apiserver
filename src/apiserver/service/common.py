@@ -2,7 +2,7 @@
 This module describes the interface of a service.
 """
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 from typing import Optional, Any
 
 from src.components.config import APIServerConfig

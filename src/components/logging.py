@@ -1,13 +1,14 @@
 """
 This module contains all logging related functions.
 """
+import logging
+import os
+import os.path as osp
 import sys
 from datetime import timedelta, datetime, time
 from typing import Set
+
 from loguru import logger
-import os.path as osp
-import os
-import logging
 
 
 class Rotator:

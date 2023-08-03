@@ -12,7 +12,6 @@ from kubernetes import client
 from kubernetes.client import ApiException
 from loguru import logger
 
-from .common import ServiceInterface
 from src.components import errors
 from src.components.config import (
     CONFIG_K8S_CREDENTIAL_FMT,
@@ -21,6 +20,7 @@ from src.components.config import (
     CONFIG_PROJECT_NAMESPACE,
     CONFIG_K8S_SERVICE_FMT
 )
+from .common import ServiceInterface
 
 
 class K8SOperatorService(ServiceInterface):

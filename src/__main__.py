@@ -9,7 +9,6 @@ from sanic import Sanic
 from src.apiserver.server import apiserver_prepare_run, apiserver_check_option
 from src.components.config import APIServerConfig, CONFIG_DEFAULT_CONFIG_PATH
 from src.components.logging import create_logger
-from src.components.tasks import set_crash_flag, get_crash_flag
 from src.components.utils import DelayedKeyboardInterrupt
 
 Sanic.start_method = 'fork'

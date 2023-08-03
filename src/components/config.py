@@ -2,14 +2,15 @@
 Configuration Component
 """
 
-from pydantic import BaseModel
-from vyper import Vyper
 import argparse
-from typing import List, Any, Tuple, Optional, Dict
 import os
 import os.path as osp
-from loguru import logger
+from typing import List, Any, Tuple, Optional, Dict
+
 import yaml
+from loguru import logger
+from pydantic import BaseModel
+from vyper import Vyper
 
 CONFIG_HOME_PATH = os.path.expanduser('~')
 CONFIG_CONFIG_NAME = "apiserver"

@@ -1,4 +1,4 @@
 from .db import DBRepo
-from .user import UserRepo
-from .template import TemplateRepo
 from .pod import PodRepo
+from .template import TemplateRepo
+from .user import UserRepo

@@ -4,14 +4,13 @@ TemplateRepo is a class that provides methods to access the database for templat
 
 from typing import List, Tuple, Optional, Dict, Any
 
+import pymongo
 from loguru import logger
 
-from .db import DBRepo
 import src.components.datamodels as datamodels
-import pymongo
-
 from src.components import errors
 from src.components.utils import singleton
+from .db import DBRepo
 
 
 @singleton

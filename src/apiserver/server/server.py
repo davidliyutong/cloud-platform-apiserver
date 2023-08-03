@@ -8,12 +8,20 @@ import secrets
 import shortuuid
 from loguru import logger
 from sanic import Sanic
-from src.apiserver.controller import controller_app
-from src.apiserver.service import RootService
-from src.apiserver.repo import DBRepo, UserRepo, TemplateRepo, PodRepo
-from src.apiserver.service.service import new_root_service
-from src.components.config import APIServerConfig
 from sanic_jwt import initialize
+
+from src.apiserver.controller import controller_app
+from src.apiserver.controller.admin_pod import bp as admin_pod_bp
+from src.apiserver.controller.admin_template import bp as admin_template_bp
+from src.apiserver.controller.admin_user import bp as admin_user_bp
+from src.apiserver.controller.auth import bp as auth_bp
+from src.apiserver.controller.heartbeat import bp as heartbeat_bp
+from src.apiserver.controller.nonadmin_pod import bp as nonadmin_pod_bp
+from src.apiserver.controller.nonadmin_template import bp as nonadmin_template_bp
+from src.apiserver.controller.nonadmin_user import bp as nonadmin_user_bp
+from src.apiserver.repo import DBRepo, UserRepo, TemplateRepo, PodRepo
+from src.apiserver.service import RootService
+from src.apiserver.service.service import new_root_service
 from src.components.authn import (
     MyJWTConfig,
     MyJWTAuthentication,
@@ -22,15 +30,7 @@ from src.components.authn import (
     store_refresh_token,
     retrieve_refresh_token
 )
-from src.apiserver.controller.admin_pod import bp as admin_pod_bp
-from src.apiserver.controller.admin_template import bp as admin_template_bp
-from src.apiserver.controller.admin_user import bp as admin_user_bp
-from src.apiserver.controller.auth import bp as auth_bp
-from src.apiserver.controller.nonadmin_pod import bp as nonadmin_pod_bp
-from src.apiserver.controller.nonadmin_template import bp as nonadmin_template_bp
-from src.apiserver.controller.nonadmin_user import bp as nonadmin_user_bp
-from src.apiserver.controller.heartbeat import bp as heartbeat_bp
-
+from src.components.config import APIServerConfig
 from src.components.tasks import check_and_create_admin_user, check_kubernetes_connection  # check_rabbitmq_connection
 from src.components.utils import get_k8s_client
 

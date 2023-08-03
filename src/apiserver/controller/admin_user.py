@@ -135,7 +135,10 @@ async def create(request):
 
 
 @bp.get("/<username:str>", name="admin_user_get")
-@openapi.response(200, {"application/json": UserGetResponse.model_json_schema(ref_template="#/components/schemas/{model}")})
+@openapi.response(
+    200,
+    {"application/json": UserGetResponse.model_json_schema(ref_template="#/components/schemas/{model}")}
+)
 @openapi.definition(
     response=[
         openapi.definitions.Response(

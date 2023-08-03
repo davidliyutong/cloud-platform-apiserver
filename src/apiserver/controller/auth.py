@@ -1,21 +1,12 @@
-import base64
-import datetime
 import http
-import secrets
-from hashlib import sha256
 
-import jwt
-from pydantic import BaseModel
 from sanic import Blueprint
 from sanic.response import json as json_response
 from sanic_ext import openapi
-from loguru import logger
 
 from src.apiserver.controller.types import ResponseBaseModel
 from src.apiserver.service import get_root_service
 from src.apiserver.service.auth import LoginCredential, TokenResponse
-from src.components.datamodels import UserModel, UserStatusEnum
-from src.components.utils import parse_basic, parse_bearer
 
 bp = Blueprint("auth", url_prefix="/auth", version=1)
 

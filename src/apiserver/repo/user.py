@@ -6,14 +6,13 @@ from hashlib import sha256
 from typing import List, Tuple, Optional, Dict, Any
 
 import bcrypt
+import pymongo
 from loguru import logger
 
-from .db import DBRepo
 import src.components.datamodels as datamodels
-import pymongo
-
 from src.components import errors
 from src.components.utils import singleton
+from .db import DBRepo
 
 
 @singleton
