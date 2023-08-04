@@ -13,20 +13,31 @@ from src.components.tasks import set_crash_flag, get_crash_flag, recover_from_cr
 
 app = Sanic("root")
 
+_health = json_response(
+    {
+        'description': '/health',
+        'status': http.HTTPStatus.OK,
+        'message': "OK",
+        'version': config.CONFIG_BUILD_VERSION,
+    },
+    http.HTTPStatus.OK
+)
+
 
 @app.get("/health", name="health")
 async def health(_):
     """
     Health check. Return a 200 OK response.
     """
-    return json_response(
-        {
-            'description': '/health',
-            'status': http.HTTPStatus.OK,
-            'message': "OK"
-        },
-        http.HTTPStatus.OK
-    )
+    return _health
+
+
+@app.get("/health", name="v1_health", version=1)
+async def health(_):
+    """
+    Health check. Return a 200 OK response.
+    """
+    return _health
 
 
 @app.main_process_start

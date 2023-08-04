@@ -24,7 +24,7 @@ services:
 #      - "28081:8081"
   apiserver:
     image: davidliyutong/clpl-apiserver:latest
-    container_name: apiserver
+    container_name: clpl-apiserver
     restart: always
     environment:
       - CLPL_API_NUMWORKERS=-1

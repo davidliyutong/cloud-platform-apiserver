@@ -1,5 +1,4 @@
 GIT_VERSION := $(shell git describe --tags --always)
-MACHINE := $(shell uname -m)
 
 build.docker.native:
 	docker build -t davidliyutong/clpl-apiserver:${GIT_VERSION} -f manifests/docker/Dockerfile .

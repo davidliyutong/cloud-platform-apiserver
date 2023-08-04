@@ -12,6 +12,7 @@ from loguru import logger
 from pydantic import BaseModel
 from vyper import Vyper
 
+CONFIG_BUILD_VERSION = "v0.0.2"
 CONFIG_HOME_PATH = os.path.expanduser('~')
 CONFIG_CONFIG_NAME = "apiserver"
 CONFIG_PROJECT_NAME = "clpl"
