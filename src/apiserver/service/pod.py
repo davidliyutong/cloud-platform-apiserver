@@ -19,7 +19,26 @@ from .handler import handle_pod_create_update_event, handle_pod_delete_event
 class PodService(ServiceInterface):
     def __init__(self, pod_repo: PodRepo):
         super().__init__()
-        self.repo = pod_repo
+        self.repo: PodRepo = pod_repo
+
+    @staticmethod
+    def check_quota(user: datamodels.UserModel, pods: List[datamodels.PodModel], req: PodCreateRequest) -> bool:
+        if user.quota is None:
+            return True
+        else:
+            num_pods = len(pods) + 1
+            cpu_m = sum([pod.cpu_lim_m_cpu for pod in pods]) + req.cpu_lim_m_cpu
+            mem_mb = sum([pod.mem_lim_mb for pod in pods]) + req.mem_lim_mb
+            storage_mb = sum([pod.storage_lim_mb for pod in pods]) + req.storage_lim_mb
+            if any([
+                num_pods > user.quota.pod_n,
+                cpu_m > user.quota.cpu_m,
+                mem_mb > user.quota.memory_mb,
+                storage_mb > user.quota.storage_mb,
+            ]):
+                return False
+            else:
+                return True
 
     async def get(self,
                   app: Sanic,
@@ -52,10 +71,30 @@ class PodService(ServiceInterface):
 
     async def create(self,
                      app: Sanic,
-                     req: PodCreateRequest) -> Tuple[datamodels.PodModel, Optional[Exception]]:
+                     req: PodCreateRequest) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
         """
         Create a pod.
         """
+        # read username from request
+        username = req.username
+        if username is None:
+            return None, errors.username_required
+
+        # check if user exists and is active
+        user, err = await self.parent.user_service.repo.get(username=username)
+        if any([
+            err is not None,
+            user is not None and user.status != datamodels.UserStatusEnum.active,
+        ]):
+            return None, errors.user_not_found
+
+        # list all pods of the user
+        _, pods, err = await self.parent.pod_service.repo.list(extra_query_filter={"username": username})
+
+        # check if user has reached the quota
+        ret = self.check_quota(user, pods, req)
+        if not ret:
+            return None, errors.quota_exceeded
 
         pod, err = await self.repo.create(
             name=req.name,

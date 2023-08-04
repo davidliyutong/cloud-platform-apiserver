@@ -136,12 +136,13 @@ table lists all the parameters.
 # TODO
 
 - Frontend
-- Quota
+
 - CLI client
 - Audit
 - OIDC
 - LDAP
 - Find Out why shutdown print error message
+- ~~Quota~~
 - ~~Pod AutoStop (Timers)~~
 - ~~Error Recovery~~
 - ~~Graceful Shutdown~~

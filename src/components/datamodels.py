@@ -87,12 +87,12 @@ class QuotaModel(BaseModel):
     Quota model, used to define user quota
     """
     committed: bool = False
-    m_cpu: int
+    cpu_m: int
     memory_mb: int
     storage_mb: int
-    gpu: int
-    network_mb: int
-    pod: int
+    gpu: int  # attention: not used
+    network_mb: int  # attention: not used
+    pod_n: int
 
 
 class UserModel(BaseModel):

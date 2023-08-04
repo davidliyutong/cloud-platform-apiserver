@@ -291,6 +291,7 @@ class PodUpdateRequest(BaseModel):
                 raise ValueError('timeout_s must be positive')
             elif v > 86400:
                 raise ValueError('timeout_s must be less than 86400 seconds')
+        return v
 
     @field_validator('target_status')
     def target_status_must_be_valid(cls, v):

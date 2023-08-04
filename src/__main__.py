@@ -73,7 +73,7 @@ if __name__ == '__main__':
             # parse the cli arguments using vyper, then build option from vyper
             v, err = APIServerConfig.load_config(argv=sys.argv[2:])
             opt = APIServerConfig().from_vyper(v)
-            logger.info(f"running option: {opt.to_dict()}")  # TODO: adapt logging level to DEBUG variable
+            logger.info(f"running option: {opt.to_dict()}")
 
             # prepare and run the server
             app = apiserver_prepare_run(apiserver_check_option(opt))
