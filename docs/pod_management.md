@@ -12,8 +12,8 @@ A template has the `template_str` attribute which is a template to be filled wit
 - `POD_MEM_LIM`: the memory of the pod, e.g. 2000MiB
 - `POD_STORAGE_LIM`: the storage of the pod, e.g. 10000MiB
 - `POD_AUTH`: the authentication secret of the pod, e.g. user-basic-auth
-- `CONFIG_CODE_HOSTNAME`: a host name for IDE
-- `CONFIG_CODE_TLS_SECRET`: a tls secret for IDE hostname
+- `CONFIG_CODER_HOSTNAME`: a host name for IDE
+- `CONFIG_CODER_TLS_SECRET`: a tls secret for IDE hostname
 - `CONFIG_VNC_HOSTNAME`: a hostname for VNC
 - `CONFIG_VNC_TLS_SECRET`: a tls secret for VNC hostname
 
@@ -27,8 +27,8 @@ For example:
         "POD_MEM_LIM": "4096Mi",
         "POD_STORAGE_LIM": "10Mi",
         "POD_AUTH": "uid-basic-auth",
-        "CONFIG_CODE_HOSTNAME": "code.example.org",
-        "CONFIG_CODE_TLS_SECRET": "code-tls-secret",
+        "CONFIG_CODER_HOSTNAME": "code.example.org",
+        "CONFIG_CODER_TLS_SECRET": "code-tls-secret",
         "CONFIG_VNC_HOSTNAME": "vnc.example.org",
         "CONFIG_VNC_TLS_SECRET": "vnc-tls-secret",
 }

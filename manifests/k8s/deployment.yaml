@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: mongodb
-          image: mongo:6.0.6
+          image: docker.io/mongo:6.0.6
           resources:
             limits:
               cpu: "4000m"
@@ -83,7 +83,8 @@ spec:
       serviceAccountName: clpl-admin
       containers:
         - name: apiserver
-          image: davidliyutong/clpl-apiserver:latest
+          image: docker.io/davidliyutong/clpl-apiserver:latest
+          imagePullPolicy: Always
           resources:
             limits:
               cpu: "4000m"
@@ -103,10 +104,10 @@ spec:
               value: clpl # CHANGE ME
             - name: CLPL_CONFIG_TOKENSECRET
               value: top-secret # CHANGE ME
-            - name: CLPL_CONFIG_CODEHOSTNAME
-              value: ${{ CONFIG_CODE_HOSTNAME }} # CHANGE ME
-            - name: CLPL_CONFIG_CODETLSSECRET
-              value: ${{ CONFIG_CODE_TLS_SECRET }} # CHANGE ME
+            - name: CLPL_CONFIG_CODERHOSTNAME
+              value: ${{ CONFIG_CODER_HOSTNAME }} # CHANGE ME
+            - name: CLPL_CONFIG_CODERTLSSECRET
+              value: ${{ CONFIG_CODER_TLS_SECRET }} # CHANGE ME
             - name: CLPL_CONFIG_VNCHOSTNAME
               value: ${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME
             - name: CLPL_CONFIG_VNCTLSSECRET
@@ -178,3 +179,74 @@ spec:
     - hosts:
         - apiserver.${{ DOMAIN }} # CHANGE ME
       secretName: ${{ APISERVER_TLS_SECRET }} # CHANGE ME
+---
+# frontend deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: clpl
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: docker.io/davidliyutong/clpl-frontend:latest # choose a version
+          imagePullPolicy: Always
+          ports:
+            - name: 80tcp
+              containerPort: 80
+              protocol: TCP
+          env:
+            - name: CLPL_BACKEND_URL # need to match the backend
+              value: "http://apiserver.clpl.svc.cluster.local:8080" # specify http/https, use 127.0.0.1 instead of localhost
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "1024Mi"
+              cpu: "1000m"
+---
+# frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: clpl
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app: frontend
+---
+# apiserver Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend
+  namespace: clpl
+spec:
+  rules:
+    - host: clpl.${{ DOMAIN }} # CHANGE ME
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/"
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - clpl.${{ DOMAIN }} # CHANGE ME
+      secretName: ${{ FRONTEND_TLS_SECRET }} # CHANGE ME

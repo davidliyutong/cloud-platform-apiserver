@@ -36,3 +36,16 @@ spec:
   issuerRef:
     name: letsencrypt-cf-dns
     kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: clpl-${{ DOMAIN_LABEL }}-tls
+  namespace: clpl
+spec:
+  secretName: clpl-${{ DOMAIN_LABEL }}-tls
+  dnsNames:
+  - "clpl.${{ DOMAIN }}"
+  issuerRef:
+    name: letsencrypt-cf-dns
+    kind: ClusterIssuer

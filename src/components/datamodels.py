@@ -232,8 +232,8 @@ class TemplateModel(BaseModel):
         "POD_STORAGE_LIM": "10Mi",
         "POD_REPLICAS": "1",
         "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format("username"),
-        "CONFIG_CODE_HOSTNAME": "code.example.org",
-        "CONFIG_CODE_TLS_SECRET": "code-tls-secret",
+        "CONFIG_CODER_HOSTNAME": "code.example.org",
+        "CONFIG_CODER_TLS_SECRET": "code-tls-secret",
         "CONFIG_VNC_HOSTNAME": "vnc.example.org",
         "CONFIG_VNC_TLS_SECRET": "vnc-tls-secret",
     }

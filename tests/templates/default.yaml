@@ -96,7 +96,7 @@ metadata:
 spec:
   ingressClassName: nginx # CHANGE ME
   rules:
-  - host: ${{ POD_ID }}.${{ CONFIG_CODE_HOSTNAME }} # CHANGE ME
+  - host: ${{ POD_ID }}.${{ CONFIG_CODER_HOSTNAME }} # CHANGE ME
     http:
       paths:
       - backend:
@@ -118,8 +118,8 @@ spec:
         pathType: Prefix
   tls:
   - hosts:
-    - ${{ POD_ID }}.${{ CONFIG_CODE_HOSTNAME }} # CHANGE ME hostname
-    secretName: ${{ CONFIG_CODE_TLS_SECRET }} # CHANGE ME TLS Secret
+    - ${{ POD_ID }}.${{ CONFIG_CODER_HOSTNAME }} # CHANGE ME hostname
+    secretName: ${{ CONFIG_CODER_TLS_SECRET }} # CHANGE ME TLS Secret
   - hosts:
     - ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME hostname
     secretName: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGE ME TLS Secret

@@ -66,8 +66,8 @@ class APIServerConfig(BaseModel):
 
     config_token_secret: str = None
     config_token_expire_s: int = 3600
-    config_code_hostname: str = None
-    config_code_tls_secret: str = None
+    config_coder_hostname: str = None
+    config_coder_tls_secret: str = None
     config_vnc_hostname: str = None
     config_vnc_tls_secret: str = None
 
@@ -104,8 +104,8 @@ class APIServerConfig(BaseModel):
 
         self.config_token_secret = str(d["config"]["tokenSecret"])
         self.config_token_expire_s = int(d["config"]["tokenExpireS"])
-        self.config_code_hostname = str(d["config"]["codeHostname"])
-        self.config_code_tls_secret = str(d["config"]["codeTLSSecret"])
+        self.config_coder_hostname = str(d["config"]["coderHostname"])
+        self.config_coder_tls_secret = str(d["config"]["coderTLSSecret"])
         self.config_vnc_hostname = str(d["config"]["vncHostname"])
         self.config_vnc_tls_secret = str(d["config"]["vncTLSSecret"])
         # <<< Define Values <<<
@@ -144,8 +144,8 @@ class APIServerConfig(BaseModel):
 
         self.config_token_secret = v.get_string("config.tokenSecret")
         self.config_token_expire_s = v.get_int("config.tokenExpireS")
-        self.config_code_hostname = v.get_string("config.codeHostname")
-        self.config_code_tls_secret = v.get_string("config.codeTLSSecret")
+        self.config_coder_hostname = v.get_string("config.coderHostname")
+        self.config_coder_tls_secret = v.get_string("config.coderTLSSecret")
         self.config_vnc_hostname = v.get_string("config.vncHostname")
         self.config_vnc_tls_secret = v.get_string("config.vncTLSSecret")
         # <<< Define Values <<<
@@ -190,8 +190,8 @@ class APIServerConfig(BaseModel):
             "config": {
                 "tokenSecret": self.config_token_secret,
                 "tokenExpireS": self.config_token_expire_s,
-                "codeHostname": self.config_code_hostname,
-                "codeTLSSecret": self.config_code_tls_secret,
+                "coderHostname": self.config_coder_hostname,
+                "coderTLSSecret": self.config_coder_tls_secret,
                 "vncHostname": self.config_vnc_hostname,
                 "vncTLSSecret": self.config_vnc_tls_secret,
             }
@@ -225,8 +225,8 @@ class APIServerConfig(BaseModel):
             "BOOTSTRAP_ADMIN_PASSWORD": self.bootstrap_admin_password,
             "CONFIG_TOKEN_SECRET": self.config_token_secret,
             "CONFIG_TOKEN_EXPIRE_S": self.config_token_expire_s,
-            "CONFIG_CODE_HOSTNAME": self.config_code_hostname,
-            "CONFIG_CODE_TLS_SECRET": self.config_code_tls_secret,
+            "CONFIG_CODER_HOSTNAME": self.config_coder_hostname,
+            "CONFIG_CODER_TLS_SECRET": self.config_coder_tls_secret,
             "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
             "CONFIG_VNC_TLS_SECRET": self.config_vnc_tls_secret,
         }
@@ -268,8 +268,8 @@ class APIServerConfig(BaseModel):
 
         v.set_default("config.tokenSecret", _DEFAULT.config_token_secret)
         v.set_default("config.tokenExpireS", _DEFAULT.config_token_expire_s)
-        v.set_default("config.codeHostname", _DEFAULT.config_code_hostname)
-        v.set_default("config.codeTLSSecret", _DEFAULT.config_code_tls_secret)
+        v.set_default("config.coderHostname", _DEFAULT.config_coder_hostname)
+        v.set_default("config.coderTLSSecret", _DEFAULT.config_coder_tls_secret)
         v.set_default("config.vncHostname", _DEFAULT.config_vnc_hostname)
         v.set_default("config.vncTLSSecret", _DEFAULT.config_vnc_tls_secret)
         # <<< Set Default Values <<<
@@ -312,8 +312,8 @@ class APIServerConfig(BaseModel):
 
         parser.add_argument("--config.tokenSecret", type=str, help="config tokenSecret")
         parser.add_argument("--config.tokenExpireS", type=int, help="config tokenExpireS")
-        parser.add_argument("--config.codeHostname", type=str, help="config code hostname")
-        parser.add_argument("--config.codeTLSSecret", type=str, help="config code tlsSecret")
+        parser.add_argument("--config.coderHostname", type=str, help="config code hostname")
+        parser.add_argument("--config.coderTLSSecret", type=str, help="config code tlsSecret")
         parser.add_argument("--config.vncHostname", type=str, help="config vnc hostname")
         parser.add_argument("--config.vncTLSSecret", type=str, help="config vnc tlsSecret")
         # <<< Set Default Values <<<
@@ -376,8 +376,8 @@ class APIServerConfig(BaseModel):
 
         v.bind_env("config.tokenSecret")
         v.bind_env("config.tokenExpireS")
-        v.bind_env("config.codeHostname")
-        v.bind_env("config.codeTLSSecret")
+        v.bind_env("config.coderHostname")
+        v.bind_env("config.coderTLSSecret")
         v.bind_env("config.vncHostname")
         v.bind_env("config.vncTLSSecret")
         # <<< Set Env Values <<<
@@ -410,8 +410,8 @@ class APIServerConfig(BaseModel):
     @property
     def k8s_config_values(self):
         return {
-            "CONFIG_CODE_HOSTNAME": self.config_code_hostname,
-            "CONFIG_CODE_TLS_SECRET": self.config_code_tls_secret,
+            "CONFIG_CODER_HOSTNAME": self.config_coder_hostname,
+            "CONFIG_CODER_TLS_SECRET": self.config_coder_tls_secret,
             "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
             "CONFIG_VNC_TLS_SECRET": self.config_vnc_tls_secret,
         }

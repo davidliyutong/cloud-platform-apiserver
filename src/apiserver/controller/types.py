@@ -86,6 +86,18 @@ class UserUpdateRequest(BaseModel):
     role: Optional[str] = None
     quota: Optional[Dict[str, Any]] = None
 
+    @field_validator('username')
+    def username_must_be_valid(cls, v):
+        if v == "" or v is None:
+            raise ValueError("username cannot be empty")
+        return v
+
+    @field_validator('password')
+    def password_must_be_valid(cls, v):
+        if v == "" or v is None:
+            raise ValueError("password cannot be empty")
+        return v
+
 
 class UserUpdateResponse(UserGetResponse):
     """
@@ -236,8 +248,8 @@ class PodCreateRequest(BaseModel):
 
     @field_validator('storage_lim_mb')
     def storage_lim_mb_must_be_valid(cls, v):
-        if v < 0:
-            raise ValueError('storage_lim_mb must be positive')
+        if v < 10240:
+            raise ValueError('storage_lim_mb must be greater than 10240 MB')
         return v
 
     @field_validator('timeout_s')

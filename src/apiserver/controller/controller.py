@@ -9,35 +9,41 @@ from sanic import Sanic
 from sanic.response import json as json_response
 
 from src.components import config
+from src.components.config import APIServerConfig
 from src.components.tasks import set_crash_flag, get_crash_flag, recover_from_crash, scan_pods
 
 app = Sanic("root")
 
-_health = json_response(
+def _health(opt: APIServerConfig):
+    return json_response(
     {
         'description': '/health',
         'status': http.HTTPStatus.OK,
         'message': "OK",
         'version': config.CONFIG_BUILD_VERSION,
+        'config': {
+            'coder_hostname': opt.config_coder_hostname,
+            'vnc_hostname': opt.config_vnc_hostname
+        }
     },
     http.HTTPStatus.OK
 )
 
 
 @app.get("/health", name="health")
-async def health(_):
+async def health(request):
     """
     Health check. Return a 200 OK response.
     """
-    return _health
+    return _health(request.app.ctx.opt)
 
 
 @app.get("/health", name="v1_health", version=1)
-async def health(_):
+async def health(request):
     """
     Health check. Return a 200 OK response.
     """
-    return _health
+    return _health(request.app.ctx.opt)
 
 
 @app.main_process_start

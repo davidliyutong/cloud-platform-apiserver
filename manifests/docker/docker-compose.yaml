@@ -34,8 +34,8 @@ services:
       - CLPL_DB_USERNAME=clpl # match mongodb username
       - CLPL_DB_PASSWORD=clpl # match mongodb password
       - CLPL_CONFIG_TOKENSECRET=top-secret
-      - CLPL_CONFIG_CODEHOSTNAME=coder.example.com # CHANGE ME
-      - CLPL_CONFIG_CODETLSSECRET=code-tls-secret # CHANGE ME
+      - CLPL_CONFIG_CODERHOSTNAME=coder.example.com # CHANGE ME
+      - CLPL_CONFIG_CODERTLSSECRET=code-tls-secret # CHANGE ME
       - CLPL_CONFIG_VNCHOSTNAME=vnc.example.com # CHANGE ME
       - CLPL_CONFIG_VNCTLSSECRET=vnc-tls-secret # CHANGE ME
       - CLPL_K8S_HOST=10.96.0.1 # CHANGE ME

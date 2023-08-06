@@ -84,9 +84,10 @@ Then, apply the `manifests/k8s/rbac.yaml` file:
 kubectl apply -f manifests/k8s/rbac.yaml
 ```
 
-You need to create 3 TLS certificate:
+You need to create 4 TLS certificate:
 
 - TLS certificate for the api server
+- - TLS certificate for the frontend
 - TLS certificate for the noVNC endpoint
 - TLS certificate for the WebIDE endpoint
 
@@ -128,8 +129,8 @@ table lists all the parameters.
 | Bootstrap Admin Password            | `--bootstrap.adminPassword` | `CLPL_BOOTSTRAP_ADMINPASSWORD` | Default admin password                               | `admin`                                                |
 | Configuration Token Secret          | `--config.tokenSecret`      | `CLPL_CONFIG_TOKENSECRET`      | Secret key for sign long-term token, must be strong  | `null`                                                 |
 | Configuration Token Expiration Time | `--config.tokenExpireS`     | `CLPL_CONFIG_TOKENEXPIRES`     | Expiration time for jwt token                        | `3600`                                                 |
-| Configuration Code Hostname         | `--config.codeHostname`     | `CLPL_CONFIG_CODEHOSTNAME`     | Hostname for the code ingress                        | `null`                                                 |
-| Configuration Code TLS Secret       | `--config.codeTLSSecret`    | `CLPL_CONFIG_CODETLSSECRET`    | Secret name for the code ingress tls                 | `null`                                                 |
+| Configuration Coder Hostname        | `--config.coderHostname`    | `CLPL_CONFIG_CODERHOSTNAME`    | Hostname for the code ingress                        | `null`                                                 |
+| Configuration Coder TLS Secret      | `--config.coderTLSSecret`   | `CLPL_CONFIG_CODERTLSSECRET`   | Secret name for the code ingress tls                 | `null`                                                 |
 | Configuration VNC Hostname          | `--config.vncHostname`      | `CLPL_CONFIG_VNCHOSTNAME`      | Hostname for the vnc ingress                         | `null`                                                 |
 | Configuration VNC TLS Secret        | `--config.vncTLSSecret`     | `CLPL_CONFIG_VNCTLSECRET`      | Secret key for the vnc ingress tls                   | `null`                                                 |
 

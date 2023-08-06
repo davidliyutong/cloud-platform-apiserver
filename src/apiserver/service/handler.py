@@ -176,11 +176,6 @@ async def handle_user_delete_event(srv: Optional['src.apiserver.service.RootServ
                 logger.error(f"handle_user_delete_event failed to delete pod {pod.pod_id}: {err}")
                 return err
 
-            _, err = await srv.pod_service.repo.purge(pod_id=pod.pod_id)  # purge pod
-            if err is not None:
-                logger.error(f"handle_user_delete_event failed to purge pod {pod.pod_id}: {err}")
-                return err
-
         # finally, purge user
         _, err = await srv.user_service.repo.purge(ev.username)
         if err is not None:
