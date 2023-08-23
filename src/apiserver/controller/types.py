@@ -1,7 +1,7 @@
 """
 This file defines the types of the request and response of the apiserver.
 """
-
+import uuid
 from typing import List, Optional, Dict, Any
 
 from pydantic import BaseModel, EmailStr, field_validator
@@ -234,16 +234,30 @@ class PodCreateRequest(BaseModel):
     timeout_s: Optional[int] = None
     values: Optional[Dict[str, Any]] = None
 
+    @field_validator('template_ref')
+    def template_ref_must_be_valid(cls, v):
+        if v == "" or v is None:
+            raise ValueError("template_ref cannot be empty")
+        try:
+            _ = uuid.UUID(v)
+        except ValueError as e:
+            raise e
+        return v
+
     @field_validator('cpu_lim_m_cpu')
     def cpu_lim_m_cpu_must_be_valid(cls, v):
         if v < 0:
             raise ValueError('cpu_lim_m_cpu must be positive')
+        if v < 500:
+            raise ValueError('cpu_lim_m_cpu must be greater than 500 mCPU')
         return v
 
     @field_validator('mem_lim_mb')
     def mem_lim_mb_must_be_valid(cls, v):
         if v < 0:
             raise ValueError('mem_lim_mb must be positive')
+        if v < 512:
+            raise ValueError('mem_lim_mb must be greater than 512 MB')
         return v
 
     @field_validator('storage_lim_mb')
