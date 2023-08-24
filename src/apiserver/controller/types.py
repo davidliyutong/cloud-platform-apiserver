@@ -175,10 +175,10 @@ class TemplateUpdateRequest(BaseModel):
     Update request for templates, all fields except template_id are optional.
     """
     template_id: str
-    name: str = None
-    description: str = None
-    image_ref: str = None
-    template_str: str = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    image_ref: Optional[str] = None
+    template_str: Optional[str] = None
     fields: Optional[Dict[str, Any]] = None
     defaults: Optional[Dict[str, Any]] = None
 
