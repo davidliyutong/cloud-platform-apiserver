@@ -136,13 +136,14 @@ table lists all the parameters.
 
 # TODO
 
-- Frontend
 
-- CLI client
+- migration mechanism
 - Audit
 - OIDC
 - LDAP
-- Find Out why shutdown print error message
+- ~~Find Out why shutdown print error message~~
+- ~~Frontend~~
+- ~~CLI client~~
 - ~~Quota~~
 - ~~Pod AutoStop (Timers)~~
 - ~~Error Recovery~~

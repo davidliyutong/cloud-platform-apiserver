@@ -94,7 +94,7 @@ class UserUpdateRequest(BaseModel):
 
     @field_validator('password')
     def password_must_be_valid(cls, v):
-        if v == "" or v is None:
+        if v == "":
             raise ValueError("password cannot be empty")
         return v
 

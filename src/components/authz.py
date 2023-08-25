@@ -40,14 +40,6 @@ def validate_role(role: Optional[Iterable[str]] = None):
                     algorithms=request.app.config.get('JWT_ALGORITHM')
                 )
 
-                # check the role
-                if role is None or payload.get('role') in role:
-                    request.ctx.user = payload
-                    return await f(request, *args, **kwargs)
-                else:
-                    error_msg = "Unauthorized"
-                    raise Exception(error_msg)
-
             except Exception as e:
                 # logging the error
                 logger.debug(str(e))
@@ -56,6 +48,21 @@ def validate_role(role: Optional[Iterable[str]] = None):
                         'description': '',
                         'status': http.HTTPStatus.UNAUTHORIZED,
                         'message': str(e)
+                    },
+                    http.HTTPStatus.UNAUTHORIZED
+                )
+
+            # check the role
+            if role is None or payload.get('role') in role:
+                request.ctx.user = payload
+                return await f(request, *args, **kwargs)
+            else:
+                error_msg = "Unauthorized"
+                return json_response(
+                    {
+                        'description': '',
+                        'status': http.HTTPStatus.UNAUTHORIZED,
+                        'message': str(error_msg)
                     },
                     http.HTTPStatus.UNAUTHORIZED
                 )

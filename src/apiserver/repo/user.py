@@ -153,7 +153,7 @@ class UserRepo:
                 user['status'] = status if status is not None else user['status']
                 user['email'] = email if email is not None else user['email']
                 user['role'] = datamodels.UserRoleEnum(role) if role is not None else user['role']
-                user['quota'] = quota if quota is not None else user['quota']
+                user['quota'] = quota
 
                 # if password is changed, then set resource_status to pending
                 if any([
