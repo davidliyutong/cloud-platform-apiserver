@@ -14,7 +14,7 @@ fi
 
 set -e
 
-TOKEN=$(ssh SERVER_HOSTNAME "cat /var/lib/rancher/rke2/server/node-token")
+TOKEN=$(ssh $SERVER_HOSTNAME "cat /var/lib/rancher/rke2/server/node-token")
 CONFIG_STRING="server: https://"$SERVER_HOSTNAME":9345
 token: "$TOKEN
 

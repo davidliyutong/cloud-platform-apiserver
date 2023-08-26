@@ -16,3 +16,6 @@ dist
 
 # Credentials
 creds
+
+# tar
+*.tar.gz
