@@ -29,6 +29,7 @@ class GlobalModel(BaseModel):
     """
     uid_counter: int = 0
     flag_crashed: bool = False  # record if last run crashed
+    version: str = config.CONFIG_BUILD_VERSION
 
 
 class UserRoleEnum(str, Enum):
@@ -86,6 +87,7 @@ class QuotaModel(BaseModel):
     """
     Quota model, used to define user quota
     """
+    version: str
     committed: bool = False
     cpu_m: int
     memory_mb: int
@@ -94,11 +96,18 @@ class QuotaModel(BaseModel):
     network_mb: int  # attention: not used
     pod_n: int
 
+    @field_validator("version")
+    def version_must_be_valid(cls, v):
+        if v is None or v == "":
+            v = config.CONFIG_BUILD_VERSION
+        return v
+
 
 class UserModel(BaseModel):
     """
     User model, used to define user
     """
+    version: str
     resource_status: ResourceStatusEnum = ResourceStatusEnum.pending
     uid: int
     uuid: Optional[UUID4]
@@ -110,6 +119,12 @@ class UserModel(BaseModel):
     role: UserRoleEnum
     owned_pod_ids: List[UUID4]  # not used
     quota: Optional[QuotaModel]
+
+    @field_validator("version")
+    def version_must_be_valid(cls, v):
+        if v is None or v == "":
+            v = config.CONFIG_BUILD_VERSION
+        return v
 
     @field_validator("uuid")
     def uuid_must_be_valid(cls, v):
@@ -157,6 +172,7 @@ class UserModel(BaseModel):
             email: Optional[str] = None,
             quota: Optional[Dict[str, Any]] = None):
         return cls(
+            version=config.CONFIG_BUILD_VERSION,
             uid=uid,
             uuid=None,
             username=username,
@@ -173,6 +189,7 @@ class TemplateModel(BaseModel):
     """
     Template model, used to define template
     """
+    version: str
     resource_status: ResourceStatusEnum = ResourceStatusEnum.pending
     template_id: UUID4
     name: str
@@ -181,6 +198,12 @@ class TemplateModel(BaseModel):
     template_str: str
     fields: Optional[Dict[str, FieldTypeEnum]]  # not used
     defaults: Optional[Dict[str, Any]]  # not used
+
+    @field_validator("version")
+    def version_must_be_valid(cls, v):
+        if v is None or v == "":
+            v = config.CONFIG_BUILD_VERSION
+        return v
 
     @field_validator("template_id")
     def uuid_must_be_valid(cls, v):
@@ -212,6 +235,7 @@ class TemplateModel(BaseModel):
             fields: Optional[Dict[str, Any]],
             defaults: Optional[Dict[str, Any]]):
         return cls(
+            version=config.CONFIG_BUILD_VERSION,
             template_id=uuid.uuid4(),
             name=name,
             description=description,
@@ -253,6 +277,7 @@ class PodModel(BaseModel):
     """
     Pod model, used to define pod
     """
+    version: str
     resource_status: ResourceStatusEnum = ResourceStatusEnum.pending
     pod_id: str
     name: str
@@ -271,6 +296,12 @@ class PodModel(BaseModel):
     current_status: PodStatusEnum
     target_status: PodStatusEnum
 
+    @field_validator("version")
+    def version_must_be_valid(cls, v):
+        if v is None or v == "":
+            v = config.CONFIG_BUILD_VERSION
+        return v
+
     @field_serializer('template_ref')
     def serialize_uuid(self, v: uuid.UUID, _info):
         return str(v)
@@ -280,6 +311,10 @@ class PodModel(BaseModel):
         if isinstance(v, str):
             v = datetime.datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%fZ")
         return v
+
+    @field_serializer('user_uuid')
+    def serialize_user_uuid(self, v: uuid.UUID, _info):
+        return str(v)
 
     @field_serializer('created_at')
     def serialize_created_at(self, v: datetime.datetime, _info):
@@ -333,10 +368,12 @@ class PodModel(BaseModel):
             storage_lim_mb: int = 10240,
             timeout_s: int = 3600):
         return cls(
+            version=config.CONFIG_BUILD_VERSION,
             pod_id=shortuuid.uuid(),
             name=name,
             description=description,
             template_ref=uuid.UUID(template_ref),
+            template_str=None,
             cpu_lim_m_cpu=cpu_lim_m_cpu,
             mem_lim_mb=mem_lim_mb,
             storage_lim_mb=storage_lim_mb,

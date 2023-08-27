@@ -43,7 +43,7 @@ def render_template_str(template_str: str,
     def replace(match):
         key = match.group(1)
         if key not in kv.keys():
-            value = ''
+            value = '${{ ' + key + ' }}'  # 保留原始的 ${{ key }}
         else:
             used_keys.append(key)
             value = str(kv.get(key, ''))

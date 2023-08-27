@@ -20,7 +20,6 @@ CONFIG_LOG_PATH_KEY = CONFIG_PROJECT_NAME.upper() + "_LOG_PATH"
 CONFIG_LOG_PATH_DEFAULT = "./logs/apiserver"
 CONFIG_DEFAULT_CONFIG_SEARCH_PATH = osp.join(CONFIG_HOME_PATH, ".config", CONFIG_PROJECT_NAME)
 CONFIG_DEFAULT_CONFIG_PATH = osp.join(CONFIG_DEFAULT_CONFIG_SEARCH_PATH, f"{CONFIG_CONFIG_NAME}.yaml")
-CONFIG_PROJECT_NAMESPACE = "clpl"
 CONFIG_EVENT_QUEUE_NAME = "clpl_event_queue"
 CONFIG_GLOBAL_COLLECTION_NAME = "clpl_global"
 CONFIG_USER_COLLECTION_NAME = "clpl_users"
@@ -30,6 +29,7 @@ CONFIG_K8S_CREDENTIAL_FMT = "{}-basic-auth"
 CONFIG_K8S_POD_LABEL_FMT = "apps.clpl-{}"
 CONFIG_K8S_POD_LABEL_KEY = "k8s-app"
 CONFIG_K8S_SERVICE_FMT = "clpl-svc-{}"
+CONFIG_K8S_NAMESPACE = "clpl"
 CONFIG_SCAN_POD_INTERVAL_S = 120
 CONFIG_HEARTBEAT_INTERVAL_S = 120
 CONFIG_SHUTDOWN_GRACE_PERIOD_S = 60
@@ -60,6 +60,7 @@ class APIServerConfig(BaseModel):
     k8s_ca_cert: str = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
     k8s_token: str = "/var/run/secrets/kubernetes.io/serviceaccount/token"
     k8s_verify_ssl: bool = False
+    k8s_namespace: str = CONFIG_K8S_NAMESPACE
 
     bootstrap_admin_username: str = "admin"
     bootstrap_admin_password: str = "admin"
@@ -98,6 +99,7 @@ class APIServerConfig(BaseModel):
         self.k8s_ca_cert = str(d["k8s"]["caCert"])
         self.k8s_token = str(d["k8s"]["token"])
         self.k8s_verify_ssl = bool(d["k8s"]["verifySSL"])
+        self.k8s_namespace = str(d["k8s"]["namespace"])
 
         self.bootstrap_admin_password = str(d["bootstrap"]["adminPassword"])
         self.bootstrap_admin_username = str(d["bootstrap"]["adminUsername"])
@@ -138,6 +140,7 @@ class APIServerConfig(BaseModel):
         self.k8s_ca_cert = v.get_string("k8s.caCert")
         self.k8s_token = v.get_string("k8s.token")
         self.k8s_verify_ssl = v.get_bool("k8s.verifySSL")
+        self.k8s_namespace = v.get_string("k8s.namespace")
 
         self.bootstrap_admin_password = v.get_string("bootstrap.adminPassword")
         self.bootstrap_admin_username = v.get_string("bootstrap.adminUsername")
@@ -182,6 +185,7 @@ class APIServerConfig(BaseModel):
                 "caCert": self.k8s_ca_cert,
                 "token": self.k8s_token,
                 "verifySSL": self.k8s_verify_ssl,
+                "namespace": self.k8s_namespace,
             },
             "bootstrap": {
                 "adminUsername": self.bootstrap_admin_username,
@@ -221,6 +225,7 @@ class APIServerConfig(BaseModel):
             "K8S_CACERT": self.k8s_ca_cert,
             "K8S_TOKEN": self.k8s_token,
             "K8S_VERIFY_SSL": self.k8s_verify_ssl,
+            "K8S_NAMESPACE": self.k8s_namespace,
             "BOOTSTRAP_ADMIN_USERNAME": self.bootstrap_admin_username,
             "BOOTSTRAP_ADMIN_PASSWORD": self.bootstrap_admin_password,
             "CONFIG_TOKEN_SECRET": self.config_token_secret,
@@ -262,6 +267,7 @@ class APIServerConfig(BaseModel):
         v.set_default("k8s.caCert", _DEFAULT.k8s_ca_cert)
         v.set_default("k8s.token", _DEFAULT.k8s_token)
         v.set_default("k8s.verifySSL", _DEFAULT.k8s_verify_ssl)
+        v.set_default("k8s.namespace", _DEFAULT.k8s_namespace)
 
         v.set_default("bootstrap.adminUsername", _DEFAULT.bootstrap_admin_username)
         v.set_default("bootstrap.adminPassword", _DEFAULT.bootstrap_admin_password)
@@ -306,6 +312,7 @@ class APIServerConfig(BaseModel):
         parser.add_argument("--k8s.caCert", type=str, help="k8s caCert")
         parser.add_argument("--k8s.token", type=str, help="k8s token")
         parser.add_argument("--k8s.verifySSL", type=bool, help="k8s verifySSL")
+        parser.add_argument("--k8s.namespace", type=str, help="k8s namespace")
 
         parser.add_argument("--bootstrap.adminUsername", type=str, help="bootstrap admin username")
         parser.add_argument("--bootstrap.adminPassword", type=str, help="bootstrap admin password")
@@ -370,6 +377,7 @@ class APIServerConfig(BaseModel):
         v.bind_env("k8s.caCert")
         v.bind_env("k8s.token")
         v.bind_env("k8s.verifySSL")
+        v.bind_env("k8s.namespace")
 
         v.bind_env("bootstrap.adminUsername")
         v.bind_env("bootstrap.adminPassword")

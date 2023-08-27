@@ -220,7 +220,7 @@ async def handle_pod_create_update_event(srv: Optional['src.apiserver.service.Ro
         # render template
         kv = pod.values | srv.opt.k8s_config_values | template.values
         rendered_template_str, _, err = render_template_str(template.template_str, kv)
-        original_template_str = template.template_str
+        original_template_str, _, _ = render_template_str(template.template_str, template.values)
     else:
         kv = pod.values | srv.opt.k8s_config_values
         rendered_template_str, _, err = render_template_str(pod.template_str, kv)

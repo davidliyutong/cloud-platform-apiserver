@@ -26,7 +26,7 @@ For example:
         "POD_CPU_LIM": "2000m",
         "POD_MEM_LIM": "4096Mi",
         "POD_STORAGE_LIM": "10Mi",
-        "POD_AUTH": "uid-basic-auth",
+        "POD_AUTH": "833c2ccc-afb6-4093-8f2c-ec1087c67d47-basic-auth",
         "CONFIG_CODER_HOSTNAME": "code.example.org",
         "CONFIG_CODER_TLS_SECRET": "code-tls-secret",
         "CONFIG_VNC_HOSTNAME": "vnc.example.org",

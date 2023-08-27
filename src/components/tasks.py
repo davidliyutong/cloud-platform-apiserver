@@ -123,7 +123,7 @@ def check_kubernetes_connection(opt: APIServerConfig) -> Optional[Exception]:
 
     v1 = get_k8s_client(opt.k8s_host, opt.k8s_port, opt.k8s_ca_cert, opt.k8s_token, debug=False).CoreV1Api()
     try:
-        _ = v1.list_namespaced_pod(namespace=config.CONFIG_PROJECT_NAME)
+        _ = v1.list_namespaced_pod(namespace=opt.k8s_namespace)
     except Exception as e:
         logger.exception(e)
         return e

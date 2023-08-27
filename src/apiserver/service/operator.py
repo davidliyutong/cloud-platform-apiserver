@@ -17,7 +17,7 @@ from src.components.config import (
     CONFIG_K8S_CREDENTIAL_FMT,
     CONFIG_K8S_POD_LABEL_FMT,
     CONFIG_K8S_POD_LABEL_KEY,
-    CONFIG_PROJECT_NAMESPACE,
+    CONFIG_K8S_NAMESPACE,
     CONFIG_K8S_SERVICE_FMT
 )
 from .common import ServiceInterface
@@ -25,9 +25,10 @@ from .common import ServiceInterface
 
 class K8SOperatorService(ServiceInterface):
 
-    def __init__(self, c: Optional[client]):
+    def __init__(self, c: Optional[client], namespace: str = CONFIG_K8S_NAMESPACE):
         super().__init__()
         self.client = c
+        self.namespace = namespace
         self.v1 = self.client.CoreV1Api()
         self.app_v1 = self.client.AppsV1Api()
         self.networking_v1 = self.client.NetworkingV1Api()
@@ -71,7 +72,7 @@ class K8SOperatorService(ServiceInterface):
         try:
             ret = self.v1.read_namespaced_secret(
                 secret_name,
-                CONFIG_PROJECT_NAMESPACE
+                self.namespace
             )
             if ret is not None:
                 return True, None
@@ -91,7 +92,7 @@ class K8SOperatorService(ServiceInterface):
         try:
             ret = self.v1.read_namespaced_service(
                 CONFIG_K8S_SERVICE_FMT.format(pod_id),
-                CONFIG_PROJECT_NAMESPACE
+                self.namespace
             )
             if ret is not None:
                 return False, None
@@ -122,7 +123,7 @@ class K8SOperatorService(ServiceInterface):
                 # update the secret
                 ret = self.v1.patch_namespaced_secret(
                     secret_name,
-                    CONFIG_PROJECT_NAMESPACE,
+                    self.namespace,
                     kubernetes.client.V1Secret(
                         api_version="v1",
                         kind="Secret",
@@ -131,7 +132,7 @@ class K8SOperatorService(ServiceInterface):
                         },
                         metadata=kubernetes.client.V1ObjectMeta(
                             name=CONFIG_K8S_CREDENTIAL_FMT.format(user_uuid),
-                            namespace=CONFIG_PROJECT_NAMESPACE
+                            namespace=self.namespace
                         )
                     )
                 )
@@ -144,7 +145,7 @@ class K8SOperatorService(ServiceInterface):
             try:
                 # create the secret
                 ret = self.v1.create_namespaced_secret(
-                    CONFIG_PROJECT_NAMESPACE,
+                    self.namespace,
                     kubernetes.client.V1Secret(
                         api_version="v1",
                         kind="Secret",
@@ -153,7 +154,7 @@ class K8SOperatorService(ServiceInterface):
                         },
                         metadata=kubernetes.client.V1ObjectMeta(
                             name=CONFIG_K8S_CREDENTIAL_FMT.format(user_uuid),
-                            namespace=CONFIG_PROJECT_NAMESPACE
+                            namespace=self.namespace
                         )
                     )
                 )
@@ -183,7 +184,7 @@ class K8SOperatorService(ServiceInterface):
                 # delete the secret
                 ret = self.v1.delete_namespaced_secret(
                     secret_name,
-                    CONFIG_PROJECT_NAMESPACE,
+                    self.namespace,
                 )
                 if ret is None:
                     logger.warning(f"failed to delete k8s secret {CONFIG_K8S_CREDENTIAL_FMT.format(user_uuid)}")
@@ -234,12 +235,12 @@ class K8SOperatorService(ServiceInterface):
             for _, col in self._resource_function_map.items():
                 # get all resources with the pod label of this kind
                 resources = col['list'](
-                    CONFIG_PROJECT_NAMESPACE,
+                    self.namespace,
                     label_selector=f"{CONFIG_K8S_POD_LABEL_KEY}={pod_label}"
                 )
                 # delete each resource
                 for resource in resources.items:
-                    col['delete'](resource.metadata.name, CONFIG_PROJECT_NAMESPACE)
+                    col['delete'](resource.metadata.name, self.namespace)
 
         except ApiException as e:
             logger.exception(e)
@@ -260,7 +261,7 @@ class K8SOperatorService(ServiceInterface):
         kind = resource['kind']
         try:
             # dynamically call the corresponding function and find if the resource exists
-            self._resource_function_map[kind]['get'](resource['metadata']['name'], CONFIG_PROJECT_NAMESPACE)
+            self._resource_function_map[kind]['get'](resource['metadata']['name'], self.namespace)
             exists = True
         except ApiException as e:
             if e.reason == 'Not Found':
@@ -274,7 +275,7 @@ class K8SOperatorService(ServiceInterface):
                 # update the resource
                 self._resource_function_map[kind]['patch'](
                     resource['metadata']['name'],
-                    CONFIG_PROJECT_NAMESPACE,
+                    self.namespace,
                     resource
                 )
             except ApiException as e:
@@ -283,7 +284,7 @@ class K8SOperatorService(ServiceInterface):
         else:
             try:
                 # create the resource
-                self._resource_function_map[kind]['create'](CONFIG_PROJECT_NAMESPACE, resource)
+                self._resource_function_map[kind]['create'](self.namespace, resource)
             except ApiException as e:
                 logger.exception(e)
                 return e

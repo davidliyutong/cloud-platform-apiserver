@@ -125,6 +125,7 @@ table lists all the parameters.
 | Kubernetes CA certificate path      | `--k8s.caCert`              | `CLPL_K8S_CACERT`              | Path of Kubernetes CA certificate                    | `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` |
 | Kubernetes Token                    | `--k8s.token`               | `CLPL_K8S_TOKEN`               | Kubernetes token                                     | `/var/run/secrets/kubernetes.io/serviceaccount/token`  |
 | Kubernetes SSL Verification         | `--k8s.verifySSL`           | `CLPL_K8S_VERIFYSSL`           | Boolean flag for Kubernetes SSL verification         | `false`                                                |
+| Kubernetes Namespace                | `--k8s.namespace`           | `CLPL_K8S_NAMESPACE`           | Kubernetes namespace                                 | `clpl`                                                 |
 | Bootstrap Admin Username            | `--bootstrap.adminUsername` | `CLPL_BOOTSTRAP_ADMINUSERNAME` | Default admin username                               | `admin`                                                |
 | Bootstrap Admin Password            | `--bootstrap.adminPassword` | `CLPL_BOOTSTRAP_ADMINPASSWORD` | Default admin password                               | `admin`                                                |
 | Configuration Token Secret          | `--config.tokenSecret`      | `CLPL_CONFIG_TOKENSECRET`      | Secret key for sign long-term token, must be strong  | `null`                                                 |
