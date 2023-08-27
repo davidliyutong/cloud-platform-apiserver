@@ -14,7 +14,7 @@ from pydantic import BaseModel, UUID4, EmailStr, SecretStr
 from pydantic import field_validator, field_serializer
 
 import src.components.config as config
-from src.components.utils import render_template_str
+from src.components.utils import render_template_str, is_valid_rfc1123
 
 database_name = config.CONFIG_PROJECT_NAME
 global_collection_name = config.CONFIG_GLOBAL_COLLECTION_NAME
@@ -110,6 +110,17 @@ class UserModel(BaseModel):
     role: UserRoleEnum
     owned_pod_ids: List[UUID4]  # not used
     quota: Optional[QuotaModel]
+
+    @field_validator("username")
+    def username_must_be_valid(cls, v):
+        # username must meet the requirement of RFC 1123
+        # https://tools.ietf.org/html/rfc1123
+        if v is None or len(v) == 0:
+            raise ValueError("username cannot be empty")
+
+        if not is_valid_rfc1123(v):
+            raise ValueError("username must meet the requirement of RFC 1123")
+        return v
 
     @field_validator("uuid")
     def uuid_must_be_valid(cls, v):
@@ -231,7 +242,7 @@ class TemplateModel(BaseModel):
         "POD_MEM_LIM": "4096Mi",
         "POD_STORAGE_LIM": "10Mi",
         "POD_REPLICAS": "1",
-        "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format("username"),
+        "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format("5a345c88-c963-4fe4-b78f-f12451f968ff'"),
         "CONFIG_CODER_HOSTNAME": "code.example.org",
         "CONFIG_CODER_TLS_SECRET": "code-tls-secret",
         "CONFIG_VNC_HOSTNAME": "vnc.example.org",
