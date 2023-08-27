@@ -104,13 +104,13 @@ class K8SOperatorService(ServiceInterface):
                 logger.exception(e)
                 return False, e
 
-    async def create_or_update_user_credentials(self, username: str, htpasswd: bytes) -> Optional[Exception]:
+    async def create_or_update_user_credentials(self, user_uuid: str, htpasswd: bytes) -> Optional[Exception]:
         """
         Create or update user credentials in the cluster. Similar to kubectl apply
         """
 
         # calculate the secret name
-        secret_name = CONFIG_K8S_CREDENTIAL_FMT.format(username)
+        secret_name = CONFIG_K8S_CREDENTIAL_FMT.format(user_uuid)
 
         # check if the secret exists
         secret_exists, err = await self.is_secret_exists(secret_name)
@@ -130,7 +130,7 @@ class K8SOperatorService(ServiceInterface):
                             "auth": base64.b64encode(htpasswd).decode()
                         },
                         metadata=kubernetes.client.V1ObjectMeta(
-                            name=CONFIG_K8S_CREDENTIAL_FMT.format(username),
+                            name=CONFIG_K8S_CREDENTIAL_FMT.format(user_uuid),
                             namespace=CONFIG_PROJECT_NAMESPACE
                         )
                     )
@@ -152,7 +152,7 @@ class K8SOperatorService(ServiceInterface):
                             "auth": base64.b64encode(htpasswd).decode()
                         },
                         metadata=kubernetes.client.V1ObjectMeta(
-                            name=CONFIG_K8S_CREDENTIAL_FMT.format(username),
+                            name=CONFIG_K8S_CREDENTIAL_FMT.format(user_uuid),
                             namespace=CONFIG_PROJECT_NAMESPACE
                         )
                     )
@@ -165,13 +165,13 @@ class K8SOperatorService(ServiceInterface):
 
         return None
 
-    async def delete_user_credential(self, username: str) -> Optional[Exception]:
+    async def delete_user_credential(self, user_uuid: str) -> Optional[Exception]:
         """
         Delete user credentials in the cluster
         """
 
         # calculate the secret name
-        secret_name = CONFIG_K8S_CREDENTIAL_FMT.format(username)
+        secret_name = CONFIG_K8S_CREDENTIAL_FMT.format(user_uuid)
 
         # check if the secret exists
         secret_exists, err = await self.is_secret_exists(secret_name)
@@ -186,7 +186,7 @@ class K8SOperatorService(ServiceInterface):
                     CONFIG_PROJECT_NAMESPACE,
                 )
                 if ret is None:
-                    logger.warning(f"failed to delete k8s secret {CONFIG_K8S_CREDENTIAL_FMT.format(username)}")
+                    logger.warning(f"failed to delete k8s secret {CONFIG_K8S_CREDENTIAL_FMT.format(user_uuid)}")
                     return errors.k8s_failed_to_delete
                 else:
                     return None

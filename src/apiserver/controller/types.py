@@ -307,6 +307,7 @@ class PodUpdateRequest(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     username: Optional[str] = None
+    user_uuid: Optional[str] = None
     timeout_s: Optional[int] = None
     target_status: Optional[datamodels.PodStatusEnum] = None
 

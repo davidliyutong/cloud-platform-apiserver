@@ -258,10 +258,12 @@ class PodModel(BaseModel):
     name: str
     description: str
     template_ref: UUID4
+    template_str: Optional[str]
     cpu_lim_m_cpu: int
     mem_lim_mb: int
     storage_lim_mb: int
     username: str
+    user_uuid: UUID4
     created_at: datetime.datetime
     started_at: datetime.datetime
     accessed_at: datetime.datetime
@@ -315,7 +317,7 @@ class PodModel(BaseModel):
             "POD_CPU_LIM": str(self.cpu_lim_m_cpu) + "m",
             "POD_MEM_LIM": str(self.mem_lim_mb) + "Mi",
             "POD_STORAGE_LIM": str(self.storage_lim_mb) + "Mi",
-            "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format(self.username),
+            "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format(str(self.user_uuid)),
             "POD_REPLICAS": "1" if self.target_status == PodStatusEnum.running else "0",
         }
 
@@ -323,6 +325,7 @@ class PodModel(BaseModel):
     def new(cls,
             template_ref: Optional[str],
             username: str,
+            user_uuid: str,
             name: str = "",
             description: str = "",
             cpu_lim_m_cpu: int = 1000,
@@ -338,6 +341,7 @@ class PodModel(BaseModel):
             mem_lim_mb=mem_lim_mb,
             storage_lim_mb=storage_lim_mb,
             username=username,
+            user_uuid=uuid.UUID(user_uuid),
             created_at=datetime.datetime.utcnow(),
             started_at=datetime.datetime.fromtimestamp(0),
             accessed_at=datetime.datetime.fromtimestamp(0),

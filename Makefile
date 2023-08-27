@@ -1,4 +1,4 @@
-GIT_VERSION := $(shell git describe --tags --abbrev=0)
+GIT_VERSION := $(shell git describe --tags)
 
 build.docker.native:
 	docker build -t davidliyutong/clpl-apiserver:${GIT_VERSION} -f manifests/docker/Dockerfile .
