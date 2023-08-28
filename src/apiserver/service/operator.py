@@ -1,9 +1,10 @@
 """
 K8SOperator service
 """
-
+import asyncio
 import base64
 import io
+import time
 from typing import Optional, Tuple
 
 import kubernetes
@@ -18,9 +19,10 @@ from src.components.config import (
     CONFIG_K8S_POD_LABEL_FMT,
     CONFIG_K8S_POD_LABEL_KEY,
     CONFIG_K8S_NAMESPACE,
-    CONFIG_K8S_SERVICE_FMT
+    CONFIG_K8S_SERVICE_FMT, CONFIG_K8S_DEPLOYMENT_FMT
 )
 from .common import ServiceInterface
+from ...components.datamodels import PodStatusEnum
 
 
 class K8SOperatorService(ServiceInterface):
@@ -221,6 +223,32 @@ class K8SOperatorService(ServiceInterface):
 
         logger.info(f"pod {pod_id} created or updated successfully")
         return None
+
+    async def wait_pod(self, pod_id: str, target_status: PodStatusEnum, timeout_s: int = 120) -> Optional[Exception]:
+        start_t = time.time()
+        while True:
+            try:
+                # check the status of deployment
+                ret = self.app_v1.read_namespaced_deployment_status(
+                    CONFIG_K8S_DEPLOYMENT_FMT.format(pod_id),
+                    self.namespace
+                )
+
+                # check if the status is the target status
+                _current_status = PodStatusEnum.from_k8s_status(ret.status)
+
+                if _current_status == target_status:
+                    logger.info(f"pod {pod_id} status is {target_status}")
+                    return None
+                elif (time.time() - start_t) > timeout_s:
+                    logger.warning(f"pod {pod_id} status is {_current_status}, timeout")
+                    return errors.k8s_timeout
+                else:
+                    await asyncio.sleep(2)
+
+            except ApiException as e:
+                logger.exception(e)
+                return errors.k8s_failed_to_update
 
     async def delete_pod(self, pod_id: str) -> Optional[Exception]:
         """

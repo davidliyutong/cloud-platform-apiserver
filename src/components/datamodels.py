@@ -9,6 +9,7 @@ from hashlib import sha256
 from typing import List, Optional, Dict, Any, Union
 
 import bcrypt
+import kubernetes
 import shortuuid
 from pydantic import BaseModel, UUID4, EmailStr, SecretStr
 from pydantic import field_validator, field_serializer
@@ -73,6 +74,19 @@ class PodStatusEnum(str, Enum):
     deleting = "deleting"  # current (unused)
     failed = "failed"  # current
     unknown = "unknown"  # current
+
+    @classmethod
+    def from_k8s_status(cls, ret_status: kubernetes.client.models.v1_deployment_status.V1DeploymentStatus):
+        if ret_status.replicas is None:
+            if ret_status.ready_replicas is None:
+                return cls.stopped
+            else:
+                return cls.pending
+        else:
+            if ret_status.ready_replicas is None:
+                return cls.pending
+            else:
+                return cls.running
 
 
 class UserStatusEnum(str, Enum):

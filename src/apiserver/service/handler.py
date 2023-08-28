@@ -10,7 +10,7 @@ from loguru import logger
 from pydantic import BaseModel
 
 import src.apiserver.service
-from src.components.datamodels import UserStatusEnum, ResourceStatusEnum
+from src.components.datamodels import UserStatusEnum, ResourceStatusEnum, PodStatusEnum
 from src.components.events import (
     TemplateCreateEvent, TemplateUpdateEvent, TemplateDeleteEvent,
     UserCreateEvent, UserUpdateEvent, UserDeleteEvent,
@@ -236,13 +236,20 @@ async def handle_pod_create_update_event(srv: Optional['src.apiserver.service.Ro
         logger.error(f"handle_pod_create_update_event failed to create pod {pod.pod_id}: {err}")
         return err
 
+    err = await srv.k8s_operator_service.wait_pod(pod.pod_id, pod.target_status)
+    if err is not None:
+        logger.error(f"handle_pod_create_update_event failed to wait pod {pod.pod_id}: {err}")
+        pod_current_status = PodStatusEnum.failed
+    else:
+        pod_current_status = pod.target_status
+
     # update pod's status
     _now = datetime.datetime.utcnow()
     _, err = await srv.pod_service.repo.update(
         pod_id=pod.pod_id,
         started_at=_now,
         accessed_at=_now,
-        current_status=pod.target_status,  # FIXME: might cause trouble
+        current_status=pod_current_status,
         template_str=original_template_str,
     )
     if err is not None:
