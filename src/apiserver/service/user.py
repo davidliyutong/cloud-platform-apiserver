@@ -3,6 +3,8 @@ User service
 """
 
 import json
+import secrets
+from hashlib import sha256
 from typing import Tuple
 
 from loguru import logger
@@ -74,6 +76,23 @@ class UserService(ServiceInterface):
         """
         Update a user.
         """
+        if req.password is not None and not req._skip_password_check:
+            # if password is not None, update password, but check the old password
+            if req.old_password is None:
+                return None, errors.old_password_required
+
+            # retrieve user from db
+            user, err = await self.repo.get(username=req.username)
+            if err is not None:
+                return None, err
+
+            # compare password
+            password_hashed = sha256(req.old_password.encode()).hexdigest()
+            if not secrets.compare_digest(
+                    password_hashed.encode('utf-8'),
+                    str(user.password.get_secret_value()).encode('utf-8')
+            ):
+                return None, errors.wrong_password
 
         user, err = await self.repo.update(username=req.username,
                                            password=req.password,

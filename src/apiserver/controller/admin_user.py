@@ -220,6 +220,7 @@ async def update(request, username: str):
         body = request.json
         req = UserUpdateRequest(**body)
         req.username = username  # set username to request
+        req._skip_password_check = True  # skip password check
 
         # update user
         user, err = await get_root_service().user_service.update(request.app, req)

@@ -120,6 +120,8 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt # CHANGE ME
             - name: CLPL_K8S_TOKEN
               value: /var/run/secrets/kubernetes.io/serviceaccount/token # CHANGE ME
+            - name: CLPL_K8S_NAMESPACE
+              value: clpl # CHANGE ME
 
           ports:
             - containerPort: 8080
@@ -206,7 +208,9 @@ spec:
               protocol: TCP
           env:
             - name: CLPL_BACKEND_URL # need to match the backend
-              value: "http://apiserver.clpl.svc.cluster.local:8080" # specify http/https, use 127.0.0.1 instead of localhost
+              value: "http://apiserver.clpl-dev.svc.cluster.local:8080" # specify http/https, use 127.0.0.1 instead of localhost
+            - name: CLPL_DNS_RESOLVER
+              value: "10.96.0.10" # CHANGE ME
           resources:
             requests:
               memory: "64Mi"

@@ -20,16 +20,17 @@ CONFIG_LOG_PATH_KEY = CONFIG_PROJECT_NAME.upper() + "_LOG_PATH"
 CONFIG_LOG_PATH_DEFAULT = "./logs/apiserver"
 CONFIG_DEFAULT_CONFIG_SEARCH_PATH = osp.join(CONFIG_HOME_PATH, ".config", CONFIG_PROJECT_NAME)
 CONFIG_DEFAULT_CONFIG_PATH = osp.join(CONFIG_DEFAULT_CONFIG_SEARCH_PATH, f"{CONFIG_CONFIG_NAME}.yaml")
-CONFIG_PROJECT_NAMESPACE = "clpl"
 CONFIG_EVENT_QUEUE_NAME = "clpl_event_queue"
 CONFIG_GLOBAL_COLLECTION_NAME = "clpl_global"
 CONFIG_USER_COLLECTION_NAME = "clpl_users"
 CONFIG_POD_COLLECTION_NAME = "clpl_pods"
 CONFIG_TEMPLATE_COLLECTION_NAME = "clpl_templates"
 CONFIG_K8S_CREDENTIAL_FMT = "{}-basic-auth"
+CONFIG_K8S_DEPLOYMENT_FMT = "clpl-{}"
 CONFIG_K8S_POD_LABEL_FMT = "apps.clpl-{}"
 CONFIG_K8S_POD_LABEL_KEY = "k8s-app"
 CONFIG_K8S_SERVICE_FMT = "clpl-svc-{}"
+CONFIG_K8S_NAMESPACE = "clpl"
 CONFIG_SCAN_POD_INTERVAL_S = 120
 CONFIG_HEARTBEAT_INTERVAL_S = 120
 CONFIG_SHUTDOWN_GRACE_PERIOD_S = 60
@@ -60,6 +61,27 @@ class APIServerConfig(BaseModel):
     k8s_ca_cert: str = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
     k8s_token: str = "/var/run/secrets/kubernetes.io/serviceaccount/token"
     k8s_verify_ssl: bool = False
+    k8s_namespace: str = CONFIG_K8S_NAMESPACE
+
+    oidc_name: str = "clpl"
+    oidc_base_url: str = "https://authentik.example.com"
+    oidc_authorization_url: str = ""
+    oidc_token_url: str = ""
+    oidc_user_info_url: str = ""
+    oidc_logout_url: str = ""
+    oidc_jwks_url: str = ""
+    oidc_frontend_login_url: str = ""
+    oidc_client_id: str = ""
+    oidc_client_secret: str = ""
+    oidc_redirect_url: str = None
+    oidc_scope: List[str] = ["openid"]
+    oidc_scope_delimiter: str = "+"
+    oidc_response_type: str = "code"
+    oidc_grant_type: str = "authorization_code"
+    oidc_user_filter: str = "{}"  # {"$and": [{"organize.id": "26000"}]}
+    oidc_user_info_path: str = "$"  # entities[0]
+    oidc_username_path: str = "preferred_username"  # account
+    oidc_email_path: str = "email"
 
     bootstrap_admin_username: str = "admin"
     bootstrap_admin_password: str = "admin"
@@ -70,6 +92,7 @@ class APIServerConfig(BaseModel):
     config_coder_tls_secret: str = None
     config_vnc_hostname: str = None
     config_vnc_tls_secret: str = None
+    config_use_oidc: bool = False
 
     @logger.catch
     def from_dict(self, d: Dict[str, Any]):
@@ -98,6 +121,27 @@ class APIServerConfig(BaseModel):
         self.k8s_ca_cert = str(d["k8s"]["caCert"])
         self.k8s_token = str(d["k8s"]["token"])
         self.k8s_verify_ssl = bool(d["k8s"]["verifySSL"])
+        self.k8s_namespace = str(d["k8s"]["namespace"])
+
+        self.oidc_name = str(d["oidc"]["name"])
+        self.oidc_base_url = str(d["oidc"]["baseURL"])
+        self.oidc_authorization_url = str(d["oidc"]["authorizationURL"])
+        self.oidc_token_url = str(d["oidc"]["tokenURL"])
+        self.oidc_user_info_url = str(d["oidc"]["userInfoURL"])
+        self.oidc_logout_url = str(d["oidc"]["logoutURL"])
+        self.oidc_jwks_url = str(d["oidc"]["jwksURL"])
+        self.oidc_frontend_login_url = str(d["oidc"]["frontendLoginURL"])
+        self.oidc_client_id = str(d["oidc"]["clientID"])
+        self.oidc_client_secret = str(d["oidc"]["clientSecret"])
+        self.oidc_redirect_url = str(d["oidc"]["redirectURL"])
+        self.oidc_scope = list(d["oidc"]["scope"])
+        self.oidc_scope_delimiter = str(d["oidc"]["scopeDelimiter"])
+        self.oidc_response_type = str(d["oidc"]["responseType"])
+        self.oidc_grant_type = str(d["oidc"]["grantType"])
+        self.oidc_user_filter = str(d["oidc"]["userFilter"])
+        self.oidc_user_info_path = str(d["oidc"]["userInfoPath"])
+        self.oidc_username_path = str(d["oidc"]["usernamePath"])
+        self.oidc_email_path = str(d["oidc"]["emailPath"])
 
         self.bootstrap_admin_password = str(d["bootstrap"]["adminPassword"])
         self.bootstrap_admin_username = str(d["bootstrap"]["adminUsername"])
@@ -108,6 +152,7 @@ class APIServerConfig(BaseModel):
         self.config_coder_tls_secret = str(d["config"]["coderTLSSecret"])
         self.config_vnc_hostname = str(d["config"]["vncHostname"])
         self.config_vnc_tls_secret = str(d["config"]["vncTLSSecret"])
+        self.config_use_oidc = bool(d["config"]["useOIDC"])
         # <<< Define Values <<<
         return self
 
@@ -138,6 +183,27 @@ class APIServerConfig(BaseModel):
         self.k8s_ca_cert = v.get_string("k8s.caCert")
         self.k8s_token = v.get_string("k8s.token")
         self.k8s_verify_ssl = v.get_bool("k8s.verifySSL")
+        self.k8s_namespace = v.get_string("k8s.namespace")
+
+        self.oidc_name = v.get_string("oidc.name")
+        self.oidc_base_url = v.get_string("oidc.baseURL")
+        self.oidc_authorization_url = v.get_string("oidc.authorizationURL")
+        self.oidc_token_url = v.get_string("oidc.tokenURL")
+        self.oidc_user_info_url = v.get_string("oidc.userInfoURL")
+        self.oidc_logout_url = v.get_string("oidc.logoutURL")
+        self.oidc_jwks_url = v.get_string("oidc.jwksURL")
+        self.oidc_frontend_login_url = v.get_string("oidc.frontendLoginURL")
+        self.oidc_client_id = v.get_string("oidc.clientID")
+        self.oidc_client_secret = v.get_string("oidc.clientSecret")
+        self.oidc_redirect_url = v.get_string("oidc.redirectURL")
+        self.oidc_scope = v.get_string("oidc.scope").split(v.get_string("oidc.scopeDelimiter"))
+        self.oidc_scope_delimiter = v.get_string("oidc.scopeDelimiter")
+        self.oidc_response_type = v.get_string("oidc.responseType")
+        self.oidc_grant_type = v.get_string("oidc.grantType")
+        self.oidc_user_filter = v.get_string("oidc.userFilter")
+        self.oidc_user_info_path = v.get_string("oidc.userInfoPath")
+        self.oidc_username_path = v.get_string("oidc.usernamePath")
+        self.oidc_email_path = v.get_string("oidc.emailPath")
 
         self.bootstrap_admin_password = v.get_string("bootstrap.adminPassword")
         self.bootstrap_admin_username = v.get_string("bootstrap.adminUsername")
@@ -148,6 +214,7 @@ class APIServerConfig(BaseModel):
         self.config_coder_tls_secret = v.get_string("config.coderTLSSecret")
         self.config_vnc_hostname = v.get_string("config.vncHostname")
         self.config_vnc_tls_secret = v.get_string("config.vncTLSSecret")
+        self.config_use_oidc = v.get_bool("config.useOIDC")
         # <<< Define Values <<<
 
         return self
@@ -182,6 +249,28 @@ class APIServerConfig(BaseModel):
                 "caCert": self.k8s_ca_cert,
                 "token": self.k8s_token,
                 "verifySSL": self.k8s_verify_ssl,
+                "namespace": self.k8s_namespace,
+            },
+            "oidc": {
+                "name": self.oidc_name,
+                "baseURL": self.oidc_base_url,
+                "authorizationURL": self.oidc_authorization_url,
+                "tokenURL": self.oidc_token_url,
+                "userInfoURL": self.oidc_user_info_url,
+                "logoutURL": self.oidc_logout_url,
+                "jwksURL": self.oidc_jwks_url,
+                "frontendLoginURL": self.oidc_frontend_login_url,
+                "clientID": self.oidc_client_id,
+                "clientSecret": self.oidc_client_secret,
+                "redirectURL": self.oidc_redirect_url,
+                "scope": self.oidc_scope,
+                "scopeDelimiter": self.oidc_scope_delimiter,
+                "responseType": self.oidc_response_type,
+                "grantType": self.oidc_grant_type,
+                "userFilter": self.oidc_user_filter,
+                "userInfoPath": self.oidc_user_info_path,
+                "usernamePath": self.oidc_username_path,
+                "emailPath": self.oidc_email_path,
             },
             "bootstrap": {
                 "adminUsername": self.bootstrap_admin_username,
@@ -194,6 +283,7 @@ class APIServerConfig(BaseModel):
                 "coderTLSSecret": self.config_coder_tls_secret,
                 "vncHostname": self.config_vnc_hostname,
                 "vncTLSSecret": self.config_vnc_tls_secret,
+                "useOIDC": self.config_use_oidc,
             }
         }
         # <<< Define Values <<<
@@ -221,6 +311,26 @@ class APIServerConfig(BaseModel):
             "K8S_CACERT": self.k8s_ca_cert,
             "K8S_TOKEN": self.k8s_token,
             "K8S_VERIFY_SSL": self.k8s_verify_ssl,
+            "K8S_NAMESPACE": self.k8s_namespace,
+            "OIDC_NAME": self.oidc_name,
+            "OIDC_BASE_URL": self.oidc_base_url,
+            "OIDC_AUTHORIZATION_URL": self.oidc_authorization_url,
+            "OIDC_TOKEN_URL": self.oidc_token_url,
+            "OIDC_USER_INFO_URL": self.oidc_user_info_url,
+            "OIDC_LOGOUT_URL": self.oidc_logout_url,
+            "OIDC_JWKS_URL": self.oidc_jwks_url,
+            "OIDC_FRONTEND_LOGIN_URL": self.oidc_frontend_login_url,
+            "OIDC_CLIENT_ID": self.oidc_client_id,
+            "OIDC_CLIENT_SECRET": self.oidc_client_secret,
+            "OIDC_REDIRECT_URL": self.oidc_redirect_url,
+            "OIDC_SCOPE": self.oidc_scope,
+            "OIDC_SCOPE_DELIMITER": self.oidc_scope_delimiter,
+            "OIDC_RESPONSE_TYPE": self.oidc_response_type,
+            "OIDC_GRANT_TYPE": self.oidc_grant_type,
+            "OIDC_USER_FILTER": self.oidc_user_filter,
+            "OIDC_USER_INFO_PATH": self.oidc_user_info_path,
+            "OIDC_USERNAME_PATH": self.oidc_username_path,
+            "OIDC_EMAIL_PATH": self.oidc_email_path,
             "BOOTSTRAP_ADMIN_USERNAME": self.bootstrap_admin_username,
             "BOOTSTRAP_ADMIN_PASSWORD": self.bootstrap_admin_password,
             "CONFIG_TOKEN_SECRET": self.config_token_secret,
@@ -229,6 +339,7 @@ class APIServerConfig(BaseModel):
             "CONFIG_CODER_TLS_SECRET": self.config_coder_tls_secret,
             "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
             "CONFIG_VNC_TLS_SECRET": self.config_vnc_tls_secret,
+            "CONFIG_USE_OIDC": self.config_use_oidc,
         }
         # <<< Define Values <<<
 
@@ -262,6 +373,27 @@ class APIServerConfig(BaseModel):
         v.set_default("k8s.caCert", _DEFAULT.k8s_ca_cert)
         v.set_default("k8s.token", _DEFAULT.k8s_token)
         v.set_default("k8s.verifySSL", _DEFAULT.k8s_verify_ssl)
+        v.set_default("k8s.namespace", _DEFAULT.k8s_namespace)
+
+        v.set_default("oidc.name", _DEFAULT.oidc_name)
+        v.set_default("oidc.baseURL", _DEFAULT.oidc_base_url)
+        v.set_default("oidc.authorizationURL", _DEFAULT.oidc_authorization_url)
+        v.set_default("oidc.tokenURL", _DEFAULT.oidc_token_url)
+        v.set_default("oidc.userInfoURL", _DEFAULT.oidc_user_info_url)
+        v.set_default("oidc.logoutURL", _DEFAULT.oidc_logout_url)
+        v.set_default("oidc.jwksURL", _DEFAULT.oidc_jwks_url)
+        v.set_default("oidc.frontendLoginURL", _DEFAULT.oidc_frontend_login_url)
+        v.set_default("oidc.clientID", _DEFAULT.oidc_client_id)
+        v.set_default("oidc.clientSecret", _DEFAULT.oidc_client_secret)
+        v.set_default("oidc.redirectURL", _DEFAULT.oidc_redirect_url)
+        v.set_default("oidc.scope", _DEFAULT.oidc_scope_delimiter.join(_DEFAULT.oidc_scope))
+        v.set_default("oidc.scopeDelimiter", _DEFAULT.oidc_scope_delimiter)
+        v.set_default("oidc.responseType", _DEFAULT.oidc_response_type)
+        v.set_default("oidc.grantType", _DEFAULT.oidc_grant_type)
+        v.set_default("oidc.userFilter", _DEFAULT.oidc_user_filter)
+        v.set_default("oidc.userInfoPath", _DEFAULT.oidc_user_info_path)
+        v.set_default("oidc.usernamePath", _DEFAULT.oidc_username_path)
+        v.set_default("oidc.emailPath", _DEFAULT.oidc_email_path)
 
         v.set_default("bootstrap.adminUsername", _DEFAULT.bootstrap_admin_username)
         v.set_default("bootstrap.adminPassword", _DEFAULT.bootstrap_admin_password)
@@ -272,6 +404,7 @@ class APIServerConfig(BaseModel):
         v.set_default("config.coderTLSSecret", _DEFAULT.config_coder_tls_secret)
         v.set_default("config.vncHostname", _DEFAULT.config_vnc_hostname)
         v.set_default("config.vncTLSSecret", _DEFAULT.config_vnc_tls_secret)
+        v.set_default("config.useOIDC", _DEFAULT.config_use_oidc)
         # <<< Set Default Values <<<
 
         return v
@@ -306,6 +439,28 @@ class APIServerConfig(BaseModel):
         parser.add_argument("--k8s.caCert", type=str, help="k8s caCert")
         parser.add_argument("--k8s.token", type=str, help="k8s token")
         parser.add_argument("--k8s.verifySSL", type=bool, help="k8s verifySSL")
+        parser.add_argument("--k8s.namespace", type=str, help="k8s namespace")
+
+        parser.add_argument("--oidc.name", type=str, help="oidc name")
+        parser.add_argument("--oidc.baseURL", type=str, help="oidc baseURL")
+        parser.add_argument("--oidc.authorizationURL", type=str, help="oidc authorizationURL")
+        parser.add_argument("--oidc.tokenURL", type=str, help="oidc tokenURL")
+        parser.add_argument("--oidc.userInfoURL", type=str, help="oidc userInfoURL")
+        parser.add_argument("--oidc.logoutURL", type=str, help="oidc logoutURL")
+        parser.add_argument("--oidc.jwksURL", type=str, help="oidc jwksURL")
+        parser.add_argument("--oidc.frontendLoginURL", type=str, help="oidc frontendLoginURL")
+        parser.add_argument("--oidc.clientID", type=str, help="oidc clientID")
+        parser.add_argument("--oidc.clientSecret", type=str, help="oidc clientSecret")
+        parser.add_argument("--oidc.redirectURL", type=str, help="oidc redirectURL")
+        parser.add_argument("--oidc.scope", type=str, help="oidc scope")
+        parser.add_argument("--oidc.scopeDelimiter", type=str, help="oidc scopeDelimiter")
+        parser.add_argument("--oidc.responseType", type=str, help="oidc responseType")
+        parser.add_argument("--oidc.grantType", type=str, help="oidc grantType")
+        parser.add_argument("--oidc.userFilter", type=str, help="oidc userFilter")
+        parser.add_argument("--oidc.userInfoPath", type=str, help="oidc userInfoPath")
+        parser.add_argument("--oidc.usernamePath", type=str, help="oidc usernamePath")
+        parser.add_argument("--oidc.emailPath", type=str, help="oidc emailPath")
+
 
         parser.add_argument("--bootstrap.adminUsername", type=str, help="bootstrap admin username")
         parser.add_argument("--bootstrap.adminPassword", type=str, help="bootstrap admin password")
@@ -316,6 +471,7 @@ class APIServerConfig(BaseModel):
         parser.add_argument("--config.coderTLSSecret", type=str, help="config code tlsSecret")
         parser.add_argument("--config.vncHostname", type=str, help="config vnc hostname")
         parser.add_argument("--config.vncTLSSecret", type=str, help="config vnc tlsSecret")
+        parser.add_argument("--config.useOIDC", type=bool, help="config useOIDC")
         # <<< Set Default Values <<<
 
         return parser
@@ -370,6 +526,27 @@ class APIServerConfig(BaseModel):
         v.bind_env("k8s.caCert")
         v.bind_env("k8s.token")
         v.bind_env("k8s.verifySSL")
+        v.bind_env("k8s.namespace")
+
+        v.bind_env("oidc.name")
+        v.bind_env("oidc.baseURL")
+        v.bind_env("oidc.authorizationURL")
+        v.bind_env("oidc.tokenURL")
+        v.bind_env("oidc.userInfoURL")
+        v.bind_env("oidc.logoutURL")
+        v.bind_env("oidc.jwksURL")
+        v.bind_env("oidc.frontendLoginURL")
+        v.bind_env("oidc.clientID")
+        v.bind_env("oidc.clientSecret")
+        v.bind_env("oidc.redirectURL")
+        v.bind_env("oidc.scope")
+        v.bind_env("oidc.scopeDelimiter")
+        v.bind_env("oidc.responseType")
+        v.bind_env("oidc.grantType")
+        v.bind_env("oidc.userFilter")
+        v.bind_env("oidc.userInfoPath")
+        v.bind_env("oidc.usernamePath")
+        v.bind_env("oidc.emailPath")
 
         v.bind_env("bootstrap.adminUsername")
         v.bind_env("bootstrap.adminPassword")
@@ -380,6 +557,7 @@ class APIServerConfig(BaseModel):
         v.bind_env("config.coderTLSSecret")
         v.bind_env("config.vncHostname")
         v.bind_env("config.vncTLSSecret")
+        v.bind_env("config.useOIDC")
         # <<< Set Env Values <<<
 
         x = cls()

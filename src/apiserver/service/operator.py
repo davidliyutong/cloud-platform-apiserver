@@ -1,9 +1,10 @@
 """
 K8SOperator service
 """
-
+import asyncio
 import base64
 import io
+import time
 from typing import Optional, Tuple
 
 import kubernetes
@@ -17,17 +18,19 @@ from src.components.config import (
     CONFIG_K8S_CREDENTIAL_FMT,
     CONFIG_K8S_POD_LABEL_FMT,
     CONFIG_K8S_POD_LABEL_KEY,
-    CONFIG_PROJECT_NAMESPACE,
-    CONFIG_K8S_SERVICE_FMT
+    CONFIG_K8S_NAMESPACE,
+    CONFIG_K8S_SERVICE_FMT, CONFIG_K8S_DEPLOYMENT_FMT
 )
 from .common import ServiceInterface
+from ...components.datamodels import PodStatusEnum
 
 
 class K8SOperatorService(ServiceInterface):
 
-    def __init__(self, c: Optional[client]):
+    def __init__(self, c: Optional[client], namespace: str = CONFIG_K8S_NAMESPACE):
         super().__init__()
         self.client = c
+        self.namespace = namespace
         self.v1 = self.client.CoreV1Api()
         self.app_v1 = self.client.AppsV1Api()
         self.networking_v1 = self.client.NetworkingV1Api()
@@ -71,7 +74,7 @@ class K8SOperatorService(ServiceInterface):
         try:
             ret = self.v1.read_namespaced_secret(
                 secret_name,
-                CONFIG_PROJECT_NAMESPACE
+                self.namespace
             )
             if ret is not None:
                 return True, None
@@ -91,7 +94,7 @@ class K8SOperatorService(ServiceInterface):
         try:
             ret = self.v1.read_namespaced_service(
                 CONFIG_K8S_SERVICE_FMT.format(pod_id),
-                CONFIG_PROJECT_NAMESPACE
+                self.namespace
             )
             if ret is not None:
                 return False, None
@@ -104,13 +107,13 @@ class K8SOperatorService(ServiceInterface):
                 logger.exception(e)
                 return False, e
 
-    async def create_or_update_user_credentials(self, username: str, htpasswd: bytes) -> Optional[Exception]:
+    async def create_or_update_user_credentials(self, user_uuid: str, htpasswd: bytes) -> Optional[Exception]:
         """
         Create or update user credentials in the cluster. Similar to kubectl apply
         """
 
         # calculate the secret name
-        secret_name = CONFIG_K8S_CREDENTIAL_FMT.format(username)
+        secret_name = CONFIG_K8S_CREDENTIAL_FMT.format(user_uuid)
 
         # check if the secret exists
         secret_exists, err = await self.is_secret_exists(secret_name)
@@ -122,7 +125,7 @@ class K8SOperatorService(ServiceInterface):
                 # update the secret
                 ret = self.v1.patch_namespaced_secret(
                     secret_name,
-                    CONFIG_PROJECT_NAMESPACE,
+                    self.namespace,
                     kubernetes.client.V1Secret(
                         api_version="v1",
                         kind="Secret",
@@ -130,8 +133,8 @@ class K8SOperatorService(ServiceInterface):
                             "auth": base64.b64encode(htpasswd).decode()
                         },
                         metadata=kubernetes.client.V1ObjectMeta(
-                            name=CONFIG_K8S_CREDENTIAL_FMT.format(username),
-                            namespace=CONFIG_PROJECT_NAMESPACE
+                            name=CONFIG_K8S_CREDENTIAL_FMT.format(user_uuid),
+                            namespace=self.namespace
                         )
                     )
                 )
@@ -144,7 +147,7 @@ class K8SOperatorService(ServiceInterface):
             try:
                 # create the secret
                 ret = self.v1.create_namespaced_secret(
-                    CONFIG_PROJECT_NAMESPACE,
+                    self.namespace,
                     kubernetes.client.V1Secret(
                         api_version="v1",
                         kind="Secret",
@@ -152,8 +155,8 @@ class K8SOperatorService(ServiceInterface):
                             "auth": base64.b64encode(htpasswd).decode()
                         },
                         metadata=kubernetes.client.V1ObjectMeta(
-                            name=CONFIG_K8S_CREDENTIAL_FMT.format(username),
-                            namespace=CONFIG_PROJECT_NAMESPACE
+                            name=CONFIG_K8S_CREDENTIAL_FMT.format(user_uuid),
+                            namespace=self.namespace
                         )
                     )
                 )
@@ -165,13 +168,13 @@ class K8SOperatorService(ServiceInterface):
 
         return None
 
-    async def delete_user_credential(self, username: str) -> Optional[Exception]:
+    async def delete_user_credential(self, user_uuid: str) -> Optional[Exception]:
         """
         Delete user credentials in the cluster
         """
 
         # calculate the secret name
-        secret_name = CONFIG_K8S_CREDENTIAL_FMT.format(username)
+        secret_name = CONFIG_K8S_CREDENTIAL_FMT.format(user_uuid)
 
         # check if the secret exists
         secret_exists, err = await self.is_secret_exists(secret_name)
@@ -183,10 +186,10 @@ class K8SOperatorService(ServiceInterface):
                 # delete the secret
                 ret = self.v1.delete_namespaced_secret(
                     secret_name,
-                    CONFIG_PROJECT_NAMESPACE,
+                    self.namespace,
                 )
                 if ret is None:
-                    logger.warning(f"failed to delete k8s secret {CONFIG_K8S_CREDENTIAL_FMT.format(username)}")
+                    logger.warning(f"failed to delete k8s secret {CONFIG_K8S_CREDENTIAL_FMT.format(user_uuid)}")
                     return errors.k8s_failed_to_delete
                 else:
                     return None
@@ -221,6 +224,32 @@ class K8SOperatorService(ServiceInterface):
         logger.info(f"pod {pod_id} created or updated successfully")
         return None
 
+    async def wait_pod(self, pod_id: str, target_status: PodStatusEnum, timeout_s: int = 120) -> Optional[Exception]:
+        start_t = time.time()
+        while True:
+            try:
+                # check the status of deployment
+                ret = self.app_v1.read_namespaced_deployment_status(
+                    CONFIG_K8S_DEPLOYMENT_FMT.format(pod_id),
+                    self.namespace
+                )
+
+                # check if the status is the target status
+                _current_status = PodStatusEnum.from_k8s_status(ret.status)
+
+                if _current_status == target_status:
+                    logger.info(f"pod {pod_id} status is {target_status}")
+                    return None
+                elif (time.time() - start_t) > timeout_s:
+                    logger.warning(f"pod {pod_id} status is {_current_status}, timeout")
+                    return errors.k8s_timeout
+                else:
+                    await asyncio.sleep(2)
+
+            except ApiException as e:
+                logger.exception(e)
+                return errors.k8s_failed_to_update
+
     async def delete_pod(self, pod_id: str) -> Optional[Exception]:
         """
         Delete a pod in the cluster
@@ -234,12 +263,12 @@ class K8SOperatorService(ServiceInterface):
             for _, col in self._resource_function_map.items():
                 # get all resources with the pod label of this kind
                 resources = col['list'](
-                    CONFIG_PROJECT_NAMESPACE,
+                    self.namespace,
                     label_selector=f"{CONFIG_K8S_POD_LABEL_KEY}={pod_label}"
                 )
                 # delete each resource
                 for resource in resources.items:
-                    col['delete'](resource.metadata.name, CONFIG_PROJECT_NAMESPACE)
+                    col['delete'](resource.metadata.name, self.namespace)
 
         except ApiException as e:
             logger.exception(e)
@@ -260,7 +289,7 @@ class K8SOperatorService(ServiceInterface):
         kind = resource['kind']
         try:
             # dynamically call the corresponding function and find if the resource exists
-            self._resource_function_map[kind]['get'](resource['metadata']['name'], CONFIG_PROJECT_NAMESPACE)
+            self._resource_function_map[kind]['get'](resource['metadata']['name'], self.namespace)
             exists = True
         except ApiException as e:
             if e.reason == 'Not Found':
@@ -274,7 +303,7 @@ class K8SOperatorService(ServiceInterface):
                 # update the resource
                 self._resource_function_map[kind]['patch'](
                     resource['metadata']['name'],
-                    CONFIG_PROJECT_NAMESPACE,
+                    self.namespace,
                     resource
                 )
             except ApiException as e:
@@ -283,7 +312,7 @@ class K8SOperatorService(ServiceInterface):
         else:
             try:
                 # create the resource
-                self._resource_function_map[kind]['create'](CONFIG_PROJECT_NAMESPACE, resource)
+                self._resource_function_map[kind]['create'](self.namespace, resource)
             except ApiException as e:
                 logger.exception(e)
                 return e

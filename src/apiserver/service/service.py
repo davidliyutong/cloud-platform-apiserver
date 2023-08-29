@@ -63,7 +63,7 @@ def new_root_service(opt: APIServerConfig,
         user_service=UserService(user_repo),
         template_service=TemplateService(template_repo),
         pod_service=PodService(pod_repo),
-        k8s_operator_service=K8SOperatorService(k8s_client),
+        k8s_operator_service=K8SOperatorService(k8s_client, opt.k8s_namespace),
         heartbeat_service=HeartbeatService(),
     )
     return _service

@@ -1,10 +1,25 @@
 #!/bin/bash
 
-echo "Starting deletion process of Kubernetes objects."
 NS=clpl
 
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+    -n | --namespace)
+        NS="$2"
+        shift
+        ;;
+    *)
+        echo "illegal option: $1" >&2
+        exit 1
+        ;;
+    esac
+    shift
+done
+
+echo "Starting deletion process of Kubernetes objects."
+
 # List of Kubernetes objects to delete
-objects=("ingress" "services" "pvc" "deployment")
+objects=("deployment" "services" "ingress"  "pvc" )
 
 # Loop over the objects
 for object_type in "${objects[@]}"; do
@@ -16,7 +31,7 @@ for object_type in "${objects[@]}"; do
     # Loop over each object name
     for name in $object_names; do
         echo "Deleting $object_type/$name"
-        kubectl delete "$object_type" "$name"
+        kubectl -n $NS delete "$object_type" "$name"
     done
 done
 

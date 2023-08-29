@@ -87,6 +87,7 @@ class PodRepo:
                      mem_lim_mb: int,
                      storage_lim_mb: int,
                      username: str,
+                     user_uuid: str,
                      timeout_s: int,
                      values: Optional[Dict[str, Any]]) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
         """
@@ -100,6 +101,7 @@ class PodRepo:
             pod = datamodels.PodModel.new(
                 template_ref=template_ref,
                 username=username,
+                user_uuid=user_uuid,
                 name=name,
                 description=description,
                 cpu_lim_m_cpu=cpu_lim_m_cpu,
@@ -126,11 +128,13 @@ class PodRepo:
             name: Optional[str] = None,
             description: Optional[str] = None,
             username: Optional[str] = None,
+            user_uuid: Optional[str] = None,
             timeout_s: Optional[int] = None,
             target_status: Optional[datamodels.PodStatusEnum] = None,
             started_at: Optional[datetime.datetime] = None,  # hidden argument
             accessed_at: Optional[datetime.datetime] = None,  # hidden argument
             current_status: Optional[datamodels.PodStatusEnum] = None,  # hidden argument
+            template_str: Optional[str] = None,  # hidden argument
     ) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
         """
         Update a pod.
@@ -152,6 +156,7 @@ class PodRepo:
                 pod['name'] = name if name is not None else pod['name']
                 pod['description'] = description if description is not None else pod['description']
                 pod['username'] = username if username is not None else pod['username']
+                pod['user_uuid'] = user_uuid if user_uuid is not None else pod['user_uuid']
                 pod['timeout_s'] = timeout_s if timeout_s is not None else pod['timeout_s']
                 pod['target_status'] = target_status if target_status is not None else pod['target_status']
 
@@ -159,6 +164,7 @@ class PodRepo:
                 pod['started_at'] = started_at if started_at is not None else pod['started_at']
                 pod['accessed_at'] = accessed_at if accessed_at is not None else datetime.datetime.utcnow()  # auto
                 pod['current_status'] = current_status if current_status is not None else pod['current_status']
+                pod['template_str'] = template_str if template_str is not None else pod['template_str']
 
                 # if username or target_status is changed, then set resource_status to pending
                 if any([

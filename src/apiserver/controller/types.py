@@ -80,16 +80,24 @@ class UserUpdateRequest(BaseModel):
     None means no change.
     """
     username: str
+    old_password: Optional[str] = None
     password: Optional[str] = None
     status: Optional[str] = None
     email: Optional[EmailStr] = None
     role: Optional[str] = None
     quota: Optional[Dict[str, Any]] = None
+    _skip_password_check: bool = False
 
     @field_validator('username')
     def username_must_be_valid(cls, v):
         if v == "" or v is None:
             raise ValueError("username cannot be empty")
+        return v
+
+    @field_validator('old_password')
+    def old_password_must_be_valid(cls, v):
+        if v == "":
+            raise ValueError("old_password cannot be empty")
         return v
 
     @field_validator('password')
@@ -307,6 +315,7 @@ class PodUpdateRequest(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     username: Optional[str] = None
+    user_uuid: Optional[str] = None
     timeout_s: Optional[int] = None
     target_status: Optional[datamodels.PodStatusEnum] = None
 
@@ -350,3 +359,14 @@ class PodDeleteResponse(PodGetResponse):
     Delete response for pods, the same as get response
     """
     pass
+
+
+class OIDCStatusResponse(BaseModel):
+    name: str
+    path: str
+
+
+from sanic_ext import openapi
+
+# attention: registrate components
+openapi.component(OIDCStatusResponse)

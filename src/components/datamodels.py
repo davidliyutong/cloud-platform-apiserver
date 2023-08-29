@@ -9,6 +9,7 @@ from hashlib import sha256
 from typing import List, Optional, Dict, Any, Union
 
 import bcrypt
+import kubernetes
 import shortuuid
 from pydantic import BaseModel, UUID4, EmailStr, SecretStr
 from pydantic import field_validator, field_serializer
@@ -29,6 +30,7 @@ class GlobalModel(BaseModel):
     """
     uid_counter: int = 0
     flag_crashed: bool = False  # record if last run crashed
+    version: str = config.CONFIG_BUILD_VERSION
 
 
 class UserRoleEnum(str, Enum):
@@ -73,6 +75,19 @@ class PodStatusEnum(str, Enum):
     failed = "failed"  # current
     unknown = "unknown"  # current
 
+    @classmethod
+    def from_k8s_status(cls, ret_status: kubernetes.client.models.v1_deployment_status.V1DeploymentStatus):
+        if ret_status.replicas is None:
+            if ret_status.ready_replicas is None:
+                return cls.stopped
+            else:
+                return cls.pending
+        else:
+            if ret_status.ready_replicas is None:
+                return cls.pending
+            else:
+                return cls.running
+
 
 class UserStatusEnum(str, Enum):
     """
@@ -86,6 +101,7 @@ class QuotaModel(BaseModel):
     """
     Quota model, used to define user quota
     """
+    version: str
     committed: bool = False
     cpu_m: int
     memory_mb: int
@@ -94,11 +110,30 @@ class QuotaModel(BaseModel):
     network_mb: int  # attention: not used
     pod_n: int
 
+    @field_validator("version")
+    def version_must_be_valid(cls, v):
+        if v is None or v == "":
+            v = config.CONFIG_BUILD_VERSION
+        return v
+
+    @classmethod
+    def default_quota(cls):
+        return cls(
+            version=config.CONFIG_BUILD_VERSION,
+            cpu_m=8000,
+            memory_mb=16384,
+            storage_mb=51200,
+            gpu=0,
+            network_mb=0,
+            pod_n=10,
+        )
+
 
 class UserModel(BaseModel):
     """
     User model, used to define user
     """
+    version: str
     resource_status: ResourceStatusEnum = ResourceStatusEnum.pending
     uid: int
     uuid: Optional[UUID4]
@@ -110,6 +145,12 @@ class UserModel(BaseModel):
     role: UserRoleEnum
     owned_pod_ids: List[UUID4]  # not used
     quota: Optional[QuotaModel]
+
+    @field_validator("version")
+    def version_must_be_valid(cls, v):
+        if v is None or v == "":
+            v = config.CONFIG_BUILD_VERSION
+        return v
 
     @field_validator("uuid")
     def uuid_must_be_valid(cls, v):
@@ -157,6 +198,7 @@ class UserModel(BaseModel):
             email: Optional[str] = None,
             quota: Optional[Dict[str, Any]] = None):
         return cls(
+            version=config.CONFIG_BUILD_VERSION,
             uid=uid,
             uuid=None,
             username=username,
@@ -173,6 +215,7 @@ class TemplateModel(BaseModel):
     """
     Template model, used to define template
     """
+    version: str
     resource_status: ResourceStatusEnum = ResourceStatusEnum.pending
     template_id: UUID4
     name: str
@@ -181,6 +224,12 @@ class TemplateModel(BaseModel):
     template_str: str
     fields: Optional[Dict[str, FieldTypeEnum]]  # not used
     defaults: Optional[Dict[str, Any]]  # not used
+
+    @field_validator("version")
+    def version_must_be_valid(cls, v):
+        if v is None or v == "":
+            v = config.CONFIG_BUILD_VERSION
+        return v
 
     @field_validator("template_id")
     def uuid_must_be_valid(cls, v):
@@ -212,6 +261,7 @@ class TemplateModel(BaseModel):
             fields: Optional[Dict[str, Any]],
             defaults: Optional[Dict[str, Any]]):
         return cls(
+            version=config.CONFIG_BUILD_VERSION,
             template_id=uuid.uuid4(),
             name=name,
             description=description,
@@ -253,21 +303,30 @@ class PodModel(BaseModel):
     """
     Pod model, used to define pod
     """
+    version: str
     resource_status: ResourceStatusEnum = ResourceStatusEnum.pending
     pod_id: str
     name: str
     description: str
     template_ref: UUID4
+    template_str: Optional[str]
     cpu_lim_m_cpu: int
     mem_lim_mb: int
     storage_lim_mb: int
     username: str
+    user_uuid: UUID4
     created_at: datetime.datetime
     started_at: datetime.datetime
     accessed_at: datetime.datetime
     timeout_s: int
     current_status: PodStatusEnum
     target_status: PodStatusEnum
+
+    @field_validator("version")
+    def version_must_be_valid(cls, v):
+        if v is None or v == "":
+            v = config.CONFIG_BUILD_VERSION
+        return v
 
     @field_serializer('template_ref')
     def serialize_uuid(self, v: uuid.UUID, _info):
@@ -278,6 +337,10 @@ class PodModel(BaseModel):
         if isinstance(v, str):
             v = datetime.datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%fZ")
         return v
+
+    @field_serializer('user_uuid')
+    def serialize_user_uuid(self, v: uuid.UUID, _info):
+        return str(v)
 
     @field_serializer('created_at')
     def serialize_created_at(self, v: datetime.datetime, _info):
@@ -315,7 +378,7 @@ class PodModel(BaseModel):
             "POD_CPU_LIM": str(self.cpu_lim_m_cpu) + "m",
             "POD_MEM_LIM": str(self.mem_lim_mb) + "Mi",
             "POD_STORAGE_LIM": str(self.storage_lim_mb) + "Mi",
-            "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format(self.username),
+            "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format(str(self.user_uuid)),
             "POD_REPLICAS": "1" if self.target_status == PodStatusEnum.running else "0",
         }
 
@@ -323,6 +386,7 @@ class PodModel(BaseModel):
     def new(cls,
             template_ref: Optional[str],
             username: str,
+            user_uuid: str,
             name: str = "",
             description: str = "",
             cpu_lim_m_cpu: int = 1000,
@@ -330,14 +394,17 @@ class PodModel(BaseModel):
             storage_lim_mb: int = 10240,
             timeout_s: int = 3600):
         return cls(
+            version=config.CONFIG_BUILD_VERSION,
             pod_id=shortuuid.uuid(),
             name=name,
             description=description,
             template_ref=uuid.UUID(template_ref),
+            template_str=None,
             cpu_lim_m_cpu=cpu_lim_m_cpu,
             mem_lim_mb=mem_lim_mb,
             storage_lim_mb=storage_lim_mb,
             username=username,
+            user_uuid=uuid.UUID(user_uuid),
             created_at=datetime.datetime.utcnow(),
             started_at=datetime.datetime.fromtimestamp(0),
             accessed_at=datetime.datetime.fromtimestamp(0),

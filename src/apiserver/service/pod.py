@@ -104,6 +104,7 @@ class PodService(ServiceInterface):
             mem_lim_mb=req.mem_lim_mb,
             storage_lim_mb=req.storage_lim_mb,
             username=req.username,
+            user_uuid=str(user.uuid),
             timeout_s=req.timeout_s,
             values=req.values,
         )
@@ -129,12 +130,15 @@ class PodService(ServiceInterface):
             user, err = await self.parent.user_service.repo.get(username=req.username)
             if err is not None:
                 return None, err
+            else:
+                req.user_uuid = user.uuid
 
         pod, err = await self.repo.update(
             pod_id=req.pod_id,
             name=req.name,
             description=req.description,
             username=req.username,
+            user_uuid=req.user_uuid,
             timeout_s=req.timeout_s,
             target_status=req.target_status,
         )
