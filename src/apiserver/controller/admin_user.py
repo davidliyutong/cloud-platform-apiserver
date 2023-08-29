@@ -272,6 +272,16 @@ async def delete(request, username: str):
             status=http.HTTPStatus.BAD_REQUEST
         )
     else:
+        # check if username is the same as the current user, if so, return error
+        if username == request.ctx.user['username']:
+            return json_response(
+                UserDeleteResponse(
+                    status=http.HTTPStatus.BAD_REQUEST,
+                    message=str(errors.user_not_allowed)
+                ).model_dump(),
+                status=http.HTTPStatus.BAD_REQUEST
+            )
+
         # delete user
         req = UserDeleteRequest(username=username)
         deleted_user, err = await get_root_service().user_service.delete(request.app, req)

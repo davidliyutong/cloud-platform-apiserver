@@ -78,12 +78,15 @@ class UserRepo:
             logger.error(f"get_collection error: {e}")
             return 0, [], errors.db_connection_error
 
-    async def create(self,
-                     username: str,
-                     password: str,
-                     email: str,
-                     role: str,
-                     quota: Dict[str, Any]) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
+    async def create(
+            self,
+            username: str,
+            password: str,
+            email: str,
+            role: str,
+            quota: Dict[str, Any],
+            extra_info: Optional[Dict[str, Any]] = None  # hidden argument
+    ) -> Tuple[Optional[datamodels.UserModel], Optional[Exception]]:
         """
         Create a user.
         """
@@ -110,7 +113,8 @@ class UserRepo:
                 password=password,
                 role=datamodels.UserRoleEnum(role),
                 email=email,
-                quota=quota
+                quota=quota,
+                extra_info=extra_info
             )
 
             # insert into database

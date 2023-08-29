@@ -364,7 +364,8 @@ async def create_or_login(cfg: OAuth2Config, user_info: dict) -> Tuple[Optional[
                                               password=random_password(),
                                               email=email,
                                               role=UserRoleEnum.user,
-                                              quota=QuotaModel.default_quota())
+                                              quota=QuotaModel.default_quota(),
+                                              extra_info=user_info)
             if err is not None:
                 return None, err
         else:

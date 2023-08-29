@@ -156,6 +156,12 @@ class QuotaModel(BaseModel):
         self.model_validate(self)
         return self
 
+    @classmethod
+    def upgrade(cls, d: Dict[str, Any]) -> Self:
+        res = cls(**d)
+        res.version = config.CONFIG_BUILD_VERSION
+        return res
+
 
 class UserModel(BaseModel):
     """
@@ -173,6 +179,7 @@ class UserModel(BaseModel):
     role: UserRoleEnum
     owned_pod_ids: List[UUID4]  # not used
     quota: Optional[QuotaModel]
+    extra_info: Optional[Dict[str, Any]] = None
 
     @field_validator("version")
     def version_must_be_valid(cls, v):
@@ -217,6 +224,12 @@ class UserModel(BaseModel):
             v = []
         return v
 
+    @field_validator("quota")
+    def quota_must_be_valid(cls, v):
+        if isinstance(v, dict):
+            v = QuotaModel(**v)
+        return v
+
     @classmethod
     def new(cls,
             uid: int,
@@ -224,7 +237,8 @@ class UserModel(BaseModel):
             password: str,
             role: UserRoleEnum,
             email: Optional[str] = None,
-            quota: Optional[Dict[str, Any]] = None):
+            quota: Optional[Dict[str, Any]] = None,
+            extra_info: Optional[Dict[str, Any]] = None):
         return cls(
             version=config.CONFIG_BUILD_VERSION,
             uid=uid,
@@ -236,7 +250,29 @@ class UserModel(BaseModel):
             role=role,
             owned_pod_ids=[],
             quota=quota,
+            extra_info=extra_info,
         )
+
+    @classmethod
+    def upgrade(cls, d: Dict[str, Any]) -> Self:
+        version = d['version']
+        # if version <= "v0.0.3":
+        #     return cls(
+        #         version=config.CONFIG_BUILD_VERSION,
+        #         uid=d['uid'],
+        #         uuid=d['uuid'],
+        #         username=d['username'],
+        #         email=d['email'],
+        #         password=d['password'],
+        #         htpasswd=d['htpasswd'],
+        #         role=d['role'],
+        #         owned_pod_ids=d['owned_pod_ids'],
+        #         quota=QuotaModel(**d['quota']),
+        #     )
+        # else:
+        res = cls(**d)
+        res.version = config.CONFIG_BUILD_VERSION
+        return res
 
 
 class TemplateModel(BaseModel):
@@ -325,6 +361,12 @@ class TemplateModel(BaseModel):
         return {
             'POD_IMAGE_REF': self.image_ref,
         }
+
+    @classmethod
+    def upgrade(cls, d: Dict[str, Any]) -> Self:
+        res = cls(**d)
+        res.version = config.CONFIG_BUILD_VERSION
+        return res
 
 
 class PodModel(BaseModel):
@@ -440,6 +482,12 @@ class PodModel(BaseModel):
             current_status=PodStatusEnum.pending,
             target_status=PodStatusEnum.running,
         )
+
+    @classmethod
+    def upgrade(cls, d: Dict[str, Any]) -> Self:
+        res = cls(**d)
+        res.version = config.CONFIG_BUILD_VERSION
+        return res
 
 
 from sanic_ext import openapi
