@@ -116,6 +116,18 @@ class QuotaModel(BaseModel):
             v = config.CONFIG_BUILD_VERSION
         return v
 
+    @classmethod
+    def default_quota(cls):
+        return cls(
+            version=config.CONFIG_BUILD_VERSION,
+            cpu_m=8000,
+            memory_mb=16384,
+            storage_mb=51200,
+            gpu=0,
+            network_mb=0,
+            pod_n=10,
+        )
+
 
 class UserModel(BaseModel):
     """

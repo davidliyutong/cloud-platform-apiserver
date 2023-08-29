@@ -15,6 +15,7 @@ from src.apiserver.controller.admin_pod import bp as admin_pod_bp
 from src.apiserver.controller.admin_template import bp as admin_template_bp
 from src.apiserver.controller.admin_user import bp as admin_user_bp
 from src.apiserver.controller.auth import bp as auth_bp
+from src.apiserver.controller.auth_oidc import bp as auth_oidc_bp, OAuth2Config
 from src.apiserver.controller.heartbeat import bp as heartbeat_bp
 from src.apiserver.controller.nonadmin_pod import bp as nonadmin_pod_bp
 from src.apiserver.controller.nonadmin_template import bp as nonadmin_template_bp
@@ -32,7 +33,7 @@ from src.components.authn import (
 )
 from src.components.config import APIServerConfig
 from src.components.tasks import check_and_create_admin_user, check_kubernetes_connection  # check_rabbitmq_connection
-from src.components.utils import get_k8s_client
+from src.components.utils import get_k8s_client, UserFilter
 
 _service: RootService
 
@@ -75,6 +76,7 @@ def apiserver_prepare_run(opt: APIServerConfig) -> Sanic:
 
     # install JWT authentication
     initialize(controller_app,
+               secret=opt.config_token_secret,
                authenticate=authenticate,
                authentication_class=MyJWTAuthentication,
                configuration_class=MyJWTConfig,
@@ -95,6 +97,10 @@ def apiserver_prepare_run(opt: APIServerConfig) -> Sanic:
     controller_app.blueprint(admin_template_bp)
     controller_app.blueprint(admin_user_bp)
     controller_app.blueprint(auth_bp)
+    if opt.config_use_oidc:
+        controller_app.blueprint(auth_oidc_bp)
+        controller_app.ctx.oauth_cfg = OAuth2Config.from_apiserver_config(opt)
+        controller_app.ctx.oauth_client = controller_app.ctx.oauth_cfg.get_async_client()
     controller_app.blueprint(nonadmin_user_bp)
     controller_app.blueprint(nonadmin_template_bp)
     controller_app.blueprint(nonadmin_pod_bp)

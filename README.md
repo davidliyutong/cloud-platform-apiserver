@@ -87,7 +87,7 @@ kubectl apply -f manifests/k8s/rbac.yaml
 You need to create 4 TLS certificate:
 
 - TLS certificate for the api server
-- - TLS certificate for the frontend
+- TLS certificate for the frontend
 - TLS certificate for the noVNC endpoint
 - TLS certificate for the WebIDE endpoint
 
@@ -115,11 +115,11 @@ table lists all the parameters.
 | Database Username                   | `--db.username`             | `CLPL_DB_USERNAME`             | Username for the database                            | `clpl`                                                 |
 | Database Password                   | `--db.password`             | `CLPL_DB_PASSWORD`             | Password for the database                            | `clpl`                                                 |
 | Database Name                       | `--db.database`             | `CLPL_DB_DATABASE`             | Name of the database                                 | `clpl`                                                 |
-| MQ Host                             | `--mq.host`                 | `CLPL_MQ_HOST`                 | Hostname of the MQ server                            | `127.0.0.1`                                            |
-| MQ Port                             | `--mq.port`                 | `CLPL_MQ_PORT`                 | Port of the MQ server                                | `5672`                                                 |
-| MQ Username                         | `--mq.username`             | `CLPL_MQ_USERNAME`             | Username for the MQ server                           | `clpl`                                                 |
-| MQ Password                         | `--mq.password`             | `CLPL_MQ_PASSWORD`             | Password for the MQ server                           | `clpl`                                                 |
-| MQ Exchange                         | `--mq.exchange`             | `CLPL_MQ_EXCHANGE`             | Name of the MQ exchange                              | ``                                                     |
+| MQ Host                             | `--mq.host`                 | `CLPL_MQ_HOST`                 | Hostname of the MQ server (not used)                 | `127.0.0.1`                                            |
+| MQ Port                             | `--mq.port`                 | `CLPL_MQ_PORT`                 | Port of the MQ server (not used)                     | `5672`                                                 |
+| MQ Username                         | `--mq.username`             | `CLPL_MQ_USERNAME`             | Username for the MQ server (not used)                | `clpl`                                                 |
+| MQ Password                         | `--mq.password`             | `CLPL_MQ_PASSWORD`             | Password for the MQ server (not used)                | `clpl`                                                 |
+| MQ Exchange                         | `--mq.exchange`             | `CLPL_MQ_EXCHANGE`             | Name of the MQ exchange (not used)                   | ``                                                     |
 | Kubernetes Host                     | `--k8s.host`                | `CLPL_K8S_HOST`                | Kubernetes Hostname                                  | `10.96.0.1`                                            |
 | Kubernetes Port                     | `--k8s.port`                | `CLPL_K8S_PORT`                | Kubernetes Port                                      | `6443`                                                 |
 | Kubernetes CA certificate path      | `--k8s.caCert`              | `CLPL_K8S_CACERT`              | Path of Kubernetes CA certificate                    | `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` |
@@ -134,14 +134,38 @@ table lists all the parameters.
 | Configuration Coder TLS Secret      | `--config.coderTLSSecret`   | `CLPL_CONFIG_CODERTLSSECRET`   | Secret name for the code ingress tls                 | `null`                                                 |
 | Configuration VNC Hostname          | `--config.vncHostname`      | `CLPL_CONFIG_VNCHOSTNAME`      | Hostname for the vnc ingress                         | `null`                                                 |
 | Configuration VNC TLS Secret        | `--config.vncTLSSecret`     | `CLPL_CONFIG_VNCTLSECRET`      | Secret key for the vnc ingress tls                   | `null`                                                 |
+| Configuration USE OIDC              | `--config.useOIDC`          | `CLPL_CONFIG_USEOIDC`          | Use OIDC or not                                      | `false`                                                |
+
+The platform supports login via OpenID Connect. It is tested with [Authentik](https://goauthentik.io/) identity provider. Here are OIDC configurations if you want to use OIDC:
+
+| Name                    | CLI                       | ENV                          | Description                                                                                                  | Default                         | 
+|-------------------------|---------------------------|------------------------------|--------------------------------------------------------------------------------------------------------------|---------------------------------|
+| OIDC Name               | `--oidc.name`             | `CLPL_OIDC_NAME`             | Name of the OIDC provider, usually the application name                                                      | `clpl`                          |
+| OIDC Base URL           | `--oidc.baseURL`          | `CLPL_OIDC_BASEURL`          | Base URL of the OIDC provider                                                                                | `https://authentik.example.com` |
+| OIDC Authorization URL  | `--oidc.authorizationURL` | `CLPL_OIDC_AUTHORIZATIONURL` | Authorization URL of the OIDC provider, defaults to `$CLPL_OIDC_BASEURL/authorize/`                          | `null`                          |
+| OIDC Token URL          | `--oidc.tokenURL`         | `CLPL_OIDC_TOKENURL`         | Token URL of the OIDC provider, defaults to `$CLPL_OIDC_BASEURL/token/`                                      | `null`                          |
+| OIDC User Info URL      | `--oidc.userInfoURL`      | `CLPL_OIDC_USERINFOURL`      | User Info URL of the OIDC provider, defaults to `$CLPL_OIDC_BASEURL/userinfo/`                               | `null`                          |
+| OIDC Logout URL         | `--oidc.logoutURL`        | `CLPL_OIDC_LOGOUTURL`        | Logout URL of the OIDC provider defaults to `$CLPL_OIDC_BASEURL/$CLPL_OIDC_NAME/end-session/` (not used)     | `null`                          |
+| OIDC JWKS URL           | `--oidc.jwksURL`          | `CLPL_OIDC_JWKSURL`          | JWKS URL of the OIDC provider, defaults to `$CLPL_OIDC_BASEURL/$CLPL_OIDC_NAME/jwks/` (not used)             | `null`                          |
+| OIDC Frontend Login URL | `--oidc.frontendLoginURL` | `CLPL_OIDC_FRONTENDLOGINURL` | Frontend URL of the Application, used to pass `token` and `refresh_token` as URL params to frontend          | `null`                          |
+| OIDC Client ID          | `--oidc.clientID`         | `CLPL_OIDC_CLIENTID`         | Client ID of the Application                                                                                 | `null`                          |
+| OIDC Client Secret      | `--oidc.clientSecret`     | `CLPL_OIDC_CLIENTSECRET`     | Client Secret of the Application                                                                             | `null`                          |
+| OIDC Redirect URL       | `--oidc.redirectURL`      | `CLPL_OIDC_REDIRECTURL`      | Redirect URL of the Application, where the authorization happens e.g. `$HOST/v1/auth/oidc/authorize`         | `null`                          |
+| OIDC Scope              | `--oidc.scope`            | `CLPL_OIDC_SCOPE`            | Scopes of the OIDC provider, seperated by delimiter                                                          | `openid`                        |
+| OIDC Scope Delimiter    | `--oidc.scopeDelimiter`   | `CLPL_OIDC_SCOPEDELIMITER`   | Scope Delimiter of the OIDC provider                                                                         | `+`                             |
+| OIDC Response Type      | `--oidc.responseType`     | `CLPL_OIDC_RESPONSETYPE`     | Response Type of the OIDC provider                                                                           | `code`                          |
+| OIDC Grant Type         | `--oidc.grantType`        | `CLPL_OIDC_GRANTTYPE`        | Grant Type of the OIDC provider                                                                              | `authorization_code`            |
+| OIDC User Filter        | `--oidc.userFilter`       | `CLPL_OIDC_USERFILTER`       | User Filter of the OIDC provider, should be mongodb-like query, e.g. `{"$and": [{"organize.id": "26000"}]}`  | `{}`                            |
+| OIDC User Info Path     | `--oidc.userInfoPath`     | `CLPL_OIDC_USERINFOPATH`     | User Info Path of the OIDC provider, should be jsonpath of user information in the response of User Info URL | `$`                             |
+| OIDC Username Path      | `--oidc.usernamePath`     | `CLPL_OIDC_USERNAMEPATH`     | Username Path of the OIDC provider, should be jsonpath of username string in user information                | `preferred_username`            |
+| OIDC Email Path         | `--oidc.emailPath`        | `CLPL_OIDC_EMAILPATH`        | Email Path of the OIDC provider, should be jsonpath of email string in user information                      | `email`                         |
 
 # TODO
 
-
 - migration mechanism
 - Audit
-- OIDC
 - LDAP
+- ~~OIDC~~
 - ~~Find Out why shutdown print error message~~
 - ~~Frontend~~
 - ~~CLI client~~

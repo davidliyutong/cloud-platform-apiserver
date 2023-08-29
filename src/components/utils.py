@@ -3,11 +3,14 @@ This module contains all the utility functions.
 """
 
 import base64
+import json
 import re
+import secrets
 import signal
 from functools import wraps
 from typing import Optional, Dict, Any, Tuple, List
 
+import mongoquery
 from kubernetes import client
 from loguru import logger
 
@@ -130,3 +133,31 @@ class DelayedKeyboardInterrupt:
         signal.signal(signal.SIGINT, self.old_handler)
         if self.signal_received:
             self.old_handler(*self.signal_received)
+
+
+def random_password(length: int = 16) -> str:
+    """
+    Generate random password
+    """
+    return base64.encodebytes(secrets.token_bytes(length))[:length].decode('utf-8')
+
+
+class UserFilter:
+    """
+    User filter, use mongodb like filter string to filter allowed users
+    """
+    mongo_like_filter_str: Optional[str] = None  # e.g. {"username": "admin"}
+    _mongo_like_filter: mongoquery.Query
+
+    def __init__(self, mongo_like_filter_str: str = None):
+        """
+        Init user filter
+        """
+        self.mongo_like_filter_str = mongo_like_filter_str
+        if self.mongo_like_filter_str is not None:
+            self._mongo_like_filter = mongoquery.Query(json.loads(self.mongo_like_filter_str))
+        else:
+            self._mongo_like_filter = mongoquery.Query({})
+
+    def filter(self, user_info: dict) -> bool:
+        return self._mongo_like_filter.match(user_info)

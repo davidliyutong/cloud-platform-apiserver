@@ -8,26 +8,32 @@ from loguru import logger
 from sanic import Sanic
 from sanic.response import json as json_response
 
+from .types import OIDCStatusResponse
 from src.components import config
 from src.components.config import APIServerConfig
 from src.components.tasks import set_crash_flag, get_crash_flag, recover_from_crash, scan_pods
 
 app = Sanic("root")
 
+
 def _health(opt: APIServerConfig):
     return json_response(
-    {
-        'description': '/health',
-        'status': http.HTTPStatus.OK,
-        'message': "OK",
-        'version': config.CONFIG_BUILD_VERSION,
-        'config': {
-            'coder_hostname': opt.config_coder_hostname,
-            'vnc_hostname': opt.config_vnc_hostname
-        }
-    },
-    http.HTTPStatus.OK
-)
+        {
+            'description': '/health',
+            'status': http.HTTPStatus.OK,
+            'message': "OK",
+            'version': config.CONFIG_BUILD_VERSION,
+            'config': {
+                'coder_hostname': opt.config_coder_hostname,
+                'vnc_hostname': opt.config_vnc_hostname
+            },
+            'oidc': None if not opt.config_use_oidc else OIDCStatusResponse(
+                name=opt.oidc_name,
+                path=app.url_for("root.auth_oidc.login")  # "/v1/auth/oidc/login"
+            ).model_dump()
+        },
+        http.HTTPStatus.OK
+    )
 
 
 @app.get("/health", name="health")

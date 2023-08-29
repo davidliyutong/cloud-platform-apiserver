@@ -76,7 +76,7 @@ class AuthService(ServiceInterface):
         ):
             return True
         else:
-            return True
+            return False
 
     async def token_login(self, cred: LoginCredential) -> Tuple[Optional[str], Optional[Exception]]:
         """
@@ -102,6 +102,22 @@ class AuthService(ServiceInterface):
             return access_token, None
         else:
             return None, errors.wrong_password
+
+    async def generate_jwt_token(self,
+                                 user: UserModel,
+                                 expire: Optional[datetime.timedelta] = None) -> Tuple[str, Optional[Exception]]:
+        """
+        Generate jwt token for user, using global secret, used in OIDC login
+        """
+        if expire is None:
+            expire = datetime.timedelta(seconds=self.parent.opt.config_token_expire_s)
+
+        # generate jwt
+        payload = self._get_payload(user, expire)
+        secret = self.parent.opt.config_token_secret
+        access_token = jwt.encode(payload, secret, algorithm=self.algorithm)
+
+        return access_token, None
 
     async def token_refresh(self, auth_header: str, secret) -> Tuple[Optional[str], Optional[Exception]]:
         """
@@ -142,3 +158,10 @@ class AuthService(ServiceInterface):
         access_token = jwt.encode(payload, secret, algorithm=self.algorithm)
 
         return access_token, None
+
+
+from sanic_ext import openapi
+
+# attention: registrate components
+openapi.component(LoginCredential)
+openapi.component(TokenResponse)

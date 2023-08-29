@@ -16,3 +16,5 @@ shortuuid>=1.0.11
 aio-pika>=9.2.0
 pika>=1.3.2
 kubernetes>=27.2.0
+mongoquery>=1.4.2
+jsonpath-ng>=1.5.3
