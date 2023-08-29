@@ -89,11 +89,14 @@ spec:
             limits:
               cpu: "4000m"
               memory: "4096Mi"
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
           env:
             - name: CLPL_API_NUMWORKERS
               value: "4" # CHANGE ME
             - name: CLPL_DEBUG
-              value: "0" # CHANGE ME
+              value: "false" # CHANGE ME
             - name: CLPL_DB_HOST
               value: mongodb.clpl.svc.cluster.local # CHANGE ME
             - name: CLPL_DB_PORT
@@ -112,6 +115,8 @@ spec:
               value: ${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME
             - name: CLPL_CONFIG_VNCTLSSECRET
               value: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGE ME
+            - name: CLPL_CONFIG_USEOIDC
+              value: "false" # CHANGE ME
             - name: CLPL_K8S_HOST
               value: "10.96.0.1" # CHANGE ME
             - name: CLPL_K8S_PORT
@@ -122,6 +127,28 @@ spec:
               value: /var/run/secrets/kubernetes.io/serviceaccount/token # CHANGE ME
             - name: CLPL_K8S_NAMESPACE
               value: clpl # CHANGE ME
+            - name: CLPL_OIDC_BASEURL
+              value: https://authentik.example.com/application/o # CHANGE ME
+            - name: CLPL_OIDC_CLIENTID
+              value: xxx # CHANGE ME
+            - name: CLPL_OIDC_CLIENTSECRET
+              value: yyy # CHANGE ME
+            - name: CLPL_OIDC_FRONTENDLOGINURL
+              value: http://127.0.0.1:8081/login # CHANGE ME
+            - name: CLPL_OIDC_NAME
+              value: cloud-platform # CHANGE ME
+            - name: CLPL_OIDC_REDIRECTURL
+              value: http://127.0.0.1:8081/v1/auth/oidc/authorize # CHANGE ME
+            - name: CLPL_OIDC_SCOPE
+              value: "openid+profile+email" # CHANGE ME
+            - name: CLPL_OIDC_USERFILTER
+              value: '{}' # CHANGE ME
+            - name: CLPL_OIDC_USERINFOPATH
+              value: '$' # CHANGE ME
+            - name: CLPL_OIDC_USERNAMEPATH
+              value: preferred_username # CHANGE ME
+            - name: CLPL_OIDC_EMAILPATH
+              value: email # CHANGE ME
 
           ports:
             - containerPort: 8080

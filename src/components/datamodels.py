@@ -6,7 +6,7 @@ import datetime
 import uuid
 from enum import Enum
 from hashlib import sha256
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union, Self
 
 import bcrypt
 import kubernetes
@@ -117,6 +117,25 @@ class QuotaModel(BaseModel):
         return v
 
     @classmethod
+    def new(cls,
+            cpu_m: int,
+            memory_mb: int,
+            storage_mb: int,
+            pod_n: int,
+            gpu: int = 0,
+            network_mb: int = 0,
+            ):
+        return cls(
+            version=config.CONFIG_BUILD_VERSION,
+            cpu_m=cpu_m,
+            memory_mb=memory_mb,
+            storage_mb=storage_mb,
+            gpu=gpu,
+            network_mb=network_mb,
+            pod_n=pod_n,
+        )
+
+    @classmethod
     def default_quota(cls):
         return cls(
             version=config.CONFIG_BUILD_VERSION,
@@ -127,6 +146,15 @@ class QuotaModel(BaseModel):
             network_mb=0,
             pod_n=10,
         )
+
+    def update_from_dict(self, d: Dict[str, Any]) -> Self:
+        if d is None:
+            return self
+        for k, v in d.items():
+            if hasattr(self, k) and v is not None and k not in ['version', 'committed']:
+                setattr(self, k, v)
+        self.model_validate(self)
+        return self
 
 
 class UserModel(BaseModel):

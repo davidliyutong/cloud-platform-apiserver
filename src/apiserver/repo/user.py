@@ -144,6 +144,7 @@ class UserRepo:
 
             # get user
             user = await collection.find_one({'username': username})
+            old_user_model = datamodels.UserModel(**user)
 
             # noinspection PyBroadException
             try:
@@ -153,7 +154,14 @@ class UserRepo:
                 user['status'] = status if status is not None else user['status']
                 user['email'] = email if email is not None else user['email']
                 user['role'] = datamodels.UserRoleEnum(role) if role is not None else user['role']
-                user['quota'] = quota
+                if quota is not None:
+                    if old_user_model.quota is not None:
+                        old_quota: datamodels.QuotaModel = old_user_model.quota
+                        user['quota'] = old_quota.update_from_dict(quota).model_dump()
+                    else:
+                        user['quota'] = datamodels.QuotaModel.new(**quota).model_dump()
+                else:
+                    user['quota'] = None
 
                 # if password is changed, then set resource_status to pending
                 if any([
