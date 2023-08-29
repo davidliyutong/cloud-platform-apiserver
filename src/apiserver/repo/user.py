@@ -113,7 +113,7 @@ class UserRepo:
                 password=password,
                 role=datamodels.UserRoleEnum(role),
                 email=email,
-                quota=quota,
+                quota=datamodels.QuotaModel.new(**quota) if quota is not None else None,
                 extra_info=extra_info
             )
 

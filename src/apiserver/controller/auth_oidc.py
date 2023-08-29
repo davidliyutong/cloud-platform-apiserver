@@ -3,9 +3,9 @@ import json
 from typing import Tuple, Optional, List
 
 import httpx
-from jsonpath_ng import parse
 import jwt
 import shortuuid
+from jsonpath_ng import parse
 from loguru import logger
 from pydantic import BaseModel, model_validator
 from sanic import Blueprint
@@ -13,9 +13,9 @@ from sanic.response import json as json_response
 from sanic.response import redirect as redirect_response
 from sanic_ext import openapi
 
-from src.components.config import APIServerConfig
 from src.apiserver.service import get_root_service, UserService
 from src.components import errors
+from src.components.config import APIServerConfig
 from src.components.datamodels import UserRoleEnum, QuotaModel
 from src.components.utils import UserFilter, random_password
 

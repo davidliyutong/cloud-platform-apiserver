@@ -33,7 +33,7 @@ from src.components.authn import (
 )
 from src.components.config import APIServerConfig
 from src.components.tasks import check_and_create_admin_user, check_kubernetes_connection  # check_rabbitmq_connection
-from src.components.utils import get_k8s_client, UserFilter
+from src.components.utils import get_k8s_client
 
 _service: RootService
 

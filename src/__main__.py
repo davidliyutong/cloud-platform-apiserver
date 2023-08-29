@@ -1,7 +1,9 @@
 import multiprocessing as mp
 import os
 import sys
+
 import urllib3
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 import click

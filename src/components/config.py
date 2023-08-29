@@ -461,7 +461,6 @@ class APIServerConfig(BaseModel):
         parser.add_argument("--oidc.usernamePath", type=str, help="oidc usernamePath")
         parser.add_argument("--oidc.emailPath", type=str, help="oidc emailPath")
 
-
         parser.add_argument("--bootstrap.adminUsername", type=str, help="bootstrap admin username")
         parser.add_argument("--bootstrap.adminPassword", type=str, help="bootstrap admin password")
 

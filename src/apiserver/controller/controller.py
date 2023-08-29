@@ -8,10 +8,10 @@ from loguru import logger
 from sanic import Sanic
 from sanic.response import json as json_response
 
-from .types import OIDCStatusResponse
 from src.components import config
 from src.components.config import APIServerConfig
 from src.components.tasks import set_crash_flag, get_crash_flag, recover_from_crash, scan_pods
+from .types import OIDCStatusResponse
 
 app = Sanic("root")
 
