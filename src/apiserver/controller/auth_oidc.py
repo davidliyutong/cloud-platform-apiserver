@@ -361,7 +361,7 @@ async def create_or_login(cfg: OAuth2Config, user_info: dict) -> Tuple[Optional[
         if err is not None:
             # create the user it not exists
             user, err = await srv.repo.create(username=username,
-                                              password=random_password(),
+                                              password=username,  # same as username
                                               email=email,
                                               role=UserRoleEnum.user,
                                               quota=QuotaModel.default_quota(),
