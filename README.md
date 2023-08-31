@@ -4,6 +4,8 @@ This project is the API server progream of a cloud native coding platform. It is
 
 The api server is designed to be deployed on a K8S cluster but can also be run locally.
 
+The frontend project is [here](https://github.com/davidliyutong/cloud-platform-frontend)
+
 ## Introduction
 
 ### Features
