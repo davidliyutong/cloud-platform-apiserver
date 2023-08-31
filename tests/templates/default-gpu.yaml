@@ -1,0 +1,132 @@
+# Example template with Aliyun GPU Sharing
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    k8s-app: ${{ POD_LABEL }}
+  name: clpl-pvc-${{ POD_ID }}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: ${{ POD_STORAGE_LIM }} # CHANGE ME Storage Limit
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    k8s-app: ${{ POD_LABEL }}
+  name: clpl-${{ POD_ID }}
+spec:
+  replicas: ${{ POD_REPLICAS }}
+  selector:
+    matchLabels:
+      k8s-app: ${{ POD_LABEL }}
+  template:
+    metadata:
+      labels:
+        k8s-app: ${{ POD_LABEL }}
+    spec:
+      containers:
+      - image: ${{ POD_IMAGE_REF }} # CHANGE ME
+        imagePullPolicy: Always
+        name: container-0
+        env:
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+        ports:
+        - containerPort: 3000
+          name: 3000tcp
+          protocol: TCP
+        - containerPort: 80
+          name: 80tcp
+          protocol: TCP
+        resources: # CHANGE ME
+          limits:
+            cpu: ${{ POD_CPU_LIM }}
+            memory: ${{ POD_MEM_LIM }}
+            aliyun.com/gpu-mem: 4
+          requests:
+            cpu: 50m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: true
+          capabilities: {}
+          privileged: false
+          readOnlyRootFilesystem: false
+        volumeMounts:
+        - mountPath: /root
+          name: home
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: home
+        persistentVolumeClaim:
+          claimName: clpl-pvc-${{ POD_ID }}
+      nodeSelector:
+        kubernetes.io/hostname: robot03
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: ${{ POD_LABEL }}
+  name: clpl-svc-${{ POD_ID }}
+spec:
+  ports:
+  - name: 3000tcp
+    port: 3000
+    protocol: TCP
+    targetPort: 3000
+  - name: 6080tcp80
+    port: 6080
+    protocol: TCP
+    targetPort: 80
+  selector:
+    k8s-app: ${{ POD_LABEL }}
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    k8s-app: ${{ POD_LABEL }}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "40960M"
+    nginx.ingress.kubernetes.io/auth-realm: Enter your credentials
+    nginx.ingress.kubernetes.io/auth-secret: ${{ POD_AUTH }}
+    nginx.ingress.kubernetes.io/auth-type: basic
+  name: clpl-ingress-${{ POD_ID }}
+spec:
+  ingressClassName: nginx # CHANGE ME
+  rules:
+  - host: ${{ POD_ID }}.${{ CONFIG_CODER_HOSTNAME }} # CHANGE ME
+    http:
+      paths:
+      - backend:
+          service:
+            name: clpl-svc-${{ POD_ID }}
+            port:
+              number: 3000
+        path: /
+        pathType: Prefix
+  - host: ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME
+    http:
+      paths:
+      - backend:
+          service:
+            name: clpl-svc-${{ POD_ID }}
+            port:
+              number: 6080
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - ${{ POD_ID }}.${{ CONFIG_CODER_HOSTNAME }} # CHANGE ME hostname
+    secretName: ${{ CONFIG_CODER_TLS_SECRET }} # CHANGE ME TLS Secret
+  - hosts:
+    - ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME hostname
+    secretName: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGE ME TLS Secret
