@@ -34,11 +34,7 @@ async def authenticate(req: request.Request):
         raise exceptions.AuthenticationFailed(str(err))
     else:
         # compare password
-        password_hashed = sha256(password.encode()).hexdigest()
-        if secrets.compare_digest(
-                password_hashed.encode('utf-8'),
-                str(user.password.get_secret_value()).encode('utf-8')
-        ):
+        if user.verify_password(password):
             return user.model_dump()
         else:
             raise exceptions.AuthenticationFailed(errors.wrong_password)

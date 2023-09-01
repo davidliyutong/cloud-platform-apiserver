@@ -207,6 +207,8 @@ class UserRepo:
             else:
                 # build user model
                 user = datamodels.UserModel(**res)
+                if user.role == datamodels.UserRoleEnum.super_admin:
+                    return None, errors.user_not_allowed
 
                 # delete user (set resource_status to deleted)
                 ret = await collection.find_one_and_update(

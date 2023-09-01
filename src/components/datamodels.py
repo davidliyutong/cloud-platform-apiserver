@@ -3,6 +3,7 @@ Data models for the project
 """
 
 import datetime
+import secrets
 import uuid
 from enum import Enum
 from hashlib import sha256
@@ -229,6 +230,16 @@ class UserModel(BaseModel):
         if isinstance(v, dict):
             v = QuotaModel(**v)
         return v
+
+    def verify_password(self, plain_password: str) -> bool:
+        password_hashed = sha256(str(plain_password).encode()).hexdigest()
+        if secrets.compare_digest(
+            password_hashed.encode('utf-8'),
+            str(self.password.get_secret_value()).encode('utf-8')
+        ):
+            return True
+        else:
+            return False
 
     @classmethod
     def new(cls,

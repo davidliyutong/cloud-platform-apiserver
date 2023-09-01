@@ -21,7 +21,7 @@ from .handler import handle_user_create_event, handle_user_update_event, handle_
 class UserService(ServiceInterface):
     def __init__(self, user_repo: UserRepo):
         super().__init__()
-        self.repo = user_repo
+        self.repo: UserRepo = user_repo
 
     async def get(self,
                   app: Sanic,
@@ -77,22 +77,19 @@ class UserService(ServiceInterface):
         Update a user.
         """
         if req.password is not None and not req._skip_password_check:
-            # if password is not None, update password, but check the old password
-            if req.old_password is None:
-                return None, errors.old_password_required
-
             # retrieve user from db
             user, err = await self.repo.get(username=req.username)
             if err is not None:
                 return None, err
 
-            # compare password
-            password_hashed = sha256(req.old_password.encode()).hexdigest()
-            if not secrets.compare_digest(
-                    password_hashed.encode('utf-8'),
-                    str(user.password.get_secret_value()).encode('utf-8')
-            ):
-                return None, errors.wrong_password
+            # if password is not None, update password, but check the old password
+            # if the old_password is empty string, allow no old_password change
+            if not user.verify_password(""):
+                if req.old_password is None:
+                    return None, errors.old_password_required
+                # compare password
+                elif not user.verify_password(req.old_password):
+                    return None, errors.wrong_password
 
         user, err = await self.repo.update(username=req.username,
                                            password=req.password,

@@ -69,11 +69,7 @@ class AuthService(ServiceInterface):
             return False
 
         # check password
-        password_hashed = sha256(input_password.encode()).hexdigest()
-        if secrets.compare_digest(
-                password_hashed.encode('utf-8'),
-                str(user.password.get_secret_value()).encode('utf-8')
-        ):
+        if user.verify_password(input_password):
             return True
         else:
             return False
@@ -89,11 +85,7 @@ class AuthService(ServiceInterface):
             return None, err
 
         # check password
-        password_hashed = sha256(cred.password.encode()).hexdigest()
-        if secrets.compare_digest(
-                password_hashed.encode('utf-8'),
-                str(user.password.get_secret_value()).encode('utf-8')
-        ):
+        if user.verify_password(cred.password):
             # generate jwt
             payload = self._get_payload(user, datetime.timedelta(days=3560))
             secret = user.htpasswd.get_secret_value().encode()

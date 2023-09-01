@@ -130,13 +130,22 @@ class OAuth2Config(BaseModel):
         """
         Get authorization redirect url, with parameters
         """
-        return f"{self.authorization_url}?response_type={self.response_type}&redirect_uri={self.redirect_url}&state={self.state}&client_id={self.client_id}&scope={self.scope_delimiter.join(self.scope)}"
+        return (f"{self.authorization_url}?"
+                f"response_type={self.response_type}&"
+                f"redirect_uri={self.redirect_url}&"
+                f"state={self.state}&"
+                f"client_id={self.client_id}&"
+                f"scope={self.scope_delimiter.join(self.scope)}")
 
-    def get_frontend_redirect_url(self, token: str, refresh_token: str, success: bool) -> str:
+    def get_frontend_redirect_url(self, token: str, refresh_token: str, success: bool, message: str = "OK") -> str:
         """
         Get frontend redirect url, with parameters
         """
-        return f"{self.frontend_login_url}?token={token}&refresh_token={refresh_token}&success={str(success).lower()}"
+        return (f"{self.frontend_login_url}?"
+                f"token={token}&"
+                f"refresh_token={refresh_token}&"
+                f"success={str(success).lower()}&"
+                f"message={message}")
 
     def get_async_client(self):
         """
@@ -361,10 +370,11 @@ async def create_or_login(cfg: OAuth2Config, user_info: dict) -> Tuple[Optional[
         if err is not None:
             # create the user it not exists
             user, err = await srv.repo.create(username=username,
-                                              password=username,  # same as username
+                                              password="",  # empty password prevent user from login
                                               email=email,
                                               role=UserRoleEnum.user,
-                                              quota=QuotaModel.default_quota().model_dump(exclude={"version", "committed"}),
+                                              quota=QuotaModel.default_quota().model_dump(
+                                                  exclude={"version", "committed"}),
                                               extra_info=user_info)
             if err is not None:
                 return None, err
@@ -448,7 +458,8 @@ async def oidc_authorize(request):
                 cfg.get_frontend_redirect_url(
                     token="",
                     refresh_token="",
-                    success=False
+                    success=False,
+                    message=str(err)
                 )
             )
     else:

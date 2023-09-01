@@ -19,7 +19,7 @@ from .handler import handle_template_create_event, handle_template_update_event,
 class TemplateService(ServiceInterface):
     def __init__(self, template_repo: TemplateRepo):
         super().__init__()
-        self.repo = template_repo
+        self.repo: TemplateRepo = template_repo
 
     async def get(self,
                   app: Sanic,
