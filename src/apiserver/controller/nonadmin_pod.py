@@ -254,7 +254,7 @@ async def update(request, pod_id: str):
             # attention: request.ctx.user['username'] is set in authn.validate_role()
             if pod.username != request.ctx.user['username']:
                 return json_response(
-                    PodGetResponse(
+                    PodUpdateResponse(
                         status=http.HTTPStatus.UNAUTHORIZED,
                         message="cannot update pods that does not belong to current user"
                     ).model_dump(),
@@ -263,7 +263,16 @@ async def update(request, pod_id: str):
 
         # update pod
         body['force'] = False
-        req = PodUpdateRequest(**body)
+        try:
+            req = PodUpdateRequest(**body)
+        except Exception as e:
+            return json_response(
+                PodUpdateResponse(
+                    status=http.HTTPStatus.BAD_REQUEST,
+                    message=str(e)
+                ).model_dump(),
+                status=http.HTTPStatus.BAD_REQUEST
+            )
         req.pod_id = pod_id  # set pod_id to the one in url
         pod, err = await get_root_service().pod_service.update(request.app, req)
 

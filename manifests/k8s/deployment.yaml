@@ -115,6 +115,8 @@ spec:
               value: ${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME
             - name: CLPL_CONFIG_VNCTLSSECRET
               value: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGE ME
+            - name: CLPL_CONFIG_AUTHENDPOINT
+              value: http://apiserver.clpl.svc.cluster.local:8080
             - name: CLPL_CONFIG_USEOIDC
               value: "false" # CHANGE ME
             - name: CLPL_K8S_HOST
@@ -149,7 +151,6 @@ spec:
               value: preferred_username # CHANGE ME
             - name: CLPL_OIDC_EMAILPATH
               value: email # CHANGE ME
-
           ports:
             - containerPort: 8080
           volumeMounts:

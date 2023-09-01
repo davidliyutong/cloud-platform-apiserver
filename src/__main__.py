@@ -23,7 +23,7 @@ if __name__ == '__main__':
     global logger
     # attention: CLPL_LOG_PATH depends on project name
     log_path = os.environ.get('CLPL_LOG_PATH', "./logs/apiserver")
-    log_debug_flag = bool(os.environ.get('CLPL_DEBUG', "false"))
+    log_debug_flag = bool(os.environ.get('CLPL_DEBUG', "false") in ["1", "True", "true"])
     _ = create_logger(log_path, log_debug_flag)
 
 
