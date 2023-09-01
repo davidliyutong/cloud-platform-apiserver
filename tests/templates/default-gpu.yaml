@@ -29,7 +29,7 @@ spec:
         k8s-app: ${{ POD_LABEL }}
     spec:
       containers:
-      - image: ${{ POD_IMAGE_REF }} # CHANGE ME
+      - image: ${{ TEMPLATE_IMAGE_REF }} # CHANGE ME
         imagePullPolicy: Always
         name: container-0
         env:
@@ -88,45 +88,3 @@ spec:
     k8s-app: ${{ POD_LABEL }}
   sessionAffinity: None
   type: ClusterIP
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  labels:
-    k8s-app: ${{ POD_LABEL }}
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "40960M"
-    nginx.ingress.kubernetes.io/auth-realm: Enter your credentials
-    nginx.ingress.kubernetes.io/auth-secret: ${{ POD_AUTH }}
-    nginx.ingress.kubernetes.io/auth-type: basic
-  name: clpl-ingress-${{ POD_ID }}
-spec:
-  ingressClassName: nginx # CHANGE ME
-  rules:
-  - host: ${{ POD_ID }}.${{ CONFIG_CODER_HOSTNAME }} # CHANGE ME
-    http:
-      paths:
-      - backend:
-          service:
-            name: clpl-svc-${{ POD_ID }}
-            port:
-              number: 3000
-        path: /
-        pathType: Prefix
-  - host: ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME
-    http:
-      paths:
-      - backend:
-          service:
-            name: clpl-svc-${{ POD_ID }}
-            port:
-              number: 6080
-        path: /
-        pathType: Prefix
-  tls:
-  - hosts:
-    - ${{ POD_ID }}.${{ CONFIG_CODER_HOSTNAME }} # CHANGE ME hostname
-    secretName: ${{ CONFIG_CODER_TLS_SECRET }} # CHANGE ME TLS Secret
-  - hosts:
-    - ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME hostname
-    secretName: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGE ME TLS Secret

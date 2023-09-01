@@ -78,7 +78,8 @@ def create_logger(log_root: str = "./logs", debug: bool = False):
     # replace sanic logger with loguru
     logging.getLogger("sanic.root").handlers.clear()
     logging.getLogger("sanic.server").handlers.clear()
-    logging.basicConfig(handlers=[InterceptHandler()], level=0)
+    logging_lvl = logging.DEBUG if debug else logging.INFO
+    logging.basicConfig(handlers=[InterceptHandler(level=logging_lvl)], level=logging_lvl)
 
     # rotate file if over 500 MB or at midnight every day
     rotator = Rotator(size=5e+8, at=time(0, 0, 0))

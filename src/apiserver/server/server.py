@@ -56,6 +56,11 @@ def apiserver_prepare_run(opt: APIServerConfig) -> Sanic:
     """
     Prepare to run the server
     """
+    ret, err = opt.verify()
+    if err is not None:
+        logger.error(f"invalid option: {str(err)}")
+        exit(1)
+
     # set options
     controller_app.ctx.opt = opt
 

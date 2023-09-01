@@ -4,7 +4,7 @@ This file defines the types of the request and response of the apiserver.
 import uuid
 from typing import List, Optional, Dict, Any
 
-from pydantic import BaseModel, EmailStr, field_validator, field_serializer
+from pydantic import BaseModel, EmailStr, field_validator
 
 import src.components.datamodels as datamodels
 
@@ -98,12 +98,6 @@ class UserUpdateRequest(BaseModel):
     def username_must_be_valid(cls, v):
         if v == "" or v is None:
             raise ValueError("username cannot be empty")
-        return v
-
-    @field_serializer('old_password')
-    def serialize_old_password(self, v: str, _info):
-        if v is None:
-            v = ""
         return v
 
     @field_validator('password')

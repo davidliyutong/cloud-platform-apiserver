@@ -56,7 +56,7 @@ def render_template_str(template_str: str,
         pattern = r'\$\{\{\s*(\w+)\s*\}\}'  # 匹配 ${{ key }}
         template_str = re.sub(pattern, replace, template_str)
 
-    return template_str, used_keys, None
+    return template_str, list(set(used_keys)), None
 
 
 def get_k8s_client(host: str,
@@ -91,7 +91,7 @@ def parse_bearer(bearer_str: Optional[str]) -> Tuple[Optional[str], Optional[Exc
     """
     Parse bearer auth header
     """
-    if len(bearer_str) == 0 or bearer_str is None:
+    if bearer_str is None or len(bearer_str) == 0:
         return None, errors.header_missing
     authorization_header_split = bearer_str.split(' ')
     if len(authorization_header_split) != 2 or authorization_header_split[0] != 'Bearer':

@@ -3,8 +3,6 @@ User service
 """
 
 import json
-import secrets
-from hashlib import sha256
 from typing import Tuple
 
 from loguru import logger
@@ -84,12 +82,12 @@ class UserService(ServiceInterface):
 
             # if password is not None, update password, but check the old password
             # if the old_password is empty string, allow no old_password change
-            if not user.verify_password(""):
-                if req.old_password is None:
-                    return None, errors.old_password_required
-                # compare password
-                elif not user.verify_password(req.old_password):
-                    return None, errors.wrong_password
+            # if not user.verify_password(""):
+            if req.old_password is None:
+                return None, errors.old_password_required
+            # compare password
+            elif not user.verify_password(req.old_password):
+                return None, errors.wrong_password
 
         user, err = await self.repo.update(username=req.username,
                                            password=req.password,

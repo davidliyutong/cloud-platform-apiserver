@@ -338,11 +338,17 @@ def oidc_status(request):
     ]
 )
 def oidc_login(request):
+    """
+    This handler redirect user to IdP login page
+    """
     c: OAuth2Config = request.app.ctx.oauth_cfg
     return redirect_response(c.authorization_redirect_url)
 
 
 async def create_or_login(cfg: OAuth2Config, user_info: dict) -> Tuple[Optional[str], Optional[Exception]]:
+    """
+    This function checks if the user exists, if not, create user
+    """
     _f: UserFilter = cfg.get_user_filter_instance()
     if all([
         _f.filter(user_info),

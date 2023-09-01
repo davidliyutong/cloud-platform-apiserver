@@ -21,8 +21,9 @@ from src.components.config import (
     CONFIG_K8S_NAMESPACE,
     CONFIG_K8S_SERVICE_FMT, CONFIG_K8S_DEPLOYMENT_FMT
 )
+from src.components.datamodels import PodStatusEnum
+from src.components.resources import K8SIngressResource
 from .common import ServiceInterface
-from ...components.datamodels import PodStatusEnum
 
 
 class K8SOperatorService(ServiceInterface):
@@ -212,8 +213,8 @@ class K8SOperatorService(ServiceInterface):
             return e
 
         try:
-            # apply each resource
-            for resource in resources:
+            # apply each resource, except Ingress
+            for resource in filter(lambda x: x['kind'] not in ['Ingress'], resources):
                 err = await self._apply_k8s_resource(resource)
                 if err is not None:
                     return err
@@ -225,6 +226,9 @@ class K8SOperatorService(ServiceInterface):
         return None
 
     async def wait_pod(self, pod_id: str, target_status: PodStatusEnum, timeout_s: int = 120) -> Optional[Exception]:
+        """
+        This method wait for a pod(deployment) to update
+        """
         start_t = time.time()
         while True:
             try:
@@ -259,7 +263,7 @@ class K8SOperatorService(ServiceInterface):
         pod_label = CONFIG_K8S_POD_LABEL_FMT.format(pod_id)
 
         try:
-            # for all types of related resources
+            # for all types of related resources, including Ingress
             for _, col in self._resource_function_map.items():
                 # get all resources with the pod label of this kind
                 resources = col['list'](
@@ -316,3 +320,6 @@ class K8SOperatorService(ServiceInterface):
             except ApiException as e:
                 logger.exception(e)
                 return e
+
+    async def create_apply_ingress(self, ingress_resource: K8SIngressResource) -> Optional[Exception]:
+        return await self._apply_k8s_resource(ingress_resource.render()[0])

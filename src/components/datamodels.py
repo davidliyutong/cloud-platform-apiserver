@@ -41,6 +41,7 @@ class UserRoleEnum(str, Enum):
     super_admin = "super_admin"
     admin = "admin"
     user = "user"
+    device = "device"
 
 
 class FieldTypeEnum(str, Enum):
@@ -234,8 +235,8 @@ class UserModel(BaseModel):
     def verify_password(self, plain_password: str) -> bool:
         password_hashed = sha256(str(plain_password).encode()).hexdigest()
         if secrets.compare_digest(
-            password_hashed.encode('utf-8'),
-            str(self.password.get_secret_value()).encode('utf-8')
+                password_hashed.encode('utf-8'),
+                str(self.password.get_secret_value()).encode('utf-8')
         ):
             return True
         else:
@@ -351,16 +352,12 @@ class TemplateModel(BaseModel):
     __EXAMPLE_VALUES__ = {
         "POD_LABEL": config.CONFIG_K8S_POD_LABEL_FMT.format("test_id"),
         "POD_ID": "test_id",
-        "POD_IMAGE_REF": "davidliyutong/code-server-speit:latest",
         "POD_CPU_LIM": "2000m",
         "POD_MEM_LIM": "4096Mi",
         "POD_STORAGE_LIM": "10Mi",
         "POD_REPLICAS": "1",
-        "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format("username"),
-        "CONFIG_CODER_HOSTNAME": "code.example.org",
-        "CONFIG_CODER_TLS_SECRET": "code-tls-secret",
-        "CONFIG_VNC_HOSTNAME": "vnc.example.org",
-        "CONFIG_VNC_TLS_SECRET": "vnc-tls-secret",
+        # there is no POD_USERNAME, POD_AUTH
+        "TEMPLATE_IMAGE_REF": "davidliyutong/code-server-speit:latest",
     }
 
     def verify(self) -> bool:
@@ -370,7 +367,7 @@ class TemplateModel(BaseModel):
     @property
     def values(self):
         return {
-            'POD_IMAGE_REF': self.image_ref,
+            'TEMPLATE_IMAGE_REF': self.image_ref,
         }
 
     @classmethod
@@ -460,6 +457,7 @@ class PodModel(BaseModel):
             "POD_MEM_LIM": str(self.mem_lim_mb) + "Mi",
             "POD_STORAGE_LIM": str(self.storage_lim_mb) + "Mi",
             "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format(str(self.user_uuid)),
+            "POD_USERNAME": self.username,
             "POD_REPLICAS": "1" if self.target_status == PodStatusEnum.running else "0",
         }
 

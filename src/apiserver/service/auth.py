@@ -3,8 +3,6 @@ This module implements auth related service
 """
 
 import datetime
-import secrets
-from hashlib import sha256
 from typing import Tuple, Optional
 
 import jwt
@@ -16,7 +14,7 @@ from src.apiserver.repo import UserRepo
 from src.apiserver.service import ServiceInterface
 from src.components import errors
 from src.components.datamodels import UserModel, UserStatusEnum
-from src.components.utils import parse_basic, parse_bearer
+from src.components.utils import parse_basic
 
 
 class LoginCredential(BaseModel):
@@ -111,18 +109,14 @@ class AuthService(ServiceInterface):
 
         return access_token, None
 
-    async def token_refresh(self, auth_header: str, secret) -> Tuple[Optional[str], Optional[Exception]]:
+    async def user_token_refresh(self, old_token: str, secret: str) -> Tuple[Optional[str], Optional[Exception]]:
         """
-        Refresh token, generate short-term jwt token
+        Refresh token, check with user's htpasswd generate short-term jwt token
         """
-
-        token, err = parse_bearer(auth_header)
-        if err is not None:
-            return None, err
 
         # decode the jwt without verify, to get the user
         try:
-            unverified_jwt = jwt.decode(token, options={"verify_signature": False})
+            unverified_jwt = jwt.decode(old_token, options={"verify_signature": False})
             user, err = await self.parent.user_service.repo.get(unverified_jwt.get('username'))
             if any([
                 err is not None,
@@ -134,10 +128,10 @@ class AuthService(ServiceInterface):
             logger.debug(str(e))
             return None, errors.invalid_token
 
-        # verify the jwt using user's password hash
+        # verify the jwt using user's htpasswd password hash
         try:
             _ = jwt.decode(
-                token,
+                old_token,
                 user.htpasswd.get_secret_value().encode(),
                 algorithms=self.algorithm
             )
@@ -149,6 +143,25 @@ class AuthService(ServiceInterface):
         payload = self._get_payload(user, datetime.timedelta(minutes=60))
         access_token = jwt.encode(payload, secret, algorithm=self.algorithm)
 
+        return access_token, None
+
+    async def jwt_token_rotate(self, payload, secret: str, duration: datetime.timedelta):
+        """
+        This method rotates jwt token, new token is signed with secret and will have duration = exp - iat
+        """
+        now = datetime.datetime.utcnow()
+        try:
+            new_payload = {
+                'username': payload['username'],
+                'exp': now + duration,
+                'iat': now,
+                'email': payload['email'],
+                'role': payload['role'],
+                'uid': payload['uid']
+            }
+        except Exception as e:
+            return None, e
+        access_token = jwt.encode(payload, secret, algorithm=self.algorithm)
         return access_token, None
 
 

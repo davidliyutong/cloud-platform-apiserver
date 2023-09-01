@@ -23,7 +23,8 @@ if __name__ == '__main__':
     global logger
     # attention: CLPL_LOG_PATH depends on project name
     log_path = os.environ.get('CLPL_LOG_PATH', "./logs/apiserver")
-    _ = create_logger(log_path)
+    log_debug_flag = bool(os.environ.get('CLPL_DEBUG', "false"))
+    _ = create_logger(log_path, log_debug_flag)
 
 
     @click.group()
@@ -88,7 +89,9 @@ if __name__ == '__main__':
                     port=opt.api_port,
                     access_log=opt.api_access_log,
                     workers=opt.api_num_workers if opt.api_access_log > 0 else mp.cpu_count(),
-                    auto_reload=False)
+                    auto_reload=False,
+                    debug=opt.debug)
+            logger.debug("debug mode toggled")
         except KeyboardInterrupt as _:
             logger.info("KeyboardInterrupt, terminating workers")
             sys.exit(1)

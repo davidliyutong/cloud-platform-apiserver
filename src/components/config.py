@@ -12,10 +12,12 @@ from loguru import logger
 from pydantic import BaseModel
 from vyper import Vyper
 
-CONFIG_BUILD_VERSION = "v0.0.4"
+CONFIG_BUILD_VERSION = "v0.0.5"
 CONFIG_HOME_PATH = os.path.expanduser('~')
 CONFIG_CONFIG_NAME = "apiserver"
 CONFIG_PROJECT_NAME = "clpl"
+CONFIG_AUTH_COOKIES_NAME = "clpl_auth_token"
+CONFIG_PROXY_ORIGIN_URL_HEADER = "x-original-url"
 CONFIG_LOG_PATH_KEY = CONFIG_PROJECT_NAME.upper() + "_LOG_PATH"
 CONFIG_LOG_PATH_DEFAULT = "./logs/apiserver"
 CONFIG_DEFAULT_CONFIG_SEARCH_PATH = osp.join(CONFIG_HOME_PATH, ".config", CONFIG_PROJECT_NAME)
@@ -34,6 +36,9 @@ CONFIG_K8S_NAMESPACE = "clpl"
 CONFIG_SCAN_POD_INTERVAL_S = 120
 CONFIG_HEARTBEAT_INTERVAL_S = 120
 CONFIG_SHUTDOWN_GRACE_PERIOD_S = 60
+
+CONFIG_DEVICE_TOKEN_EXPIRE_S = 7 * 24 * 60 * 60
+CONFIG_DEVICE_TOKEN_RENEW_THRESHOLD_S = 6 * 24 * 60 * 60
 
 
 class APIServerConfig(BaseModel):
@@ -73,7 +78,7 @@ class APIServerConfig(BaseModel):
     oidc_frontend_login_url: str = ""
     oidc_client_id: str = ""
     oidc_client_secret: str = ""
-    oidc_redirect_url: str = None
+    oidc_redirect_url: str = ""
     oidc_scope: List[str] = ["openid"]
     oidc_scope_delimiter: str = "+"
     oidc_response_type: str = "code"
@@ -88,10 +93,11 @@ class APIServerConfig(BaseModel):
 
     config_token_secret: str = None
     config_token_expire_s: int = 3600
-    config_coder_hostname: str = None
-    config_coder_tls_secret: str = None
-    config_vnc_hostname: str = None
-    config_vnc_tls_secret: str = None
+    config_auth_endpoint: str = ""
+    config_coder_hostname: str = ""
+    config_coder_tls_secret: str = ""
+    config_vnc_hostname: str = ""
+    config_vnc_tls_secret: str = ""
     config_use_oidc: bool = False
 
     @logger.catch
@@ -148,6 +154,7 @@ class APIServerConfig(BaseModel):
 
         self.config_token_secret = str(d["config"]["tokenSecret"])
         self.config_token_expire_s = int(d["config"]["tokenExpireS"])
+        self.config_auth_endpoint = str(d["config"]["authEndpoint"])
         self.config_coder_hostname = str(d["config"]["coderHostname"])
         self.config_coder_tls_secret = str(d["config"]["coderTLSSecret"])
         self.config_vnc_hostname = str(d["config"]["vncHostname"])
@@ -210,6 +217,7 @@ class APIServerConfig(BaseModel):
 
         self.config_token_secret = v.get_string("config.tokenSecret")
         self.config_token_expire_s = v.get_int("config.tokenExpireS")
+        self.config_auth_endpoint = v.get_string("config.authEndpoint")
         self.config_coder_hostname = v.get_string("config.coderHostname")
         self.config_coder_tls_secret = v.get_string("config.coderTLSSecret")
         self.config_vnc_hostname = v.get_string("config.vncHostname")
@@ -279,6 +287,7 @@ class APIServerConfig(BaseModel):
             "config": {
                 "tokenSecret": self.config_token_secret,
                 "tokenExpireS": self.config_token_expire_s,
+                "authEndpoint": self.config_auth_endpoint,
                 "coderHostname": self.config_coder_hostname,
                 "coderTLSSecret": self.config_coder_tls_secret,
                 "vncHostname": self.config_vnc_hostname,
@@ -335,6 +344,7 @@ class APIServerConfig(BaseModel):
             "BOOTSTRAP_ADMIN_PASSWORD": self.bootstrap_admin_password,
             "CONFIG_TOKEN_SECRET": self.config_token_secret,
             "CONFIG_TOKEN_EXPIRE_S": self.config_token_expire_s,
+            "CONFIG_AUTH_ENDPOINT": self.config_auth_endpoint,
             "CONFIG_CODER_HOSTNAME": self.config_coder_hostname,
             "CONFIG_CODER_TLS_SECRET": self.config_coder_tls_secret,
             "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
@@ -400,6 +410,7 @@ class APIServerConfig(BaseModel):
 
         v.set_default("config.tokenSecret", _DEFAULT.config_token_secret)
         v.set_default("config.tokenExpireS", _DEFAULT.config_token_expire_s)
+        v.set_default("config.authEndpoint", _DEFAULT.config_auth_endpoint)
         v.set_default("config.coderHostname", _DEFAULT.config_coder_hostname)
         v.set_default("config.coderTLSSecret", _DEFAULT.config_coder_tls_secret)
         v.set_default("config.vncHostname", _DEFAULT.config_vnc_hostname)
@@ -466,6 +477,7 @@ class APIServerConfig(BaseModel):
 
         parser.add_argument("--config.tokenSecret", type=str, help="config tokenSecret")
         parser.add_argument("--config.tokenExpireS", type=int, help="config tokenExpireS")
+        parser.add_argument("--config.authEndpoint", type=str, help="config authEndpoint")
         parser.add_argument("--config.coderHostname", type=str, help="config code hostname")
         parser.add_argument("--config.coderTLSSecret", type=str, help="config code tlsSecret")
         parser.add_argument("--config.vncHostname", type=str, help="config vnc hostname")
@@ -552,6 +564,7 @@ class APIServerConfig(BaseModel):
 
         v.bind_env("config.tokenSecret")
         v.bind_env("config.tokenExpireS")
+        v.bind_env("config.authEndpoint")
         v.bind_env("config.coderHostname")
         v.bind_env("config.coderTLSSecret")
         v.bind_env("config.vncHostname")
@@ -592,3 +605,29 @@ class APIServerConfig(BaseModel):
             "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
             "CONFIG_VNC_TLS_SECRET": self.config_vnc_tls_secret,
         }
+
+    @property
+    def auth_config_values(self):
+        return {
+            "CONFIG_AUTH_COOKIES_NAME": CONFIG_AUTH_COOKIES_NAME,
+            "CONFIG_AUTH_ENDPOINT": self.config_auth_endpoint
+        }
+
+    def verify(self) -> Tuple[bool, Optional[Exception]]:
+        msg = []
+        if any([
+            self.config_auth_endpoint == "" and msg.append("no config_auth_endpoint"),
+            self.config_use_oidc and any([
+                self.oidc_frontend_login_url == "" and msg.append("no oidc_frontend_login_url"),
+                self.oidc_client_id == "" and msg.append("no oidc_client_id"),
+                self.oidc_client_secret == "" and msg.append("no oidc_client_secret"),
+                self.oidc_redirect_url == "" and msg.append("no oidc_redirect_url"),
+            ]),
+            self.config_coder_hostname == "" and msg.append("no config_coder_hostname"),
+            self.config_coder_tls_secret == "" and msg.append("no config_coder_tls_secret"),
+            self.config_vnc_hostname == "" and msg.append("no config_vnc_hostname"),
+            self.config_vnc_tls_secret == "" and msg.append("no config_vnc_tls_secret")
+        ]):
+            return False, Exception("\n".join(msg))
+        else:
+            return True, None

@@ -3,7 +3,6 @@ Authentication module
 """
 import base64
 import secrets
-from hashlib import sha256
 
 from loguru import logger
 from sanic import request, response

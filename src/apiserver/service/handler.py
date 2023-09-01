@@ -17,6 +17,7 @@ from src.components.events import (
     PodCreateUpdateEvent, PodDeleteEvent,
     UserHeartbeatEvent
 )
+from src.components.resources import K8SIngressResource
 from src.components.utils import render_template_str
 
 
@@ -211,23 +212,32 @@ async def handle_pod_create_update_event(srv: Optional['src.apiserver.service.Ro
         return err
 
     # get template
-    if pod.template_str is None or pod.template_str == "":
-        template, err = await srv.template_service.repo.get(str(pod.template_ref))
-        if err is not None:
-            logger.error(f"handle_pod_create_update_event failed to get template {pod.template_ref}: {err}")
+    template, err = await srv.template_service.repo.get(str(pod.template_ref))
+    if err is not None:
+        logger.warning(f"handle_pod_create_update_event failed to get template {pod.template_ref}: {err}, "
+                       f"fallback to cached template")
+        if pod.template_str is None or pod.template_str == "":
+            logger.error("handle_pod_create_update_event failed to retrieve template")
             return err
-
+        else:
+            kv = pod.values
+            rendered_template_str, _, err = render_template_str(pod.template_str, kv)
+            original_template_str = pod.template_str
+    else:
         # render template
-        kv = pod.values | srv.opt.k8s_config_values | template.values
+        kv = pod.values | template.values
         rendered_template_str, _, err = render_template_str(template.template_str, kv)
         original_template_str, _, _ = render_template_str(template.template_str, template.values)
-    else:
-        kv = pod.values | srv.opt.k8s_config_values
-        rendered_template_str, _, err = render_template_str(pod.template_str, kv)
-        original_template_str = pod.template_str
 
     if err is not None:
         logger.error(f"handle_pod_create_update_event failed to parse template {pod.template_ref}: {err}")
+        return err
+
+    # create pod ingress
+    ingress_resource = K8SIngressResource.new(pod, srv.opt)
+    err = await srv.k8s_operator_service.create_apply_ingress(ingress_resource)
+    if err is not None:
+        logger.error(f"handle_pod_create_update_event failed to create pod {pod.pod_id}: {err}")
         return err
 
     # create pod on k8s
@@ -271,7 +281,7 @@ async def handle_pod_delete_event(srv: Optional['src.apiserver.service.RootServi
     Handle pod delete event
     """
 
-    # delete pod from cluster
+    # delete pod and ingress from cluster
     err = await srv.k8s_operator_service.delete_pod(ev.pod_id)
     if err is not None:
         logger.error(f"handle_pod_delete_event failed to delete pod {ev.pod_id}: {err}")
