@@ -4,7 +4,7 @@ This file defines the types of the request and response of the apiserver.
 import uuid
 from typing import List, Optional, Dict, Any
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, field_validator, model_validator
 
 import src.components.datamodels as datamodels
 
@@ -254,16 +254,12 @@ class PodCreateRequest(BaseModel):
 
     @field_validator('cpu_lim_m_cpu')
     def cpu_lim_m_cpu_must_be_valid(cls, v):
-        if v < 0:
-            raise ValueError('cpu_lim_m_cpu must be positive')
         if v < 500:
             raise ValueError('cpu_lim_m_cpu must be greater than 500 mCPU')
         return v
 
     @field_validator('mem_lim_mb')
     def mem_lim_mb_must_be_valid(cls, v):
-        if v < 0:
-            raise ValueError('mem_lim_mb must be positive')
         if v < 512:
             raise ValueError('mem_lim_mb must be greater than 512 MB')
         return v
@@ -314,19 +310,22 @@ class PodUpdateRequest(BaseModel):
     pod_id: Optional[str]
     name: Optional[str] = None
     description: Optional[str] = None
+    cpu_lim_m_cpu: Optional[int] = None
+    mem_lim_mb: Optional[int] = None
+    storage_lim_mb: Optional[int] = None
     username: Optional[str] = None
     user_uuid: Optional[str] = None
     timeout_s: Optional[int] = None
     target_status: Optional[datamodels.PodStatusEnum] = None
+    force: bool = False
 
-    @field_validator('timeout_s')
-    def timeout_s_must_be_valid(cls, v):
-        if v is not None:
-            if v < 0:
+    @model_validator(mode="after")
+    def validate_request(self):
+        if self.timeout_s is not None:
+            if self.timeout_s < 0:
                 raise ValueError('timeout_s must be positive')
-            elif v > 86400:
+            elif self.timeout_s > 86400 and not self.force:
                 raise ValueError('timeout_s must be less than 86400 seconds')
-        return v
 
     @field_validator('target_status')
     def target_status_must_be_valid(cls, v):
@@ -338,6 +337,27 @@ class PodUpdateRequest(BaseModel):
         if v not in [datamodels.PodStatusEnum.running, datamodels.PodStatusEnum.stopped]:
             raise ValueError('target_status must be valid')
         return v
+
+    @field_validator('cpu_lim_m_cpu')
+    def cpu_lim_m_cpu_must_be_valid(cls, v):
+        if v is not None:
+            return PodCreateRequest.cpu_lim_m_cpu_must_be_valid(v)
+        else:
+            return v
+
+    @field_validator('mem_lim_mb')
+    def mem_lim_mb_must_be_valid(cls, v):
+        if v is not None:
+            return PodCreateRequest.mem_lim_mb_must_be_valid(v)
+        else:
+            return v
+
+    @field_validator('storage_lim_mb')
+    def storage_lim_mb_must_be_valid(cls, v):
+        if v is not None:
+            PodCreateRequest.storage_lim_mb_must_be_valid(v)
+        else:
+            return v
 
 
 class PodUpdateResponse(PodGetResponse):

@@ -215,6 +215,7 @@ async def update(request, pod_id: str):
         )
     else:
         body = request.json
+        body['force'] = True
         req = PodUpdateRequest(**body)
         req.pod_id = pod_id  # set pod_id to request
 

@@ -262,6 +262,7 @@ async def update(request, pod_id: str):
                 )
 
         # update pod
+        body['force'] = False
         req = PodUpdateRequest(**body)
         req.pod_id = pod_id  # set pod_id to the one in url
         pod, err = await get_root_service().pod_service.update(request.app, req)

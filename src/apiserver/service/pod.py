@@ -1,9 +1,9 @@
 """
 Pod service
 """
-
+from enum import Enum
 import json
-from typing import Tuple
+from typing import Tuple, Union
 
 from loguru import logger
 from sanic import Sanic
@@ -16,20 +16,49 @@ from .common import ServiceInterface
 from .handler import handle_pod_create_update_event, handle_pod_delete_event
 
 
+class ModeEnum(str, Enum):
+    create = "create"
+    update = "update"
+
+
 class PodService(ServiceInterface):
     def __init__(self, pod_repo: PodRepo):
         super().__init__()
         self.repo: PodRepo = pod_repo
 
     @staticmethod
-    def check_quota(user: datamodels.UserModel, pods: List[datamodels.PodModel], req: PodCreateRequest) -> bool:
+    def check_quota(
+            user: datamodels.UserModel,
+            pods: List[datamodels.PodModel],
+            req: Union[PodCreateRequest, PodUpdateRequest],
+            mode: ModeEnum
+    ) -> bool:
         if user.quota is None:
             return True
         else:
-            num_pods = len(pods) + 1
-            cpu_m = sum([pod.cpu_lim_m_cpu for pod in pods]) + req.cpu_lim_m_cpu
-            mem_mb = sum([pod.mem_lim_mb for pod in pods]) + req.mem_lim_mb
-            storage_mb = sum([pod.storage_lim_mb for pod in pods]) + req.storage_lim_mb
+            if mode == ModeEnum.create:
+                running_pods = list(filter(lambda x: x.current_status == datamodels.PodStatusEnum.running, pods))
+                num_pods = len(pods) + 1
+                cpu_m = sum([pod.cpu_lim_m_cpu for pod in running_pods]) + req.cpu_lim_m_cpu
+                mem_mb = sum([pod.mem_lim_mb for pod in running_pods]) + req.mem_lim_mb
+                storage_mb = sum([pod.storage_lim_mb for pod in pods]) + req.storage_lim_mb
+            elif mode == ModeEnum.update:
+                running_pods = list(
+                    filter(
+                        lambda x: x.current_status == datamodels.PodStatusEnum.running and x.pod_id != req.pod_id,
+                        pods
+                    )
+                )
+                if req.target_status == datamodels.PodStatusEnum.running:
+                    num_pods = len(pods)
+                    cpu_m = sum([pod.cpu_lim_m_cpu for pod in running_pods]) + req.cpu_lim_m_cpu
+                    mem_mb = sum([pod.mem_lim_mb for pod in running_pods]) + req.mem_lim_mb
+                    storage_mb = sum([pod.storage_lim_mb for pod in pods])
+                else:
+                    return True
+            else:
+                return False
+
             if any([
                 num_pods > user.quota.pod_n,
                 cpu_m > user.quota.cpu_m,
@@ -76,12 +105,11 @@ class PodService(ServiceInterface):
         Create a pod.
         """
         # read username from request
-        username = req.username
-        if username is None:
+        if req.username is None or req.username == "":
             return None, errors.username_required
 
         # check if user exists and is active
-        user, err = await self.parent.user_service.repo.get(username=username)
+        user, err = await self.parent.user_service.repo.get(username=req.username)
         if any([
             err is not None,
             user is not None and user.status != datamodels.UserStatusEnum.active,
@@ -89,10 +117,10 @@ class PodService(ServiceInterface):
             return None, errors.user_not_found
 
         # list all pods of the user
-        _, pods, err = await self.parent.pod_service.repo.list(extra_query_filter={"username": username})
+        _, pods, err = await self.parent.pod_service.repo.list(extra_query_filter={"username": req.username})
 
         # check if user has reached the quota
-        ret = self.check_quota(user, pods, req)
+        ret = self.check_quota(user, pods, req, mode=ModeEnum.create)
         if not ret:
             return None, errors.quota_exceeded
 
@@ -126,12 +154,33 @@ class PodService(ServiceInterface):
         """
         Update a pod.
         """
-        if req.username is not None:
-            user, err = await self.parent.user_service.repo.get(username=req.username)
-            if err is not None:
-                return None, err
-            else:
-                req.user_uuid = user.uuid
+        old_pod, err = await self.repo.get(req.pod_id)
+        if err is not None:
+            return None, errors.pod_not_found
+
+        if req.username is None or req.username == "":
+            req.username = old_pod.username
+
+        user, err = await self.parent.user_service.repo.get(username=req.username)
+        if any([
+            err is not None,
+            user is not None and user.status != datamodels.UserStatusEnum.active,
+        ]):
+            return None, errors.user_not_found
+        else:
+            req.user_uuid = str(user.uuid)
+
+        # list all pods of the user
+        _, pods, err = await self.parent.pod_service.repo.list(extra_query_filter={"username": req.username})
+
+        # check if user has reached the quota
+        req.cpu_lim_m_cpu = old_pod.cpu_lim_m_cpu
+        req.mem_lim_mb = old_pod.mem_lim_mb
+        req.storage_lim_mb = old_pod.storage_lim_mb
+
+        ret = self.check_quota(user, pods, req, mode=ModeEnum.update)
+        if not ret:
+            return None, errors.quota_exceeded
 
         pod, err = await self.repo.update(
             pod_id=req.pod_id,
