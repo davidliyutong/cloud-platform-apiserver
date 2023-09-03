@@ -64,6 +64,44 @@ By clicking **CONNECT**, users can choose to connect to WEBIDE or VNC in the dro
 
 > Attention: Make sure to save the file in the `/root` directory, otherwise it will be deleted after the pod shutdown. Storing files on the Desktop is fine.
 
+#### Connecting to SSH
+
+Currently, ssh access to pod is experimental. The connection is established via [websocat](https://github.com/vi/websocat).
+
+To connect the pod via ssh, first install websocat on your local machine by following [the guide](https://github.com/vi/websocat#installation). Make sure command `websocat` is available in the shell.
+
+```text
+> websocat
+websocat: No URL specified. Use `websocat --help` to show the help message.
+```
+
+Then, click the SSH button in CONNECT menu, the configuration will be copied to clipboard. Paste the configuration to the ssh config. See [this post](https://linuxize.com/post/using-the-ssh-config-file/) or Google to learn more about ssh config. Make sure something similar to this is in ssh config:
+
+```text
+Host <pod_id>
+  HostName <pod_id>.ssh.example.com
+  User root
+  ProxyCommand websocat --binary wss://<pod_id>.ssh.example.com
+```
+
+> `<pod_id>` replaces pod_id of the pod
+
+Before connecting the pod, ssh public key authentication must be configured in the pod. Connect to pod via WebIDE or VNC, and run the following commands:
+
+```bash
+mkdir -p ~/.ssh
+chmod 600 ~/.ssh
+```
+
+Edit the `~/.ssh/authorized_keys` file and paste your public key. Save the file and exit. See [this post](https://linuxize.com/post/how-to-setup-passwordless-ssh-login/) or google to learn more about ssh public key authentication.
+
+Now the pod can be connected via ssh:
+
+```bash
+ssh <pod_id>
+```
+
+
 ### Pod Removal
 
 Click the **DELETE** button to delete a pod. **All data stored in pod will be deleted.**
