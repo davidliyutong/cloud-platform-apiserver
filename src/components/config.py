@@ -12,7 +12,7 @@ from loguru import logger
 from pydantic import BaseModel
 from vyper import Vyper
 
-CONFIG_BUILD_VERSION = "v0.0.5"
+CONFIG_BUILD_VERSION = "v0.0.6"
 CONFIG_HOME_PATH = os.path.expanduser('~')
 CONFIG_CONFIG_NAME = "apiserver"
 CONFIG_PROJECT_NAME = "clpl"
@@ -98,6 +98,9 @@ class APIServerConfig(BaseModel):
     config_coder_tls_secret: str = ""
     config_vnc_hostname: str = ""
     config_vnc_tls_secret: str = ""
+    config_ssh_hostname: str = ""
+    config_ssh_tls_secret: str = ""
+    config_nginx_class: str = "nginx"
     config_use_oidc: bool = False
 
     @logger.catch
@@ -159,6 +162,9 @@ class APIServerConfig(BaseModel):
         self.config_coder_tls_secret = str(d["config"]["coderTLSSecret"])
         self.config_vnc_hostname = str(d["config"]["vncHostname"])
         self.config_vnc_tls_secret = str(d["config"]["vncTLSSecret"])
+        self.config_ssh_hostname = str(d["config"]["sshHostname"])
+        self.config_ssh_tls_secret = str(d["config"]["sshTLSSecret"])
+        self.config_nginx_class = str(d["config"]["nginxClass"])
         self.config_use_oidc = bool(d["config"]["useOIDC"])
         # <<< Define Values <<<
         return self
@@ -222,6 +228,9 @@ class APIServerConfig(BaseModel):
         self.config_coder_tls_secret = v.get_string("config.coderTLSSecret")
         self.config_vnc_hostname = v.get_string("config.vncHostname")
         self.config_vnc_tls_secret = v.get_string("config.vncTLSSecret")
+        self.config_ssh_hostname = v.get_string("config.sshHostname")
+        self.config_ssh_tls_secret = v.get_string("config.sshTLSSecret")
+        self.config_nginx_class = v.get_string("config.nginxClass")
         self.config_use_oidc = v.get_bool("config.useOIDC")
         # <<< Define Values <<<
 
@@ -292,6 +301,9 @@ class APIServerConfig(BaseModel):
                 "coderTLSSecret": self.config_coder_tls_secret,
                 "vncHostname": self.config_vnc_hostname,
                 "vncTLSSecret": self.config_vnc_tls_secret,
+                "sshHostname": self.config_ssh_hostname,
+                "sshTLSSecret": self.config_ssh_tls_secret,
+                "nginxClass": self.config_nginx_class,
                 "useOIDC": self.config_use_oidc,
             }
         }
@@ -349,6 +361,9 @@ class APIServerConfig(BaseModel):
             "CONFIG_CODER_TLS_SECRET": self.config_coder_tls_secret,
             "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
             "CONFIG_VNC_TLS_SECRET": self.config_vnc_tls_secret,
+            "CONFIG_SSH_HOSTNAME": self.config_ssh_hostname,
+            "CONFIG_SSH_TLS_SECRET": self.config_ssh_tls_secret,
+            "CONFIG_NGINX_CLASS": self.config_nginx_class,
             "CONFIG_USE_OIDC": self.config_use_oidc,
         }
         # <<< Define Values <<<
@@ -415,6 +430,9 @@ class APIServerConfig(BaseModel):
         v.set_default("config.coderTLSSecret", _DEFAULT.config_coder_tls_secret)
         v.set_default("config.vncHostname", _DEFAULT.config_vnc_hostname)
         v.set_default("config.vncTLSSecret", _DEFAULT.config_vnc_tls_secret)
+        v.set_default("config.sshHostname", _DEFAULT.config_ssh_hostname)
+        v.set_default("config.sshTLSSecret", _DEFAULT.config_ssh_tls_secret)
+        v.set_default("config.nginxClass", _DEFAULT.config_nginx_class)
         v.set_default("config.useOIDC", _DEFAULT.config_use_oidc)
         # <<< Set Default Values <<<
 
@@ -482,6 +500,9 @@ class APIServerConfig(BaseModel):
         parser.add_argument("--config.coderTLSSecret", type=str, help="config code tlsSecret")
         parser.add_argument("--config.vncHostname", type=str, help="config vnc hostname")
         parser.add_argument("--config.vncTLSSecret", type=str, help="config vnc tlsSecret")
+        parser.add_argument("--config.sshHostname", type=str, help="config ssh hostname")
+        parser.add_argument("--config.sshTLSSecret", type=str, help="config ssh tlsSecret")
+        parser.add_argument("--config.nginxClass", type=str, help="config nginx class")
         parser.add_argument("--config.useOIDC", type=bool, help="config useOIDC")
         # <<< Set Default Values <<<
 
@@ -569,6 +590,9 @@ class APIServerConfig(BaseModel):
         v.bind_env("config.coderTLSSecret")
         v.bind_env("config.vncHostname")
         v.bind_env("config.vncTLSSecret")
+        v.bind_env("config.sshHostname")
+        v.bind_env("config.sshTLSSecret")
+        v.bind_env("config.nginxClass")
         v.bind_env("config.useOIDC")
         # <<< Set Env Values <<<
 
@@ -604,6 +628,9 @@ class APIServerConfig(BaseModel):
             "CONFIG_CODER_TLS_SECRET": self.config_coder_tls_secret,
             "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
             "CONFIG_VNC_TLS_SECRET": self.config_vnc_tls_secret,
+            "CONFIG_SSH_HOSTNAME": self.config_ssh_hostname,
+            "CONFIG_SSH_TLS_SECRET": self.config_ssh_tls_secret,
+            "CONFIG_NGINX_CLASS": self.config_nginx_class,
         }
 
     @property
@@ -616,17 +643,19 @@ class APIServerConfig(BaseModel):
     def verify(self) -> Tuple[bool, Optional[Exception]]:
         msg = []
         if any([
-            self.config_auth_endpoint == "" and msg.append("no config_auth_endpoint"),
+            self.config_auth_endpoint == "" and (msg.append("no config_auth_endpoint") == None),
             self.config_use_oidc and any([
-                self.oidc_frontend_login_url == "" and msg.append("no oidc_frontend_login_url"),
-                self.oidc_client_id == "" and msg.append("no oidc_client_id"),
-                self.oidc_client_secret == "" and msg.append("no oidc_client_secret"),
-                self.oidc_redirect_url == "" and msg.append("no oidc_redirect_url"),
+                self.oidc_frontend_login_url == "" and (msg.append("no oidc_frontend_login_url") == None),
+                self.oidc_client_id == "" and (msg.append("no oidc_client_id") == None),
+                self.oidc_client_secret == "" and (msg.append("no oidc_client_secret") == None),
+                self.oidc_redirect_url == "" and (msg.append("no oidc_redirect_url") == None),
             ]),
-            self.config_coder_hostname == "" and msg.append("no config_coder_hostname"),
-            self.config_coder_tls_secret == "" and msg.append("no config_coder_tls_secret"),
-            self.config_vnc_hostname == "" and msg.append("no config_vnc_hostname"),
-            self.config_vnc_tls_secret == "" and msg.append("no config_vnc_tls_secret")
+            self.config_coder_hostname == "" and (msg.append("no config_coder_hostname") == None),
+            self.config_coder_tls_secret == "" and (msg.append("no config_coder_tls_secret") == None),
+            self.config_vnc_hostname == "" and (msg.append("no config_vnc_hostname") == None),
+            self.config_vnc_tls_secret == "" and (msg.append("no config_vnc_tls_secret") == None),
+            self.config_ssh_hostname == "" and (msg.append("no config_ssh_hostname") == None),
+            self.config_ssh_tls_secret == "" and (msg.append("no config_ssh_tls_secret") == None)
         ]):
             return False, Exception("\n".join(msg))
         else:

@@ -88,7 +88,7 @@ if __name__ == '__main__':
             app.run(host=opt.api_host,
                     port=opt.api_port,
                     access_log=opt.api_access_log,
-                    workers=opt.api_num_workers if opt.api_access_log > 0 else mp.cpu_count(),
+                    workers=opt.api_num_workers,
                     auto_reload=False,
                     debug=opt.debug)
             logger.debug("debug mode toggled")

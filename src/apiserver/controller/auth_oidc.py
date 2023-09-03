@@ -317,7 +317,7 @@ class AsyncOauthClient:
         )
     ]
 )
-def oidc_status(request):
+async def oidc_status(request):
     if request.app.ctx.oauth_cfg is None:
         return json_response(None)
     else:
@@ -337,7 +337,7 @@ def oidc_status(request):
         )
     ]
 )
-def oidc_login(request):
+async def oidc_login(request):
     """
     This handler redirect user to IdP login page
     """
@@ -425,13 +425,22 @@ async def oidc_authorize(request):
     oauth_token, err = await c.fetch_token(request.args.get("code"))
     # oauth_token, err = await c.refresh_token(oauth_token)
     if err is not None:
-        return json_response(
-            ResponseBaseModel(
-                status=http.HTTPStatus.BAD_REQUEST,
-                message=str(err),
-                description="Authorization Error"
-            ).model_dump(), status=http.HTTPStatus.BAD_REQUEST
-        )
+        if opt.debug:
+            return json_response(
+                ResponseBaseModel(
+                    status=http.HTTPStatus.BAD_REQUEST,
+                    message=str(err),
+                ).model_dump(), status=http.HTTPStatus.BAD_REQUEST
+            )
+        else:
+            return redirect_response(
+                cfg.get_frontend_redirect_url(
+                    token="",
+                    refresh_token="",
+                    success=False,
+                    message=str(err)
+                )
+            )
 
     # fetch user info with access token
     user_info, err = await c.fetch_user(oauth_token)
@@ -440,7 +449,6 @@ async def oidc_authorize(request):
             ResponseBaseModel(
                 status=http.HTTPStatus.BAD_REQUEST,
                 message=str(err),
-                description="Authorization Error"
             ).model_dump(), status=http.HTTPStatus.BAD_REQUEST
         )
 

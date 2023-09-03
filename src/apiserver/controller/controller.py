@@ -25,7 +25,8 @@ def _health(opt: APIServerConfig):
             'version': config.CONFIG_BUILD_VERSION,
             'config': {
                 'coder_hostname': opt.config_coder_hostname,
-                'vnc_hostname': opt.config_vnc_hostname
+                'vnc_hostname': opt.config_vnc_hostname,
+                'ssh_hostname': opt.config_ssh_hostname,
             },
             'oidc': None if not opt.config_use_oidc else OIDCStatusResponse(
                 name=opt.oidc_name,
@@ -57,30 +58,6 @@ async def main_process_start(application: Sanic):
     """
     This function is called when the main process starts.
     """
-    # check if apiserver crashed last time
-    crashed, err = await get_crash_flag(application.ctx.opt)
-    if err is not None:
-        logger.warning(f"cannot get crash_flag: {err}")
-        crashed = True
-
-    # if crashed, print warning
-    if crashed:
-        logger.warning("apiserver crashed last time")
-    else:
-        logger.info("apiserver did not crash last time")
-
-    # recover from crash
-    if crashed:
-        ret, err = await recover_from_crash(application)
-        if not ret:
-            logger.error(err)
-            sys.exit(1)
-        else:
-            logger.info("apiserver recovered from crash")
-
-    # set crash flag to True, assume will crash
-    _ = await set_crash_flag(application.ctx.opt, True)
-
     logger.info(f"sanic application: {application} starting")
 
 
@@ -102,6 +79,32 @@ async def after_server_start(application: Sanic):
     This function is called after the server starts.
     """
     logger.info(f"sanic process: {application.m.name} started")
+
+    # only check crash status in rank 0 process
+    if application.m.name == "Sanic-Server-0-0":
+        # check if apiserver crashed last time
+        crashed, err = await get_crash_flag(application.ctx.opt)
+        if err is not None:
+            logger.warning(f"cannot get crash_flag: {err}")
+            crashed = True
+
+        # if crashed, print warning
+        if crashed:
+            logger.warning("apiserver crashed last time")
+        else:
+            logger.info("apiserver did not crash last time")
+
+        # recover from crash
+        if crashed:
+            ret, err = await recover_from_crash(application)
+            if not ret:
+                logger.error(err)
+                sys.exit(1)
+            else:
+                logger.info("apiserver recovered from crash")
+
+        # set crash flag to True, assume will crash
+        _ = await set_crash_flag(application.ctx.opt, True)
 
     # only start scan_pods task in rank 0 process
     if application.m.name == "Sanic-Server-0-0":

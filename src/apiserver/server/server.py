@@ -60,6 +60,8 @@ def apiserver_prepare_run(opt: APIServerConfig) -> Sanic:
     if err is not None:
         logger.error(f"invalid option: {str(err)}")
         exit(1)
+    else:
+        logger.info(f"option validation succeed")
 
     # set options
     controller_app.ctx.opt = opt

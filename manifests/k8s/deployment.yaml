@@ -115,6 +115,12 @@ spec:
               value: ${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME
             - name: CLPL_CONFIG_VNCTLSSECRET
               value: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGE ME
+            - name: CLPL_CONFIG_SSHHOSTNAME
+              value: ${{ CONFIG_SSH_HOSTNAME }} # CHANGE ME
+            - name: CLPL_CONFIG_SSHTLSSECRET
+              value: ${{ CONFIG_SSH_SECRET }} # CHANGE ME
+            - name: CLPL_CONFIG_NGINXCLASS
+              value: nginx # CHANGE ME
             - name: CLPL_CONFIG_AUTHENDPOINT
               value: http://apiserver.clpl.svc.cluster.local:8080
             - name: CLPL_CONFIG_USEOIDC

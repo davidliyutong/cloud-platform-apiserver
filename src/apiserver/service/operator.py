@@ -322,4 +322,10 @@ class K8SOperatorService(ServiceInterface):
                 return e
 
     async def create_apply_ingress(self, ingress_resource: K8SIngressResource) -> Optional[Exception]:
-        return await self._apply_k8s_resource(ingress_resource.render()[0])
+        tasks = [self._apply_k8s_resource(obj) for obj in ingress_resource.render()]
+        res = await asyncio.gather(*tasks)
+        if any(map(lambda x: x is not None, res)):
+            logger.debug(res)
+            return errors.k8s_failed_to_update
+        else:
+            return None

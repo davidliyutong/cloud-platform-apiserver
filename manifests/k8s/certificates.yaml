@@ -27,6 +27,19 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
+  name: ssh-${{ DOMAIN_LABEL }}-tls
+  namespace: clpl
+spec:
+  secretName: ssh-${{ DOMAIN_LABEL }}-tls
+  dnsNames:
+  - "*.ssh.${{ DOMAIN }}"
+  issuerRef:
+    name: letsencrypt-cf-dns
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
   name: apiserver-${{ DOMAIN_LABEL }}-tls
   namespace: clpl
 spec:

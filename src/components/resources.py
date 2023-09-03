@@ -33,7 +33,7 @@ metadata:
     nginx.ingress.kubernetes.io/auth-url: ${{ CONFIG_AUTH_ENDPOINT }}/v1/auth/token/validate/${{ POD_USERNAME }}
   name: clpl-ingress-${{ POD_ID }}
 spec:
-  ingressClassName: nginx # CHANGE ME
+  ingressClassName: ${{ CONFIG_NGINX_CLASS }} # CHANGE ME
   rules:
   - host: ${{ POD_ID }}.${{ CONFIG_CODER_HOSTNAME }} # CHANGE ME
     http:
@@ -62,6 +62,32 @@ spec:
   - hosts:
     - ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME hostname
     secretName: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGE ME TLS Secret
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    k8s-app: ${{ POD_LABEL }}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "40960M"
+  name: clpl-ingress-${{ POD_ID }}-ssh
+spec:
+  ingressClassName: ${{ CONFIG_NGINX_CLASS }} # CHANGE ME
+  rules:
+  - host: ${{ POD_ID }}.${{ CONFIG_SSH_HOSTNAME }} # CHANGE ME
+    http:
+      paths:
+      - backend:
+          service:
+            name: clpl-svc-${{ POD_ID }}
+            port:
+              number: 22
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - ${{ POD_ID }}.${{ CONFIG_SSH_HOSTNAME }} # CHANGE ME hostname
+    secretName: ${{ CONFIG_SSH_TLS_SECRET }} # CHANGE ME TLS Secret
 """
 
     @classmethod
@@ -83,6 +109,9 @@ spec:
         "CONFIG_CODER_TLS_SECRET": "code-tls-secret",
         "CONFIG_VNC_HOSTNAME": "vnc.example.org",
         "CONFIG_VNC_TLS_SECRET": "vnc-tls-secret",
+        "CONFIG_SSH_HOSTNAME": "ssh.example.org",
+        "CONFIG_SSH_TLS_SECRET": "ssh-tls-secret",
+        "CONFIG_NGINX_CLASS": "nginx",
     }
 
     @model_validator(mode="after")
