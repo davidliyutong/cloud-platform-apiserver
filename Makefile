@@ -1,4 +1,4 @@
-GIT_VERSION := $(shell git describe --tags --abbrev=0)
+GIT_VERSION := $(shell git describe --tags --abbrev=0 --always)
 AUTHOR="davidliyutong"
 DEV_AUTHOR="davidliyutong"
 
