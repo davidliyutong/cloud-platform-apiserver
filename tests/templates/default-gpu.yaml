@@ -59,7 +59,7 @@ spec:
           privileged: false
           readOnlyRootFilesystem: false
         volumeMounts:
-        - mountPath: /root
+        - mountPath: /home/ubuntu
           name: home
       dnsPolicy: ClusterFirst
       restartPolicy: Always

@@ -254,7 +254,8 @@ async def token_validate(request, username: str):
     If the validation succeed, return 200 OK and set cookie clpl_auth_token=${JWT}
     """
     # try to get from cookies
-    if (cookies_token := request.cookies.get(config.CONFIG_AUTH_COOKIES_NAME, None)) is None:
+    cookies_token = request.cookies.get(config.CONFIG_AUTH_COOKIES_NAME, None)
+    if cookies_token is None:
         # cookie does not exists, fallback to header
         token, err = parse_bearer(request.headers.get('Authorization'))
         if err is not None:

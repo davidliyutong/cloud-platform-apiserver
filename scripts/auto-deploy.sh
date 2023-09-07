@@ -61,6 +61,9 @@ else
     cp scripts/configure_rke2_agent.sh scripts/install_base_server.sh .temporary_root/
     wget https://rancher-mirror.rancher.cn/rke2/install.sh -O .temporary_root/install_rke2.sh
     cp -a ~/.ssh .temporary_root/
+    if [[ -f .temporary_root/.ssh/known_hosts ]]; then
+        rm ./temporary_root/.ssh/known_hosts
+    fi
     tar -czf root-deployment.tar.gz -C .temporary_root .
     rm -rf .temporary_root
 fi
@@ -79,8 +82,8 @@ echo "安装rke2: install_rke2.sh"
 ssh $USER@$TARGET_MACHINE "export INSTALL_RKE2_MIRROR=cn;export INSTALL_RKE2_TYPE=agent; sudo -E bash /root/install_rke2.sh"
 
 # trust host
-echo "信任主机: "
-ssh $USER@$TARGET_MACHINE "sudo ssh root@$SERVER_NODE sleep 1;"
+#echo "信任主机: "
+#ssh $USER@$TARGET_MACHINE "sudo ssh root@$SERVER_NODE sleep 1;"
 
 # join the cluster
 echo "加入集群: configure_rke2_agent.sh"
