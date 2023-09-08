@@ -58,7 +58,7 @@ else
         rm -rf .temporary_root
     fi
     mkdir -p .temporary_root
-    cp scripts/configure_rke2_agent.sh scripts/install_base_server.sh .temporary_root/
+    cp scripts/configure_rke2_agent.sh scripts/install_base_server.sh scripts/prepare_disk.sh .temporary_root/
     wget https://rancher-mirror.rancher.cn/rke2/install.sh -O .temporary_root/install_rke2.sh
     cp -a ~/.ssh .temporary_root/
     if [[ -f .temporary_root/.ssh/known_hosts ]]; then
