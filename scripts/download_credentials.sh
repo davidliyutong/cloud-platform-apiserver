@@ -27,4 +27,4 @@ mkdir -p creds
 
 # Download the credentials for the service account
 kubectl -n $NS get secret $SA-secret -o jsonpath='{.data.ca\.crt}' | base64 --decode > ./creds/ca.crt
-kubectl -n $NS get secret $SA-secret -o jsonpath='{.data.token}' | base64 --decode > ./creds/token.crt
+kubectl -n $NS get secret $SA-secret -o jsonpath='{.data.token}' | base64 --decode > ./creds/token

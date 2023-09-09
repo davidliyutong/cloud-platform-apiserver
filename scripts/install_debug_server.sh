@@ -15,6 +15,9 @@ else
     echo "SELinux is already disabled."
 fi
 
+# Configure io watcher
+echo fs.inotify.max_user_instances=8192| tee -a /etc/sysctl.conf && sysctl -p
+
 # Configure DNF
 echo "Configuring DNF..."
 dnf config-manager --set-enabled crb

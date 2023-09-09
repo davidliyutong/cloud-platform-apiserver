@@ -161,7 +161,7 @@ class AuthService(ServiceInterface):
             }
         except Exception as e:
             return None, e
-        access_token = jwt.encode(payload, secret, algorithm=self.algorithm)
+        access_token = jwt.encode(new_payload, secret, algorithm=self.algorithm)
         return access_token, None
 
 

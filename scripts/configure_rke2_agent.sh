@@ -19,10 +19,12 @@ TOKEN=$(ssh $SERVER_HOSTNAME "cat /var/lib/rancher/rke2/server/node-token")
 if USE_EXTERNAL_CONTAINERD; then
   CONFIG_STRING="server: https://"$SERVER_HOSTNAME":9345
 token: $TOKEN
+kubelet-arg: \"--max-pods=200\"
 container-runtime-endpoint: unix:///run/containerd/containerd.sock"
 else
     CONFIG_STRING="server: https://"$SERVER_HOSTNAME":9345
-token: $TOKEN"
+token: $TOKEN
+kubelet-arg: \"--max-pods=200\""
 fi
 
 # Configure Rancher

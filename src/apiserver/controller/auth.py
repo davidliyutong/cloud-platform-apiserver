@@ -301,15 +301,18 @@ async def token_validate(request, username: str):
         # case 2: the token is not device token
         if (
                 (payload['exp'] < (now + config.CONFIG_DEVICE_TOKEN_RENEW_THRESHOLD_S)) or
-                (payload['role'] != UserRoleEnum.device)
+                (payload['role'] != UserRoleEnum.device.value)
         ):
-            payload['role'] = str(UserRoleEnum.device)
+            logger.debug(f"validation_warning: token will expire in less "
+                         f"than {config.CONFIG_DEVICE_TOKEN_RENEW_THRESHOLD_S} seconds, rotate token")
+            payload['role'] = UserRoleEnum.device.value
             token, err = await get_root_service().auth_service.jwt_token_rotate(
                 payload,
                 request.app.config.get('JWT_SECRET'),
                 datetime.timedelta(seconds=config.CONFIG_DEVICE_TOKEN_EXPIRE_S)
             )
             if err is not None:
+                logger.debug(f"validation_err: {str(err)}")
                 return get_unauthorized_token_response()
 
         # return authorized response
