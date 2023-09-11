@@ -16,6 +16,7 @@ from src.components.logging import create_logger
 from src.components.utils import DelayedKeyboardInterrupt
 
 Sanic.start_method = 'fork'
+Sanic.test_mode = True  # attention: this is a hack to make sanic start in fork mode on some linux machines
 
 opt: APIServerConfig = APIServerConfig()
 
