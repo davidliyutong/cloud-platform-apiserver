@@ -80,7 +80,7 @@ Then, click the SSH button in CONNECT menu, the configuration will be copied to 
 ```text
 Host <pod_id>
   HostName <pod_id>.ssh.example.com
-  User root
+  User ubuntu
   ProxyCommand websocat --binary wss://<pod_id>.ssh.example.com
 ```
 
@@ -90,10 +90,15 @@ Before connecting the pod, ssh public key authentication must be configured in t
 
 ```bash
 mkdir -p ~/.ssh
-chmod 600 ~/.ssh
 ```
 
 Edit the `~/.ssh/authorized_keys` file and paste your public key. Save the file and exit. See [this post](https://linuxize.com/post/how-to-setup-passwordless-ssh-login/) or google to learn more about ssh public key authentication.
+
+Make sure the `~/.ssh/authorized_keys` file has mode `600`
+
+```bash
+chmod 600 ~/.ssh/authorized_keys
+```
 
 Now the pod can be connected via ssh:
 
