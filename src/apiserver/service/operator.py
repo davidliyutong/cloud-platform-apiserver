@@ -40,28 +40,28 @@ class K8SOperatorService(ServiceInterface):
         self._resource_function_map = {
             'Deployment': {
                 'create': self.app_v1.create_namespaced_deployment,
-                'patch': self.app_v1.patch_namespaced_deployment,
+                'update': self.app_v1.replace_namespaced_deployment,
                 'get': self.app_v1.read_namespaced_deployment,
                 'delete': self.app_v1.delete_namespaced_deployment,
                 'list': self.app_v1.list_namespaced_deployment,
             },
             'Service': {
                 'create': self.v1.create_namespaced_service,
-                'patch': self.v1.patch_namespaced_service,
+                'update': self.v1.patch_namespaced_service,
                 'get': self.v1.read_namespaced_service,
                 'delete': self.v1.delete_namespaced_service,
                 'list': self.v1.list_namespaced_service,
             },
             'Ingress': {
                 'create': self.networking_v1.create_namespaced_ingress,
-                'patch': self.networking_v1.patch_namespaced_ingress,
+                'update': self.networking_v1.patch_namespaced_ingress,
                 'get': self.networking_v1.read_namespaced_ingress,
                 'delete': self.networking_v1.delete_namespaced_ingress,
                 'list': self.networking_v1.list_namespaced_ingress,
             },
             'PersistentVolumeClaim': {
                 'create': self.v1.create_namespaced_persistent_volume_claim,
-                'patch': self.v1.patch_namespaced_persistent_volume_claim,
+                'update': self.v1.patch_namespaced_persistent_volume_claim,
                 'get': self.v1.read_namespaced_persistent_volume_claim,
                 'delete': self.v1.delete_namespaced_persistent_volume_claim,
                 'list': self.v1.list_namespaced_persistent_volume_claim,
@@ -305,7 +305,7 @@ class K8SOperatorService(ServiceInterface):
         if exists:
             try:
                 # update the resource
-                self._resource_function_map[kind]['patch'](
+                self._resource_function_map[kind]['update'](
                     resource['metadata']['name'],
                     self.namespace,
                     resource

@@ -160,10 +160,10 @@ spec:
           ports:
             - containerPort: 8080
           volumeMounts:
-            - name: apiserver-creds
-              mountPath: /root
+            - name: apiserver-logs
+              mountPath: /opt/app/logs
       volumes:
-      - name: apiserver-creds
+      - name: apiserver-logs
         persistentVolumeClaim:
           claimName: apiserver-pvc
 ---

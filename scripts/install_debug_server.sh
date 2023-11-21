@@ -25,7 +25,7 @@ dnf install epel-release -y
 dnf update -y
 dnf install openssh-server zsh git vim curl wget htop net-tools iftop dnsutils nfs-utils tmux iscsi-initiator-utils -y
 
-if USE_EXTERNAL_CONTAINERD; then
+if $USE_EXTERNAL_CONTAINERD; then
     echo "Using external containerd"
     dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
     dnf install containerd.io -y
