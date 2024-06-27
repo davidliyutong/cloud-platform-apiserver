@@ -1,10 +1,8 @@
 # Cloud Platform API Server
 
-This project is the API server progream of a cloud native coding platform. It is a RESTful server built with Sanic that enables creation of WebIDE in a K8S cluster (e.g. [code-server](https://github.com/coder/code-server))
+This project is the API server of a cloud native coding platform. It is a RESTful server built with Sanic that enables creation of WebIDE in a K8S cluster (e.g. [code-server](https://github.com/coder/code-server))
 
 The api server is designed to be deployed on a K8S cluster but can also be run locally.
-
-The frontend project is [here](https://github.com/davidliyutong/cloud-platform-frontend)
 
 ## Introduction
 
@@ -44,62 +42,22 @@ python -m src serve
 
 To apply custom configuration, see the `Configuration` section below.
 
-### Deploy with Docker
+### Image Build
 
-To deploy the api server with Docker, you need to build the Docker image first:
+The Docker image is built with the following command:
 
 ```shell
-docker build -t davidliyutong/clpl-apiserver:$(shell uname -m)-latest -f manifests/docker/Dockerfile .
+docker build -t davidliyutong/clpl-apiserver:latest -f manifests/docker/Dockerfile .
 
 ```
 
 Then, you can run the Docker image with the following command:
 
 ```shell
-docker run -it --rm -p 8080:8080 davidliyutong/clpl-apiserver:$(shell uname -m)-latest
+docker run -it --rm -p 8080:8080 davidliyutong/clpl-apiserver:latest
 ```
 
 To apply custom configuration, see the `Configuration` section below.
-
-### Deploy with Docker Compose
-
-Modify the `manifests/docker/docker-compose.yml` file according to your configuration, then run the following command
-
-```shell
-cd manifests/docker
-docker-compose up -d
-```
-
-To apply custom configuration, see the `Configuration` section below.
-
-### Deploy with Kubernetes
-
-First, create the `clpl` namespace:
-
-```shell
-kubectl create namespace clpl
-```
-
-Then, apply the `manifests/k8s/rbac.yaml` file:
-
-```shell
-kubectl apply -f manifests/k8s/rbac.yaml
-```
-
-You need to create 4 TLS certificate:
-
-- TLS certificate for the api server
-- TLS certificate for the frontend
-- TLS certificate for the noVNC endpoint
-- TLS certificate for the WebIDE endpoint
-
-You can use `manifests/k8s/clusterissure.yaml` to create a cert-manager cluster issuer. Then, create the certificates with the help of `manifests/k8s/certificates.yaml`
-
-Finally, modify the `manifests/k8s/deployment.yaml` according to your configuration and apply it:
-
-```shell
-kubectl apply -f manifests/k8s/deployment.yaml
-```
 
 ## Configuration
 
@@ -164,24 +122,6 @@ The platform supports login via OpenID Connect. It is tested with [Authentik](ht
 
 # TODO
 
-- migration mechanism
-- Audit
-- LDAP
-- ~~OIDC~~
-- ~~Find Out why shutdown print error message~~
-- ~~Frontend~~
-- ~~CLI client~~
-- ~~Quota~~
-- ~~Pod AutoStop (Timers)~~
-- ~~Error Recovery~~
-- ~~Graceful Shutdown~~
-- ~~Client library~~
-- ~~Comments~~
-- ~~Documentation about deploy~~
-- ~~K8S manifests~~
-- ~~LogLevel~~
-- ~~Pod / User Handlers (CheckLogic)~~
-- ~~Pod KeepAlive~~
-- ~~Basic Auth~~
-- ~~Check Logic~~
-- ~~Pod Management~~
+- [ ] migration mechanism
+- [ ] Audit
+- [ ] LDAP

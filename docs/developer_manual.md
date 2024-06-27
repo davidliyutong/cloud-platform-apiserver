@@ -1,1 +1,0 @@
-# Cloud Platform Developer Manual
