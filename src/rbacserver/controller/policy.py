@@ -84,3 +84,7 @@ async def add_policy(request):
     return wrapped_model_response(
         ResponseBaseModel(status=http.HTTPStatus.OK, message="success")
     )
+
+
+openapi.component(RBACPolicyExchangeModelV2)
+openapi.component(ResponseBaseModel)

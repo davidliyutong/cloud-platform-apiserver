@@ -1,0 +1,1 @@
+wrk -t50 -c100 -d5s -T5s --latency -s rbac.lua http://127.0.0.1:8081/v1/enforce

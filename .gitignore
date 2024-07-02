@@ -5,6 +5,7 @@
 # Logs, Temp Data
 logs
 tmp
+manifests/docker/dev/data
 
 # Python
 *.pyc

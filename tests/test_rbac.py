@@ -1,0 +1,31 @@
+import casbin
+from casbin.util import regex_match_func
+from src.rbac import system_policy_text, system_config_text
+from src.rbac import MemoryAdapter
+model = casbin.Model()
+model.load_model_from_text(system_config_text)
+adapter = MemoryAdapter(system_policy_text)
+e = casbin.Enforcer(model, adapter)
+e.add_named_matching_func("keyMatch", regex_match_func)
+
+# e.add_named_matching_func("g", key_match2)
+e.add_grouping_policy("alice", "role::super_admin")
+print(e.enforce("alice", "resources::/groups/", "create") == True)
+print(e.enforce("alice", "resources::/ddd", "create") == True)
+print(e.enforce("bob", "resources::/groups/", "create") == True)
+print(e.enforce("bob", "resources::/ddd", "create") == False)
+print(e.enforce("bob", "resources::/system/", "read") == True)
+print(e.enforce("bob", "resources::/system/", "update") == False)
+print(e.enforce("bob", "resources::/pods/", "list") == True)
+print(e.enforce("charlie", "resources::/system/", "read") == False)
+print(e.enforce("charlie", "resources::/templates/d", "create") == True)
+print(e.enforce("david", "resources::/templates/d", "create") == False)
+print(e.enforce("david", "resources::/templates/.public/d", "read") == True)
+print(e.enforce("david", "resources::/pods/d", "create") == True)
+print(e.enforce("david", "resources::/pods/ttt", "read") == False)
+print(e.enforce("eve", "resources::/templates/d", "create") == False)
+print(e.enforce("eve", "resources::/pods/d", "create") == True)
+print(e.enforce("eve", "resources::/pods/ttt", "read") == False)
+print(e.enforce("eve", "resources::/groups/ttt", "create") == True)
+print(e.enforce("eve", "resources::/pods/.private/xxx", "read") == True)
+print(e.enforce("eve", "resources::/pods/.public/xxx", "read") == False)

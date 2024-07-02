@@ -15,7 +15,7 @@ async def main():
         routing_key = "clpl_event_queue"
         channel = await connection.channel()
         while True:
-            message_body = datamodels.PodModel.new(
+            message_body = datamodels.PodModelV1.new(
                 template_ref=str(uuid.uuid4()),
                 username='test_user',
             ).model_dump_json()
