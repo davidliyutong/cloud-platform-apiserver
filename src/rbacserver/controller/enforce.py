@@ -8,7 +8,8 @@ from loguru import logger
 from sanic import Blueprint
 from sanic_ext import openapi
 
-from src.components.types import EnforceRequest, EnforceResponse, ResponseBaseModel
+from src.components.types.common import ResponseBaseModel
+from src.components.types.rbac import EnforceRequest, EnforceResponse
 from src.components.utils.checkers import unmarshal_json_request, wrapped_model_response
 
 bp = Blueprint("enforce", url_prefix="/enforce", version=1)

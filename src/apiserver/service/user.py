@@ -1,12 +1,12 @@
 """
 User service
 """
-from typing import Type
+from typing import Type, Optional, Tuple, List, Union
+from pydantic import SecretStr
 
 from odmantic import AIOEngine
 from sanic import Sanic
 
-from src.components.types import *
 from src.components import errors
 from src.components.datamodels import UserModelV2, ResourceStatusEnum
 from src.components.datamodels.user import RESERVED_USERNAMES
@@ -14,7 +14,9 @@ from src.components.utils.checkers import unmarshal_mongodb_filter
 from src.components.utils.security import get_hashed_text
 
 from .common import ServiceInterface
-
+from src.components.types.rbac import PolicyCreateRequest, PolicyDeleteRequest
+from src.components.types.user import UserListRequest, UserCreateRequest, UserGetRequest, UserUpdateRequest, \
+    UserDeleteRequest
 
 
 class UserService(ServiceInterface):
@@ -46,9 +48,9 @@ class UserService(ServiceInterface):
         """
         res = await self._engine.find_one(
             UserModelV2,
-            UserModelV2.username == req.username # and UserModelV2.resource_status != ResourceStatusEnum.deleted
+            UserModelV2.username == req.username  # and UserModelV2.resource_status != ResourceStatusEnum.deleted
         )
-        if res is None or res.resource_status == ResourceStatusEnum.deleted:
+        if res is None or res.resource_status in [ResourceStatusEnum.deleted, ResourceStatusEnum.finalizing]:
             return None, Exception(errors.user_not_found)
 
         return res, None
@@ -64,7 +66,8 @@ class UserService(ServiceInterface):
         query_filter, err = unmarshal_mongodb_filter(req.extra_query_filter)
         if err is not None:
             return 0, [], err
-        res = await self._engine.find(UserModelV2, query_filter)
+
+        res = await self._engine.find(UserModelV2, query_filter, skip=req.skip, limit=req.limit)
         count = await self._engine.count(UserModelV2, query_filter)
         return count, res, None
 
@@ -79,10 +82,7 @@ class UserService(ServiceInterface):
         """
         user = await self._engine.find_one(UserModelV2, UserModelV2.username == req.username)
         if user is not None:
-            if user.resource_status != ResourceStatusEnum.deleted:
-                return None, Exception(errors.user_exists)
-            else:
-                await self._engine.delete(user)
+            return None, Exception(errors.user_exists)
 
         # if the user is registering, check if the username is in the reserved list
         if registration:
@@ -197,6 +197,7 @@ class UserService(ServiceInterface):
             else:
                 return None, Exception(errors.otp_code_wrong)
 
+        user.resource_status = ResourceStatusEnum.committed
         try:
             await self._engine.save(user)
         except Exception as e:

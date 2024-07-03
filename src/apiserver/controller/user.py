@@ -1,5 +1,5 @@
 """
-This module implements the admin user controller.
+This module implements the user controller.
 """
 
 import http
@@ -7,11 +7,13 @@ import http
 from loguru import logger
 from sanic import Blueprint
 from sanic_ext import openapi
-# from sanic_jwt import protected
 
 from src.components import errors
 from src.apiserver.service import RootService
-from src.components.types import *
+from src.components.auth.common import JWT_TOKEN_NAME
+from src.components.datamodels.group import GroupEnumInternal
+from src.components.types.user import UserListRequest, UserListResponse, UserCreateRequest, UserCreateResponse, \
+    UserGetRequest, UserGetResponse, UserUpdateRequest, UserUpdateResponse, UserDeleteRequest, UserDeleteResponse
 from src.components.utils.wrappers import wrapped_model_response
 from src.components.utils.checkers import unmarshal_query_args, unmarshal_json_request
 
@@ -20,7 +22,7 @@ from src.components.auth import authn, authz
 bp = Blueprint('user', url_prefix="/users", version=1)
 
 
-@bp.get("/", name="admin_user_list")
+@bp.get("/", name="user_list")
 @openapi.definition(
     response=[
         openapi.definitions.Response(
@@ -29,11 +31,11 @@ bp = Blueprint('user', url_prefix="/users", version=1)
         )
     ],
     parameter=[
-        openapi.definitions.Parameter("index_start", int, location="query", required=False),
-        openapi.definitions.Parameter("index_end", int, location="query", required=False),
+        openapi.definitions.Parameter("skip", int, location="query", required=False),
+        openapi.definitions.Parameter("limit", int, location="query", required=False),
         openapi.definitions.Parameter("extra_query_filter", str, location="query", required=False)
     ],
-    secured={"token": []}
+    secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
 @authz.enforce_rbac_any(action="list", resource_fmts=["resources::/users/*"])
@@ -62,7 +64,7 @@ async def list(request):
         )
 
 
-@bp.post("/", name="admin_user_create")
+@bp.post("/", name="user_create")
 @openapi.definition(
     body={'application/json': UserCreateRequest.model_json_schema(ref_template="#/components/schemas/{model}")},
     response=[
@@ -70,7 +72,7 @@ async def list(request):
             {'application/json': UserCreateResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
             status=200)
     ],
-    secured={"token": []}
+    secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
 @authz.enforce_rbac_any(action="create", resource_fmts=["resources::/users/*"])
@@ -103,7 +105,7 @@ async def create(request):
         )
 
 
-@bp.get("/<username:str>", name="admin_user_get")
+@bp.get("/<username:str>", name="user_get")
 @openapi.response(
     200,
     {"application/json": UserGetResponse.model_json_schema(ref_template="#/components/schemas/{model}")}
@@ -114,7 +116,7 @@ async def create(request):
             {'application/json': UserGetResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
             status=200)
     ],
-    secured={"token": []}
+    secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
 @authz.enforce_rbac_any(action="read", resource_fmts=["resources::/users/{username}"])
@@ -146,7 +148,7 @@ async def get(request, username: str):
             )
 
 
-@bp.put("/<username:str>", name="admin_user_update")
+@bp.put("/<username:str>", name="user_update")
 @openapi.definition(
     body={'application/json': UserUpdateRequest.model_json_schema(ref_template="#/components/schemas/{model}")},
     response=[
@@ -154,7 +156,7 @@ async def get(request, username: str):
             {'application/json': UserUpdateResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
             status=200)
     ],
-    secured={"token": []}
+    secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
 @authz.enforce_rbac_any(action="update", resource_fmts=["resources::/users/{username}"])
@@ -206,7 +208,7 @@ async def update(request, username: str):
             )
 
 
-@bp.delete("/<username:str>", name="admin_user_delete")
+@bp.delete("/<username:str>", name="user_delete")
 @openapi.definition(
     body={'application/json': UserDeleteRequest.model_json_schema(ref_template="#/components/schemas/{model}")},
     response=[
@@ -214,7 +216,7 @@ async def update(request, username: str):
             {'application/json': UserDeleteResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
             status=200)
     ],
-    secured={"token": []}
+    secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
 @authz.enforce_rbac_any(action="delete", resource_fmts=["resources::/users/{username}"])
@@ -263,6 +265,7 @@ async def delete(request, username: str):
                 UserDeleteResponse(status=http.HTTPStatus.OK, message="success", user=deleted_user)
             )
 
+# TODO: add search API
 
 openapi.component(UserListRequest)
 openapi.component(UserListResponse)

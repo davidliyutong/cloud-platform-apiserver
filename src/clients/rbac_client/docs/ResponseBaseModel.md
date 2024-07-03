@@ -13,7 +13,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```python
-from clpl_apiserver_client.models.response_base_model import ResponseBaseModel
+from clpl_rbacserver_client.models.response_base_model import ResponseBaseModel
 
 # TODO update the JSON string below
 json = "{}"

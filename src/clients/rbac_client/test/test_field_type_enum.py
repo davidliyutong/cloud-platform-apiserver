@@ -14,7 +14,7 @@
 
 import unittest
 
-from clpl_apiserver_client.models.field_type_enum import FieldTypeEnum
+from clpl_rbacserver_client.models.field_type_enum import FieldTypeEnum
 
 class TestFieldTypeEnum(unittest.TestCase):
     """FieldTypeEnum unit test stubs"""

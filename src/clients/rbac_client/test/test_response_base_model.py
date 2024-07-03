@@ -14,7 +14,7 @@
 
 import unittest
 
-from clpl_apiserver_client.models.response_base_model import ResponseBaseModel
+from clpl_rbacserver_client.models.response_base_model import ResponseBaseModel
 
 class TestResponseBaseModel(unittest.TestCase):
     """ResponseBaseModel unit test stubs"""
@@ -27,7 +27,7 @@ class TestResponseBaseModel(unittest.TestCase):
 
     def make_instance(self, include_optional) -> ResponseBaseModel:
         """Test ResponseBaseModel
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `ResponseBaseModel`

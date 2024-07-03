@@ -30,9 +30,10 @@ class ResourceStatusEnum(str, Enum):
     """
     Resource status enum, used to define resource status. (for error recovery)
     """
+    pending = "pending"
     committed = "committed"
     deleted = "deleted"
-    pending = "pending"
+    finalizing = "finalizing"
 
 
 # TODO: wait for odmantic support class inheritance

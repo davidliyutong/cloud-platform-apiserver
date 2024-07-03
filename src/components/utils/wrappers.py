@@ -1,6 +1,6 @@
 from sanic.response import json as json_response
 
-from src.components.types import ResponseBaseModel
+from src.components.types.common import ResponseBaseModel
 
 
 def wrapped_model_response(model: ResponseBaseModel, status_code: int = None, headers: dict = None):

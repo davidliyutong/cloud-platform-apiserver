@@ -9,18 +9,19 @@ import shortuuid
 from loguru import logger
 from odmantic import AIOEngine
 from sanic import Sanic
-from sanic_jwt import initialize
 
 from src.apiserver.controller import controller_app
-from src.apiserver.controller.admin_pod import bp as admin_pod_bp
-from src.apiserver.controller.admin_template import bp as admin_template_bp
-from src.apiserver.controller.auth import bp as auth_bp
-from src.apiserver.controller.auth_oidc import bp as auth_oidc_bp, OAuth2Config
+# from src.apiserver.controller.admin_pod import bp as admin_pod_bp
+from src.apiserver.controller.auth.jwt import bp as auth_jwt_bp
+from src.apiserver.controller.auth.oidc import bp as auth_oidc_bp, OAuth2Config
 from src.apiserver.controller.heartbeat import bp as heartbeat_bp
-from src.apiserver.controller.nonadmin_pod import bp as nonadmin_pod_bp
-from src.apiserver.controller.nonadmin_template import bp as nonadmin_template_bp
+# from src.apiserver.controller.nonadmin_pod import bp as nonadmin_pod_bp
 from src.apiserver.controller.user import bp as user_bp
 from src.apiserver.controller.policy import bp as policy_bp
+from src.apiserver.controller.project import bp as project_bp
+from src.apiserver.controller.template import bp as template_bp
+
+
 from src.apiserver.service import init_root_service
 from src.components.auth.common import JWT_SECRET_KEYNAME, JWT_ALGORITHM_KEYNAME
 from src.components.config import APIServerConfig, OIDCConfig, CONFIG_PROJECT_NAME, SiteConfig
@@ -47,18 +48,27 @@ def apiserver_check_option(opt: APIServerConfig) -> APIServerConfig:
 
     # check existence of OIDCConfig in cluster
     try:
-        crd = _v1.get_namespaced_custom_object(f'{CONFIG_PROJECT_NAME}.davidliyutong.github.io', 'v1',
-                                               opt.k8s_namespace, 'oidcconfigs', opt.oidc_config_name)
-        opt.oidc_config = OIDCConfig(**(crd['items'][0]['spec']))
+        crd = _v1.get_namespaced_custom_object(
+            f'{CONFIG_PROJECT_NAME}.davidliyutong.github.io', 'v1', opt.k8s_namespace, 'oidcconfigs',
+            opt.oidc_config_name
+        )
+        # FIXME: don't know sometimes the result is a list, sometimes it's a dict
+        if 'items' in crd.keys() and len(crd['items']) > 0:
+            crd = crd['items'][0]
+        opt.oidc_config = OIDCConfig(**(crd['spec']))
     except Exception as e:
         logger.warning("Exception when calling get_namespaced_custom_object: %s\n" % e)
         opt.oidc_config = None
 
     # check existence of SiteConfig in cluster
     try:
-        crd = _v1.get_namespaced_custom_object(f'{CONFIG_PROJECT_NAME}.davidliyutong.github.io', 'v1',
-                                               opt.k8s_namespace, 'siteconfigs', opt.site_config_name)
-        opt.site_config = SiteConfig(**(crd['items'][0]['spec']))
+        crd = _v1.get_namespaced_custom_object(
+            f'{CONFIG_PROJECT_NAME}.davidliyutong.github.io', 'v1', opt.k8s_namespace, 'siteconfigs',
+            opt.site_config_name
+        )
+        if 'items' in crd.keys() and len(crd['items']) > 0:
+            crd = crd['items'][0]
+        opt.site_config = SiteConfig(**(crd['spec']))
     except Exception as e:
         logger.warning("Exception when calling get_namespaced_custom_object: %s\n" % e)
         opt.site_config = None
@@ -133,18 +143,17 @@ def apiserver_prepare_run(opt: APIServerConfig) -> Sanic:
     )
 
     # attach Blueprint to context
-    controller_app.blueprint(admin_pod_bp)
-    controller_app.blueprint(admin_template_bp)
-    controller_app.blueprint(auth_bp)
+    controller_app.blueprint(auth_jwt_bp)
     if opt.config_use_oidc:
         controller_app.blueprint(auth_oidc_bp)
-        controller_app.ctx.oauth_cfg = OAuth2Config.from_oidc_config(opt.oidc_config)
-        controller_app.ctx.oauth_client = controller_app.ctx.oauth_cfg.get_async_client()
+        _oauth2_cfg = OAuth2Config.from_oidc_config(opt.oidc_config)
+        controller_app.ctx.oauth_cfg = _oauth2_cfg
+        controller_app.ctx.oauth_client = _oauth2_cfg.get_async_client()
     controller_app.blueprint(user_bp)
-    controller_app.blueprint(nonadmin_template_bp)
-    controller_app.blueprint(nonadmin_pod_bp)
     controller_app.blueprint(heartbeat_bp)
     controller_app.blueprint(policy_bp)
+    controller_app.blueprint(project_bp)
+    controller_app.blueprint(template_bp)
 
     # attach JWT secret to context
     controller_app.config.update({JWT_SECRET_KEYNAME: opt.config_token_secret})

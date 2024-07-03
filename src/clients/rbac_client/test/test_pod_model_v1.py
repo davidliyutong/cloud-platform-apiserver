@@ -14,7 +14,7 @@
 
 import unittest
 
-from clpl_apiserver_client.models.pod_model_v1 import PodModelV1
+from clpl_rbacserver_client.models.pod_model_v1 import PodModelV1
 
 class TestPodModelV1(unittest.TestCase):
     """PodModelV1 unit test stubs"""
@@ -27,7 +27,7 @@ class TestPodModelV1(unittest.TestCase):
 
     def make_instance(self, include_optional) -> PodModelV1:
         """Test PodModelV1
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `PodModelV1`

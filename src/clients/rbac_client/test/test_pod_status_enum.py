@@ -14,7 +14,7 @@
 
 import unittest
 
-from clpl_apiserver_client.models.pod_status_enum import PodStatusEnum
+from clpl_rbacserver_client.models.pod_status_enum import PodStatusEnum
 
 class TestPodStatusEnum(unittest.TestCase):
     """PodStatusEnum unit test stubs"""

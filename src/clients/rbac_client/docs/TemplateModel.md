@@ -19,7 +19,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```python
-from clpl_apiserver_client.models.template_model import TemplateModel
+from clpl_rbacserver_client.models.template_model import TemplateModel
 
 # TODO update the JSON string below
 json = "{}"

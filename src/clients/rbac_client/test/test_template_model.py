@@ -14,7 +14,7 @@
 
 import unittest
 
-from clpl_apiserver_client.models.template_model import TemplateModel
+from clpl_rbacserver_client.models.template_model import TemplateModel
 
 class TestTemplateModel(unittest.TestCase):
     """TemplateModel unit test stubs"""
@@ -27,7 +27,7 @@ class TestTemplateModel(unittest.TestCase):
 
     def make_instance(self, include_optional) -> TemplateModel:
         """Test TemplateModel
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `TemplateModel`

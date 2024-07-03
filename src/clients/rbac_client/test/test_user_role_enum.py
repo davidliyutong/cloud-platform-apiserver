@@ -14,7 +14,7 @@
 
 import unittest
 
-from clpl_apiserver_client.models.user_role_enum import UserRoleEnum
+from clpl_rbacserver_client.models.user_role_enum import UserRoleEnum
 
 class TestUserRoleEnum(unittest.TestCase):
     """UserRoleEnum unit test stubs"""

@@ -14,7 +14,7 @@
 
 import unittest
 
-from clpl_apiserver_client.models.resource_status_enum import ResourceStatusEnum
+from clpl_rbacserver_client.models.resource_status_enum import ResourceStatusEnum
 
 class TestResourceStatusEnum(unittest.TestCase):
     """ResourceStatusEnum unit test stubs"""

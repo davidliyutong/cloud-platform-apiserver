@@ -12,7 +12,8 @@ from .names import (
     template_collection_name,
     volume_collection_name,
     group_collection_name,
-    policy_collection_name
+    policy_collection_name,
+    project_collection_name
 )
 
 from .common import FieldTypeEnum, ResourceStatusEnum

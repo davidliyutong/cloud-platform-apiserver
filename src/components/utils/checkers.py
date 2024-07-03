@@ -3,7 +3,7 @@ from typing import Optional, Tuple, Type, TypeVar
 import http
 
 from src.components import errors
-from src.components.types import ResponseBaseModel
+from src.components.types.common import ResponseBaseModel
 from .wrappers import wrapped_model_response
 
 T = TypeVar('T')
@@ -23,8 +23,7 @@ def unmarshal_json_request(
     if request.json is None:
         return None, wrapped_model_response(
             err_response_type(
-                status=http.HTTPStatus.BAD_REQUEST,
-                message=str(errors.invalid_request_body)
+                status=http.HTTPStatus.BAD_REQUEST, message=str(errors.invalid_request_body)
             ),
             status_code=http.HTTPStatus.BAD_REQUEST
         ), Exception(errors.invalid_request_body),
@@ -34,8 +33,7 @@ def unmarshal_json_request(
         except Exception as e:
             return None, wrapped_model_response(
                 err_response_type(
-                    status=http.HTTPStatus.BAD_REQUEST,
-                    message=str(e)
+                    status=http.HTTPStatus.BAD_REQUEST, message=str(e)
                 ),
                 status_code=http.HTTPStatus.BAD_REQUEST
             ), e
@@ -61,8 +59,7 @@ def unmarshal_query_args(
         except Exception as e:
             return None, wrapped_model_response(
                 err_response_type(
-                    status=http.HTTPStatus.BAD_REQUEST,
-                    message=str(e)
+                    status=http.HTTPStatus.BAD_REQUEST, message=str(e)
                 ),
                 status_code=http.HTTPStatus.BAD_REQUEST
             ), e
@@ -72,8 +69,7 @@ def unmarshal_query_args(
         except Exception as e:
             return None, wrapped_model_response(
                 err_response_type(
-                    status=http.HTTPStatus.BAD_REQUEST,
-                    message=str(e)
+                    status=http.HTTPStatus.BAD_REQUEST, message=str(e)
                 ),
                 status_code=http.HTTPStatus.BAD_REQUEST
             ), e

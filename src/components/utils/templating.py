@@ -46,5 +46,5 @@ class UserFilter:
         else:
             self._mongo_like_filter = mongoquery.Query({})
 
-    def filter(self, user_info: dict) -> bool:
+    def __call__(self, user_info: dict) -> bool:
         return self._mongo_like_filter.match(user_info)

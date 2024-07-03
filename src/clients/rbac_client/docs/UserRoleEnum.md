@@ -1,10 +1,15 @@
 # UserRoleEnum
 
 
-## Properties
+## Enum
 
-Name | Type | Description | Notes
------------- | ------------- | ------------- | -------------
+* `SUPER_ADMIN` (value: `'super_admin'`)
+
+* `ADMIN` (value: `'admin'`)
+
+* `USER` (value: `'user'`)
+
+* `DEVICE` (value: `'device'`)
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

@@ -1,5 +1,5 @@
 """
-This module implements the admin template controller.
+This module implements the policy controller.
 """
 
 import http
@@ -12,13 +12,9 @@ import src.components.auth.authn as authn
 import src.components.auth.common
 import src.components.errors as errors
 from src.apiserver.service import RootService
-from src.components.types import (
-    PolicyListResponse, PolicyListRequest,
-    PolicyUpdateRequest, PolicyUpdateResponse,
-    PolicyDeleteResponse, PolicyDeleteRequest,
-    PolicyGetResponse, PolicyGetRequest,
-    PolicyCreateResponse, PolicyCreateRequest,
-)
+from src.components.types.rbac import PolicyListRequest, PolicyListResponse, PolicyCreateRequest, \
+    PolicyCreateResponse, PolicyGetRequest, PolicyGetResponse, PolicyUpdateRequest, PolicyUpdateResponse, \
+    PolicyDeleteRequest, PolicyDeleteResponse
 from src.components.utils.checkers import unmarshal_json_request, unmarshal_query_args
 from src.components.utils.wrappers import wrapped_model_response
 from src.components.auth import authn, authz
@@ -35,8 +31,8 @@ bp = Blueprint("policy", url_prefix="/policy", version=1)
             status=200)
     ],
     parameter=[
-        openapi.definitions.Parameter("index_start", int, location="query", required=False),
-        openapi.definitions.Parameter("index_end", int, location="query", required=False),
+        openapi.definitions.Parameter("skip", int, location="query", required=False),
+        openapi.definitions.Parameter("limit", int, location="query", required=False),
         openapi.definitions.Parameter("extra_query_filter", str, location="query", required=False)
     ],
     secured={src.components.auth.common.JWT_TOKEN_NAME: []}

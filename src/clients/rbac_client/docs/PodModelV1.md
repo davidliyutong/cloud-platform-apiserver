@@ -28,7 +28,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```python
-from clpl_apiserver_client.models.pod_model_v1 import PodModelV1
+from clpl_rbacserver_client.models.pod_model_v1 import PodModelV1
 
 # TODO update the JSON string below
 json = "{}"

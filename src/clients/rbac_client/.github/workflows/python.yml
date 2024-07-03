@@ -3,7 +3,7 @@
 #
 # ref: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: clpl_apiserver_client Python package
+name: clpl_rbacserver_client Python package
 
 on: [push, pull_request]
 

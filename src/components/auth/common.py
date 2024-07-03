@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from src.components.types import ResponseBaseModel
+from src.components.types.common import ResponseBaseModel
 
 
 class LoginCredential(BaseModel):

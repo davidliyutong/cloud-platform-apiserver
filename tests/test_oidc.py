@@ -6,7 +6,7 @@ from sanic import Sanic, response
 # App
 app = Sanic("OAuthApp")
 
-from src.apiserver.controller.auth_oidc import OAuthToken, OAuth2Config, AsyncOauthClient
+from src.apiserver.controller.auth.oidc import OAuth2Config, AsyncOauthClient
 
 from src.components.utils import UserFilter
 
@@ -14,7 +14,7 @@ from src.components.utils import UserFilter
 def create_or_login(request, user_info: dict) -> Tuple[Optional[str], Optional[Exception]]:
     _f: UserFilter = request.app.ctx.oauth_user_filter
     if all([
-        _f.filter(user_info),
+        _f(user_info),
     ]):
         #   pseudo code
         #

@@ -14,7 +14,7 @@
 
 import unittest
 
-from clpl_apiserver_client.api.default_api import DefaultApi
+from clpl_rbacserver_client.api.default_api import DefaultApi
 
 
 class TestDefaultApi(unittest.TestCase):

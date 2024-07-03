@@ -14,7 +14,7 @@
 
 import unittest
 
-from clpl_apiserver_client.models.user_status_enum import UserStatusEnum
+from clpl_rbacserver_client.models.user_status_enum import UserStatusEnum
 
 class TestUserStatusEnum(unittest.TestCase):
     """UserStatusEnum unit test stubs"""

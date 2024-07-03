@@ -14,7 +14,7 @@
 
 import unittest
 
-from clpl_apiserver_client.api.enforce_api import EnforceApi
+from clpl_rbacserver_client.api.enforce_api import EnforceApi
 
 
 class TestEnforceApi(unittest.TestCase):

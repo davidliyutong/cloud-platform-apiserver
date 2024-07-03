@@ -2,14 +2,12 @@
 This module contains the event handlers for the apiserver service.
 """
 
-import asyncio
 import datetime
 from typing import Optional, Union
 
 from loguru import logger
 from pydantic import BaseModel
 
-import src.apiserver.service
 from src.components.datamodels import UserStatusEnum, ResourceStatusEnum, PodStatusEnum
 from src.components.events import (
     TemplateCreateEvent, TemplateUpdateEvent, TemplateDeleteEvent,
@@ -82,10 +80,11 @@ async def handle_user_create_event(srv: Optional['src.apiserver.service.RootServ
         logger.info(f"creating k8s credentials for user {ev.username}")
 
         # create k8s credentials
-        err = await srv.k8s_operator_service.create_or_update_user_credentials(
-            str(user.uuid),
-            user.htpasswd.get_secret_value().encode()
-        )
+        # deprecated, now use cookies
+        # err = await srv.k8s_operator_service.create_or_update_user_credentials(
+        #     str(user.uuid),
+        #     user.htpasswd.get_secret_value().encode()
+        # )
 
         if err is not None:
             logger.error(f"handle_user_create_event failed to create k8s credentials: {err}")
@@ -116,10 +115,11 @@ async def handle_user_update_event(srv: Optional['src.apiserver.service.RootServ
         logger.info(f"updating k8s credentials for user {ev.username}")
 
         # update k8s credentials
-        err = await srv.k8s_operator_service.create_or_update_user_credentials(
-            str(user.uuid),
-            user.htpasswd.get_secret_value().encode()
-        )
+        # deprecated, now use cookies
+        # err = await srv.k8s_operator_service.create_or_update_user_credentials(
+        #     str(user.uuid),
+        #     user.htpasswd.get_secret_value().encode()
+        # )
 
         if err is not None:
             logger.error(f"handle_user_update_event failed to create k8s credentials: {err}")
@@ -293,12 +293,4 @@ async def handle_pod_delete_event(srv: Optional['src.apiserver.service.RootServi
         logger.error(f"handle_pod_delete_event failed to commit: {err}")
         return err
     else:
-        return err
-
-
-async def handle_user_heartbeat_event(srv: Optional['src.apiserver.service.RootService'],
-                                      ev: Union[UserHeartbeatEvent, BaseModel]) -> Optional[Exception]:
-    err = await srv.heartbeat_service.ping(ev.username)
-    if err is not None:
-        logger.error(f"handle_user_heartbeat_event failed to list pods: {err}")
         return err

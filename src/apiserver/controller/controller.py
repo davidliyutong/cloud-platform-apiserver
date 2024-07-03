@@ -11,7 +11,7 @@ from sanic.response import json as json_response
 from src.components import config
 from src.components.config import APIServerConfig
 from src.components.tasks.crash import set_crash_flag_async
-from src.components.types import OIDCStatusResponse
+from src.components.types.common import OIDCStatusResponse
 
 app = Sanic("apiserver")
 

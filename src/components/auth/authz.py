@@ -101,7 +101,7 @@ def enforce_rbac_any(subject_fmt: str = "{rbac_id}", action: str = "", resource_
                 rbac_group = request.ctx.rbac_group
                 if rbac_id is None or rbac_group is None:
                     return wrapped_model_response(
-                        JWTAuthenticationResponse(status=http.HTTPStatus.UNAUTHORIZED, message=str(e))
+                        JWTAuthenticationResponse(status=http.HTTPStatus.UNAUTHORIZED, message="")
                     )
 
                 # kwargs is provided by sanic and contains the defined parameters

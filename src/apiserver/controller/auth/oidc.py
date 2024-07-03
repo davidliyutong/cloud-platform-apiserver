@@ -23,7 +23,8 @@ from src.components.utils.wrappers import wrapped_model_response
 
 bp = Blueprint("auth_oidc", url_prefix="/auth/oidc", version=1)
 
-from src.components.types import OIDCStatusResponse, ResponseBaseModel, UserGetRequest, UserCreateRequest
+from src.components.types.common import ResponseBaseModel, OIDCStatusResponse
+from src.components.types.user import UserCreateRequest, UserGetRequest
 
 
 class OAuthToken(BaseModel):
@@ -325,7 +326,7 @@ async def create_or_login(
     _f: UserFilter
     _f, err = cfg.get_user_filter_instance()
     if all([
-        _f.filter(user_info),
+        _f(user_info),
     ]):
         # try parse username and email
         try:

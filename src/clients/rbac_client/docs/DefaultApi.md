@@ -1,4 +1,4 @@
-# clpl_apiserver_client.DefaultApi
+# clpl_rbacserver_client.DefaultApi
 
 All URIs are relative to *http://localhost*
 
@@ -16,21 +16,21 @@ Health check. Return a 200 OK response.
 
 
 ```python
-import clpl_apiserver_client
-from clpl_apiserver_client.rest import ApiException
+import clpl_rbacserver_client
+from clpl_rbacserver_client.rest import ApiException
 from pprint import pprint
 
 # Defining the host is optional and defaults to http://localhost
 # See configuration.py for a list of all supported configuration parameters.
-configuration = clpl_apiserver_client.Configuration(
+configuration = clpl_rbacserver_client.Configuration(
     host = "http://localhost"
 )
 
 
 # Enter a context with an instance of the API client
-async with clpl_apiserver_client.ApiClient(configuration) as api_client:
+async with clpl_rbacserver_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
-    api_instance = clpl_apiserver_client.DefaultApi(api_client)
+    api_instance = clpl_rbacserver_client.DefaultApi(api_client)
 
     try:
         # Health check. Return a 200 OK response.

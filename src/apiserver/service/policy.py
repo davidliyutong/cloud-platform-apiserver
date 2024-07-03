@@ -7,17 +7,12 @@ from odmantic import AIOEngine
 
 from src.apiserver.service import ServiceInterface
 from src.components import errors
-from src.components.datamodels import RBACPolicyModelV2
-from src.components.types import (
-    PolicyGetRequest,
-    PolicyListRequest,
-    PolicyCreateRequest,
-    PolicyUpdateRequest,
+from src.components.datamodels import RBACPolicyModelV2, ResourceStatusEnum
+from src.components.types.rbac import PolicyListRequest, PolicyCreateRequest, PolicyGetRequest, PolicyUpdateRequest, \
     PolicyDeleteRequest
-)
 from src.components.utils.checkers import unmarshal_mongodb_filter
 
-import src.clients.rbac_client.clpl_apiserver_client as rbac_client
+import src.clients.rbac_client.clpl_rbacserver_client as rbac_client
 
 # Enter a context with an instance of the API client
 RBAC_DEFAULT_ENDPOINT = "http://127.0.0.1:8081"  # TODO: Currently hardcoded, should be configurable
@@ -55,7 +50,7 @@ class PolicyService(ServiceInterface):
 
         if err is not None:
             return 0, [], err
-        res = await self._engine.find(RBACPolicyModelV2, query_filter)
+        res = await self._engine.find(RBACPolicyModelV2, query_filter, skip=req.skip, limit=req.limit)
         count = await self._engine.count(RBACPolicyModelV2, query_filter)
         return count, res, None
 
@@ -97,6 +92,7 @@ class PolicyService(ServiceInterface):
         policy.description = req.description if req.description is not None else policy.description
         policy.policies = req.policies if req.policies is not None else policy.policies
 
+        policy.resource_status = ResourceStatusEnum.committed
         try:
             await self._engine.save(policy)
         except Exception as e:
@@ -150,7 +146,7 @@ class PolicyService(ServiceInterface):
         """
         Enforce a policy.
         """
-        req = rbac_client.EnforceRequest(subject=subject, action=action, object=resource)
+        req = rbac_client.EnforceRequest1(subject=subject, action=action, object=resource)
         async with rbac_client.ApiClient(self._configuration) as api_client:
             _enforce_instance = rbac_client.EnforceApi(api_client=api_client)
             try:

@@ -9,7 +9,7 @@ import jwt
 from loguru import logger
 from odmantic import AIOEngine
 
-from src.components.types import UserGetRequest
+from ...components.types.user import UserGetRequest
 from src.components import errors
 from src.components.datamodels import UserStatusEnum, UserModelV2
 from src.components.utils import parse_basic

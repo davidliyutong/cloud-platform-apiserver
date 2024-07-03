@@ -8,7 +8,7 @@ from loguru import logger
 from sanic import Blueprint
 from sanic_ext import openapi
 
-from src.components.types import ResponseBaseModel
+from src.components.types.common import ResponseBaseModel
 from src.components.datamodels.rbac import RBACPolicyExchangeModelV2
 from src.components.utils.wrappers import wrapped_model_response
 from src.components.utils.checkers import unmarshal_json_request

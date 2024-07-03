@@ -13,7 +13,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```python
-from clpl_apiserver_client.models.enforce_response import EnforceResponse
+from clpl_rbacserver_client.models.enforce_response import EnforceResponse
 
 # TODO update the JSON string below
 json = "{}"

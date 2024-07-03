@@ -7,7 +7,7 @@ from loguru import logger
 from sanic import Blueprint
 from sanic_ext import openapi
 
-from src.components.types import ResponseBaseModel
+from src.components.types.common import ResponseBaseModel
 from src.apiserver.service import RootService
 from src.components.auth.common import LoginCredential, TokenResponse, JWT_SECRET_KEYNAME, JWT_HEADER_NAME, \
     JWT_ALGORITHM_KEYNAME, JWTTokenType, POLICY_DEVICE_TOKEN_RENEW_THRESHOLD_SECOND, POLICY_DEVICE_TOKEN_EXPIRE_SECOND, \
@@ -17,15 +17,10 @@ from src.components.datamodels import UserRoleEnum
 from src.components.utils.parser import parse_bearer
 from src.components.utils.checkers import wrapped_model_response
 
-bp = Blueprint("auth", url_prefix="/auth", version=1)
+bp = Blueprint("auth_jwt", url_prefix="/auth/jwt", version=1)
 
 _unauthorized_basic_response = wrapped_model_response(
     ResponseBaseModel(message='UNAUTHORIZED', status=http.HTTPStatus.UNAUTHORIZED),
-    headers={'WWW-Authenticate': "Basic realm=Auth Required"},
-)
-
-_authorized_basic_response = wrapped_model_response(
-    ResponseBaseModel(message='AUTHORIZED', status=http.HTTPStatus.OK),
     headers={'WWW-Authenticate': "Basic realm=Auth Required"},
 )
 
@@ -63,55 +58,7 @@ def get_unauthorized_token_response():
     return r
 
 
-@bp.get("/basic/", name="basic", version=1)
-@openapi.definition(
-    response=[
-        openapi.definitions.Response(
-            {"application/json": _authorized_basic_response}, status=200
-        ),
-        openapi.definitions.Response(
-            {"application/json": _unauthorized_basic_response}, status=401
-        ),
-    ],
-    secured={"http_basic": []}
-)
-async def basic_all(request):
-    """
-    Basic auth for any user
-    """
-
-    # verify credential
-    ret = await RootService().auth_service.basic_login(request.app, request.headers.authorization)
-    return _authorized_basic_response if ret else _unauthorized_basic_response
-
-
-@bp.get("/basic/<username:str>", name="basic_user", version=1)
-@openapi.definition(
-    response=[
-        openapi.definitions.Response(
-            {"application/json": _authorized_basic_response}, status=200
-        ),
-        openapi.definitions.Response(
-            {"application/json": _unauthorized_basic_response}, status=401
-        ),
-    ],
-    secured={"http_basic": []}
-)
-async def basic_user(request, username: str):
-    """
-    Basic auth for specific user
-    """
-
-    # verify credential
-    ret = await RootService().auth_service.basic_login(
-        request.app,
-        request.headers.authorization,
-        username=username
-    )
-    return _authorized_basic_response if ret else _unauthorized_basic_response
-
-
-@bp.post("/jwt/login", name="jwt_token_login", version=1)
+@bp.post("/login", name="jwt_token_login", version=1)
 @openapi.definition(
     body={'application/json': LoginCredential.model_json_schema(ref_template="#/components/schemas/{model}")},
     response=[
@@ -147,7 +94,7 @@ async def jwt_token_login(request):
         )
 
 
-@bp.post("/jwt/refresh", name="jwt_token_refresh", version=1)
+@bp.post("/refresh", name="jwt_token_refresh", version=1)
 @openapi.definition(
     parameter=[
         openapi.definitions.Parameter(
@@ -191,8 +138,7 @@ async def jwt_token_refresh(request):
         )
 
 
-@bp.get("/token/validate/<username:str>", name="token_validate_user", version=1)
-@bp.get("/jwt/validate/<username:str>", name="jwt_token_validate_user", version=1)
+@bp.get("/validate/<username:str>", name="jwt_token_validate_user", version=1)
 @openapi.definition(
     parameter=[
         openapi.definitions.Parameter(

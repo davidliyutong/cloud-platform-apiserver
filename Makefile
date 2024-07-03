@@ -32,7 +32,7 @@ task.api.generate_apiserver_client:
 task.api.generate_rbacserver_client:
 	@mkdir -p src/clients/rbac_client
 	@rm -rf src/clients/rbac_client/*
-	openapi-generator-cli generate -g python -i http://127.0.0.1:8081/docs/openapi.json --skip-validate-spec -o src/clients/rbac_client --package-name ${PROJECT_NAME}_apiserver_client --library asyncio
+	openapi-generator-cli generate -g python -i http://127.0.0.1:8081/docs/openapi.json --skip-validate-spec -o src/clients/rbac_client --package-name ${PROJECT_NAME}_rbacserver_client --library asyncio
 	@touch src/clients/rbac_client/__init__.py
 
 task.api.generate_client: task.api.generate_apiserver_client task.api.generate_rbacserver_client

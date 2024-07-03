@@ -14,7 +14,7 @@
 
 import unittest
 
-from clpl_apiserver_client.models.rbac_policy_exchange_model_v2 import RBACPolicyExchangeModelV2
+from clpl_rbacserver_client.models.rbac_policy_exchange_model_v2 import RBACPolicyExchangeModelV2
 
 class TestRBACPolicyExchangeModelV2(unittest.TestCase):
     """RBACPolicyExchangeModelV2 unit test stubs"""
@@ -27,7 +27,7 @@ class TestRBACPolicyExchangeModelV2(unittest.TestCase):
 
     def make_instance(self, include_optional) -> RBACPolicyExchangeModelV2:
         """Test RBACPolicyExchangeModelV2
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `RBACPolicyExchangeModelV2`

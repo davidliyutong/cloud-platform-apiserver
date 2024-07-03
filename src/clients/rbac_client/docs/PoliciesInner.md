@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 ## Example
 
 ```python
-from clpl_apiserver_client.models.policies_inner import PoliciesInner
+from clpl_rbacserver_client.models.policies_inner import PoliciesInner
 
 # TODO update the JSON string below
 json = "{}"

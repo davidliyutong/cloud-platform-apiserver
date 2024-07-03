@@ -14,7 +14,7 @@
 
 import unittest
 
-from clpl_apiserver_client.models.enforce_response import EnforceResponse
+from clpl_rbacserver_client.models.enforce_response import EnforceResponse
 
 class TestEnforceResponse(unittest.TestCase):
     """EnforceResponse unit test stubs"""
@@ -27,7 +27,7 @@ class TestEnforceResponse(unittest.TestCase):
 
     def make_instance(self, include_optional) -> EnforceResponse:
         """Test EnforceResponse
-            include_option is a boolean, when False only required
+            include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
         # uncomment below to create an instance of `EnforceResponse`
