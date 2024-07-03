@@ -83,10 +83,7 @@ class UserCreateRequest(BaseModel):
     password: str
     email: Optional[str] = None
     quota: Optional[Dict[str, Any]] = None  # resource quota
-
-    @field_validator('password')
-    def password_must_be_valid(cls, v):
-        return _ensure_non_empty_value(v, "password")
+    extra_info: Optional[Dict[str, Any]] = None  # extra info
 
 
 class UserCreateResponse(ResponseBaseModel):
@@ -124,6 +121,7 @@ class UserUpdateRequest(BaseModel):
     """
     username: str
     email: Optional[EmailStr] = None
+    extra_info: Optional[Dict[str, Any]] = None
     public_keys: Optional[List[str]] = None
 
     update_password: bool = False

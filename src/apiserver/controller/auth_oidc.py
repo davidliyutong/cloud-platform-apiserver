@@ -1,6 +1,6 @@
 import http
 import json
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional
 
 import httpx
 import jwt
@@ -13,15 +13,17 @@ from sanic.response import json as json_response
 from sanic.response import redirect as redirect_response
 from sanic_ext import openapi
 
-from src.apiserver.service import get_root_service, UserService
+from src.apiserver.service import RootService, UserService
 from src.components import errors
-from src.components.config import APIServerConfig
-from src.components.datamodels import UserRoleEnum, QuotaModel
-from src.components.utils import UserFilter, random_password
+from src.components.auth.common import POLICY_ACCESS_TOKEN_DURATION_SECOND
+from src.components.config import APIServerConfig, OIDCConfig
+from src.components.datamodels.group import GroupEnumInternal
+from src.components.utils import UserFilter
+from src.components.utils.wrappers import wrapped_model_response
 
 bp = Blueprint("auth_oidc", url_prefix="/auth/oidc", version=1)
 
-from .types import OIDCStatusResponse, ResponseBaseModel
+from src.components.types import OIDCStatusResponse, ResponseBaseModel, UserGetRequest, UserCreateRequest
 
 
 class OAuthToken(BaseModel):
@@ -45,7 +47,7 @@ class OAuthToken(BaseModel):
             return None
 
 
-class OAuth2Config(BaseModel):
+class OAuth2Config(OIDCConfig):
     """
     OAuth2 config, contains all parameters needed for OAuth2
     """
@@ -53,59 +55,21 @@ class OAuth2Config(BaseModel):
     _user_filter_instance: UserFilter = None
     _username_expr: parse = None
     _email_expr: parse = None
-
-    name: str
-    base_url: str
-    authorization_url: Optional[str] = None
-    token_url: Optional[str] = None
-    user_info_url: Optional[str] = None
-    logout_url: Optional[str] = None
-    jwks_url: Optional[str] = None
-    frontend_login_url: Optional[str] = None
-    client_id: str
-    client_secret: str
-    redirect_url: str
-    scope: List[str] = ["openid"]
-    scope_delimiter: str = "+"
-    state: str = shortuuid.uuid()
-    response_type: str = "code"
-    grant_type: str = "authorization_code"
-    user_filter: str = "{}"
-    user_info_path: str = "$"
-    username_path: str = "preferred_username"
-    email_path: str = "email"
+    _state: str = shortuuid.uuid()
 
     @classmethod
-    def from_apiserver_config(cls, cfg: APIServerConfig):
+    def from_oidc_config(cls, cfg: OIDCConfig):
         """
         Create OAuth2Config from APIServerConfig
         """
         return cls(
-            name=cfg.oidc_name,
-            base_url=cfg.oidc_base_url,
-            authorization_url=cfg.oidc_authorization_url,
-            token_url=cfg.oidc_token_url,
-            user_info_url=cfg.oidc_user_info_url,
-            logout_url=cfg.oidc_logout_url,
-            jwks_url=cfg.oidc_jwks_url,
-            frontend_login_url=cfg.oidc_frontend_login_url,
-            client_id=cfg.oidc_client_id,
-            client_secret=cfg.oidc_client_secret,
-            redirect_url=cfg.oidc_redirect_url,
-            scope=cfg.oidc_scope,
-            scope_delimiter=cfg.oidc_scope_delimiter,
-            response_type=cfg.oidc_response_type,
-            grant_type=cfg.oidc_grant_type,
-            user_filter=cfg.oidc_user_filter,
-            user_info_path=cfg.oidc_user_info_path,
-            username_path=cfg.oidc_username_path,
-            email_path=cfg.oidc_email_path
+            **cfg.model_dump(by_alias=True)
         )
 
     @model_validator(mode="after")
     def set_urls(self):
         """
-        This validator completes urls
+        This validator completes urls if they are not set
         """
         if self.authorization_url is None or self.authorization_url == "":
             self.authorization_url = f"{self.base_url}/authorize/"
@@ -133,11 +97,13 @@ class OAuth2Config(BaseModel):
         return (f"{self.authorization_url}?"
                 f"response_type={self.response_type}&"
                 f"redirect_uri={self.redirect_url}&"
-                f"state={self.state}&"
+                f"state={self._state}&"
                 f"client_id={self.client_id}&"
                 f"scope={self.scope_delimiter.join(self.scope)}")
 
-    def get_frontend_redirect_url(self, token: str, refresh_token: str, success: bool, message: str = "OK") -> str:
+    def get_frontend_redirect_url(
+            self, token: str = "", refresh_token: str = "", success: bool = False, message: str = "OK"
+    ) -> str:
         """
         Get frontend redirect url, with parameters
         """
@@ -153,13 +119,18 @@ class OAuth2Config(BaseModel):
         """
         return AsyncOauthClient(self)
 
-    def get_user_filter_instance(self):
+    def get_user_filter_instance(self) -> Tuple[UserFilter, Optional[Exception]]:
         """
         Get UserFilter
         """
         if self._user_filter_instance is None:
-            self._user_filter_instance = UserFilter(mongo_like_filter_str=self.user_filter)
-        return self._user_filter_instance
+            try:
+                self._user_filter_instance = UserFilter(mongo_like_filter_str=self.user_filter)
+            except Exception as e:
+                logger.exception(e)
+                self._user_filter_instance = UserFilter(mongo_like_filter_str=None)
+                return self._user_filter_instance, errors.user_failed_to_parse
+        return self._user_filter_instance, None
 
     def get_user_expr_instance(self):
         """
@@ -345,11 +316,14 @@ async def oidc_login(request):
     return redirect_response(c.authorization_redirect_url)
 
 
-async def create_or_login(cfg: OAuth2Config, user_info: dict) -> Tuple[Optional[str], Optional[Exception]]:
+async def create_or_login(
+        app, cfg: OAuth2Config, user_info: dict
+) -> Tuple[Optional[str], Optional[str], Optional[Exception]]:
     """
     This function checks if the user exists, if not, create user
     """
-    _f: UserFilter = cfg.get_user_filter_instance()
+    _f: UserFilter
+    _f, err = cfg.get_user_filter_instance()
     if all([
         _f.filter(user_info),
     ]):
@@ -359,7 +333,7 @@ async def create_or_login(cfg: OAuth2Config, user_info: dict) -> Tuple[Optional[
             username = username_expr.find(user_info)[0].value
         except Exception as e:
             logger.error(f"failed to parse username: {e}")
-            return None, errors.user_failed_to_parse
+            return None, None, errors.user_failed_to_parse
 
         try:
             email_expr = cfg.get_email_expr_instance()
@@ -369,34 +343,39 @@ async def create_or_login(cfg: OAuth2Config, user_info: dict) -> Tuple[Optional[
             email = None
 
         # get a service
-        srv: UserService = get_root_service().user_service
+        srv: UserService = RootService().user_service
 
         # find user
-        user, err = await srv.repo.get(username)
+        user, err = await srv.get(app, UserGetRequest(username=username))
         if err is not None:
             # create the user it not exists
-            user, err = await srv.repo.create(username=username,
-                                              password="",  # empty password prevent user from login
-                                              email=email,
-                                              role=UserRoleEnum.user,
-                                              quota=QuotaModel.default_quota().model_dump(
-                                                  exclude={"version", "committed"}),
-                                              extra_info=user_info)
+            req = UserCreateRequest(
+                username=username,
+                group=GroupEnumInternal.default,
+                password="",
+                email=email,
+                quota=None,
+                extra_info=user_info
+            )
+            user, err = await srv.create(app, req, registration=True)
             if err is not None:
-                return None, err
+                return None, None, err
         else:
-            # super_admin is not allowed to log in
-            if user.role in ['super_admin']:
-                return None, errors.user_not_allowed
+            # guest and admin and parked users are allowed to log in
+            if user.group in [
+                GroupEnumInternal.guest.value,
+                GroupEnumInternal.parked.value
+            ]:
+                return None, None, errors.user_not_allowed
 
         # generate jwt token
-        access_token, err = await get_root_service().auth_service.generate_jwt_token(user)
+        access_token, refresh_token, err = await RootService().auth_service.generate_oidc_token(user)
         if err is not None:
-            return None, err
+            return None, None, err
         else:
-            return access_token, None
+            return access_token, refresh_token, None
     else:
-        return None, errors.user_not_allowed
+        return None, None, errors.user_not_allowed
 
 
 @bp.get("/authorize", name="authorize", version=1)
@@ -426,11 +405,8 @@ async def oidc_authorize(request):
     # oauth_token, err = await c.refresh_token(oauth_token)
     if err is not None:
         if opt.debug:
-            return json_response(
-                ResponseBaseModel(
-                    status=http.HTTPStatus.BAD_REQUEST,
-                    message=str(err),
-                ).model_dump(), status=http.HTTPStatus.BAD_REQUEST
+            return wrapped_model_response(
+                ResponseBaseModel(status=http.HTTPStatus.BAD_REQUEST, message=str(err))
             )
         else:
             return redirect_response(
@@ -445,46 +421,32 @@ async def oidc_authorize(request):
     # fetch user info with access token
     user_info, err = await c.fetch_user(oauth_token)
     if err is not None:
-        return json_response(
-            ResponseBaseModel(
-                status=http.HTTPStatus.BAD_REQUEST,
-                message=str(err),
-            ).model_dump(), status=http.HTTPStatus.BAD_REQUEST
+        return wrapped_model_response(
+            ResponseBaseModel(status=http.HTTPStatus.BAD_REQUEST, message=str(err))
         )
 
     # try to decode id_token
     logger.debug(f"id_payload: {oauth_token.id_payload}")
 
     # create or login
-    access_token, err = await create_or_login(cfg, user_info)
+    access_token, refresh_token, err = await create_or_login(request.app, cfg, user_info)
 
     if err is not None:
         if opt.debug:
-            return json_response(
-                ResponseBaseModel(
-                    status=http.HTTPStatus.BAD_REQUEST,
-                    message=str(err),
-                    description="Authorization Error"
-                ).model_dump(), status=http.HTTPStatus.BAD_REQUEST
+            return wrapped_model_response(
+                ResponseBaseModel(status=http.HTTPStatus.BAD_REQUEST, message=str(err))
             )
         else:
             return redirect_response(
-                cfg.get_frontend_redirect_url(
-                    token="",
-                    refresh_token="",
-                    success=False,
-                    message=str(err)
-                )
+                cfg.get_frontend_redirect_url(success=False, message=str(err))
             )
     else:
-        # attention: this refresh token is generated according to :
-        # https://sanic-jwt.readthedocs.io/en/latest/pages/refreshtokens.html
-        refresh_token = random_password(24)
-        return redirect_response(
-            cfg.get_frontend_redirect_url(
-                token=access_token,
-                refresh_token=refresh_token,
-                success=True
-            )
+        resp = redirect_response(
+            cfg.get_frontend_redirect_url(token=access_token, refresh_token=refresh_token, success=True)
         )
-        # return json_response({"jwt": access_token}, http.HTTPStatus.OK)
+        resp.add_cookie("access_token", access_token, max_age=POLICY_ACCESS_TOKEN_DURATION_SECOND)
+        resp.add_cookie("refresh_token", refresh_token, max_age=POLICY_ACCESS_TOKEN_DURATION_SECOND)
+        return resp
+
+
+openapi.component(OIDCStatusResponse)

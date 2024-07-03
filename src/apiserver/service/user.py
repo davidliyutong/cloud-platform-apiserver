@@ -1,19 +1,20 @@
 """
 User service
 """
-from hashlib import sha256
 from typing import Type
 
-from loguru import logger
 from odmantic import AIOEngine
 from sanic import Sanic
 
 from src.components.types import *
 from src.components import errors
 from src.components.datamodels import UserModelV2, ResourceStatusEnum
-from .common import ServiceInterface
+from src.components.datamodels.user import RESERVED_USERNAMES
 from src.components.utils.checkers import unmarshal_mongodb_filter
 from src.components.utils.security import get_hashed_text
+
+from .common import ServiceInterface
+
 
 
 class UserService(ServiceInterface):
@@ -70,7 +71,8 @@ class UserService(ServiceInterface):
     async def create(
             self,
             app: Sanic,
-            req: Union[UserCreateRequest, Type[UserCreateRequest]]
+            req: Union[UserCreateRequest, Type[UserCreateRequest]],
+            registration: bool = False
     ) -> Tuple[Optional[UserModelV2], Optional[Exception]]:
         """
         Create a user.
@@ -82,9 +84,14 @@ class UserService(ServiceInterface):
             else:
                 await self._engine.delete(user)
 
+        # if the user is registering, check if the username is in the reserved list
+        if registration:
+            if req.username in RESERVED_USERNAMES:
+                return None, Exception(errors.username_illegal)
+
         async with self._engine.session() as session:
             try:
-                req.password = get_hashed_text(req.password)
+                req.password = get_hashed_text(req.password) if req.password else SecretStr("")
                 user = UserModelV2(**req.dict())
                 await session.save(user)
             except Exception as e:
@@ -139,6 +146,7 @@ class UserService(ServiceInterface):
         # selectively update fields
         user.email = req.email if req.email is not None else user.email
         user.public_keys = req.public_keys if req.public_keys is not None else user.public_keys
+        user.extra_info = req.extra_info if req.extra_info is not None else user.extra_info
 
         if req.update_password:
             if req.old_password is None:
@@ -168,6 +176,9 @@ class UserService(ServiceInterface):
             user.status = req.status if req.status is not None else user.status
 
         if req.update_otp:
+            # check if user has password
+            if user.password is None or user.password.get_secret_value() == "":
+                return None, Exception(errors.otp_password_required)
             # check if otp is enabled
             if user.otp_enabled:
                 # check if otp code is provided

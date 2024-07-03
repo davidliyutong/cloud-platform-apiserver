@@ -9,14 +9,29 @@ from typing import Optional, List, Dict, Any, Self
 import bcrypt
 import pyotp
 from odmantic import Model, Field
-from pydantic import BaseModel, UUID4, EmailStr, SecretStr, field_validator, field_serializer
+from pydantic import EmailStr, SecretStr, field_validator, field_serializer
 
 from src import CONFIG_BUILD_VERSION
 from src.components.datamodels import user_collection_name
 from src.components.datamodels.common import ResourceStatusEnum
 from src.components.datamodels.group import GroupEnumInternal
 from src.components.datamodels.quota import QuotaModelV2
-from src.components.utils.security import get_hashed_text  #
+
+RESERVED_USERNAMES = (
+    "root",
+    "sys_admin",
+    "admin",
+    "super_admin",
+    "sys",
+    "system",
+    "service",
+    "daemon",
+    "sync",
+    "guest",
+    "nobody",
+    "nfsnobody",
+    "noreply",
+)
 
 
 class UserStatusEnum(str, Enum):
@@ -58,6 +73,7 @@ class UserModelV2(Model):
     email: Optional[EmailStr] = Field(default=None)
     password: SecretStr = Field(default=SecretStr(""))
     quota: Optional[QuotaModelV2] = Field(default=None)
+    extra_info: Optional[Dict[str, Any]] = Field(default=None)
     public_keys: List[str] = Field(default_factory=list)
     otp_secret: SecretStr = Field(default=SecretStr(""))
     otp_enabled: bool = Field(default=False)

@@ -19,8 +19,9 @@ from src.components.auth.common import (
     POLICY_ACCESS_TOKEN_DURATION_SECOND, JWTTokenType
 )
 
-from .common import ServiceInterface
 from src.components.utils.security import get_hashed_text
+from src.components.datamodels.group import GroupEnumInternal
+from .common import ServiceInterface
 
 
 class AuthService(ServiceInterface):
@@ -79,8 +80,9 @@ class AuthService(ServiceInterface):
         else:
             return False
 
-    async def jwt_token_login(self, app, cred: LoginCredential) -> Tuple[
-        Optional[str], Optional[str], Optional[Exception]]:
+    async def jwt_token_login(
+            self, app, cred: LoginCredential
+    ) -> Tuple[Optional[str], Optional[str], Optional[Exception]]:
         """
         Login with username and password, return a short-term jwt token for authn and long-term refresh token (jwt)
         """
@@ -90,6 +92,12 @@ class AuthService(ServiceInterface):
         user, err = await self.root_service.user_service.get(app, UserGetRequest(username=cred.username))
         if err is not None:
             return None, None, err
+
+        # check user status
+        if user.group in [
+            GroupEnumInternal.parked.value
+        ]:
+            return None, None, errors.user_not_allowed
 
         # check password
         if user.challenge_password(cred.password):
@@ -164,19 +172,27 @@ class AuthService(ServiceInterface):
             self,
             user: UserModelV2,
             expire: Optional[datetime.timedelta] = None
-    ) -> Tuple[str, Optional[Exception]]:
+    ) -> Tuple[Optional[str], Optional[str], Optional[Exception]]:
         """
         Generate jwt token for user, using global secret, used in OIDC login
         """
         if expire is None:
-            expire = datetime.timedelta(seconds=self.root_service.opt.config_token_expire_s)
+            expire = datetime.timedelta(seconds=POLICY_ACCESS_TOKEN_DURATION_SECOND)
 
         # generate jwt
-        payload = self._get_payload_from_model(user, expire)
-        secret = self.root_service.opt.config_token_secret
-        access_token = jwt.encode(payload, secret, algorithm=self._algorithm)
+        refresh_payload = self._get_payload_from_model(
+            user, datetime.timedelta(seconds=POLICY_REFRESH_TOKEN_DURATION_SECOND)
+        )
+        refresh_secret = get_hashed_text(
+            self.root_service.opt.config_token_secret + user.password.get_secret_value().encode()
+        )
+        refresh_token = jwt.encode(refresh_payload, refresh_secret, algorithm=self._algorithm)
 
-        return access_token, None
+        access_payload = self._get_payload_from_model(user, expire)
+        access_secret = self.root_service.opt.config_token_secret
+        access_token = jwt.encode(access_payload, access_secret, algorithm=self._algorithm)
+
+        return access_token, refresh_token, None
 
     async def jwt_token_rotate(self, payload, secret: str, duration: datetime.timedelta):
         """

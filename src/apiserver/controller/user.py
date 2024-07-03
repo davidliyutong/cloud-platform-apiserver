@@ -193,7 +193,6 @@ async def update(request, username: str):
                 )
 
         # update user
-        # FIXME
         user, err = await RootService().user_service.update(request.app, req)
 
         # return response

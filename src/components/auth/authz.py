@@ -18,18 +18,6 @@ from src.components.utils import parse_bearer
 from src.components.utils.wrappers import wrapped_model_response
 
 
-class SupportedRoles(str, Enum):
-    """
-    Supported roles
-
-    FIXME: deprecated
-    """
-    ADMIN = "admin"
-    SUPER_ADMIN = "super_admin"
-    POWER_USER = "power_user"
-    USER = "user"
-
-
 def validate_role_v1(role: Optional[Iterable[str]] = None):
     """
     Authorize User by JWT

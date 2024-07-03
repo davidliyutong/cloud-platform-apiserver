@@ -11,7 +11,6 @@ class ServiceInterface(metaclass=ABCMeta):
     """
     Service interface. All baisc services should inherit from this class.
     """
-    repo: Optional[Any] = None  # point to the repo
     _engine: Optional[AIOEngine]
     _root_service: Optional['RootService']
 

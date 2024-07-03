@@ -2,6 +2,7 @@ from odmantic import Field, Model
 from pydantic import BaseModel
 
 from src import CONFIG_BUILD_VERSION
+from .names import system_document_name
 
 
 class GlobalModel(BaseModel):
@@ -36,6 +37,6 @@ class SystemModel(Model):
         "collection": "system",
     }
 
-    name: str = Field(default="system", key_name="_name")
+    name: str = Field(default=system_document_name, key_name="_name")
     status: SystemStatusModel
     settings: SystemSettingsModel

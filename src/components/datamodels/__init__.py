@@ -6,6 +6,7 @@ from sanic_ext import openapi
 from .names import (
     database_name,
     system_collection_name,
+    system_document_name,
     user_collection_name,
     pod_collection_name,
     template_collection_name,

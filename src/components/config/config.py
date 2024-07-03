@@ -3,13 +3,14 @@ Configuration Component
 """
 
 import argparse
+import json
 import os
 import os.path as osp
 from typing import List, Tuple, Optional
 
 import yaml
 from loguru import logger
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, field_validator
 from vyper import Vyper
 
 from src import CONFIG_PROJECT_NAME
@@ -45,6 +46,20 @@ class OIDCConfig(BaseModel):
     @staticmethod
     def alias_generator(name: str):
         return name.replace("_", "-")
+
+    @field_validator("user_filter")
+    def check_user_filter(cls, v):
+        try:
+            _v = json.loads(v)
+        except json.JSONDecodeError:
+            logger.warning(f"user_filter decode error, try to fix it: {v}")
+            # replace ' to "
+            v = v.replace("'", '"')
+            try:
+                _v = json.loads(v)
+            except json.JSONDecodeError:
+                raise ValueError("autofix user_filter failed")
+        return json.dumps(_v)
 
 
 class SiteConfig(BaseModel):
@@ -147,7 +162,7 @@ class APIServerConfig(BaseModel):
         # >>> Set Default Values >>>
         for name in _api_config_mapping.keys():
             parser.add_argument(f"--{_api_config_mapping[name].cli_name}", type=_api_config_mapping[name].type,
-                                            help=_api_config_mapping[name].help)
+                                help=_api_config_mapping[name].help)
         # <<< Set Default Values <<<
 
         return parser
