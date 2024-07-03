@@ -1,0 +1,44 @@
+from odmantic import AIOEngine
+
+from src.apiserver.service import ServiceInterface
+from src.components.types import PolicyGetRequest
+
+
+class DummyService(ServiceInterface):
+    def __init__(self, odm_engine: AIOEngine):
+        super().__init__()
+        self.engine = odm_engine
+
+
+    async def get(self, app, req: DummyGetRequest):
+        """
+        Get dummy.
+        """
+        raise NotImplementedError
+
+    async def list(self, app, req: DummyListRequest):
+        """
+        List dummies.
+        """
+        raise NotImplementedError
+
+    async def create(self, app, req: DummyCreateRequest):
+        """
+        Create a dummy.
+        """
+        raise NotImplementedError
+
+    async def update(self, app, req: DummyUpdateRequest):
+        """
+        Update a dummy.
+        """
+        raise NotImplementedError
+
+    async def delete(self, app, req: DummyDeleteRequest):
+
+        """
+        Delete a dummy.
+        """
+        raise NotImplementedError
+
+

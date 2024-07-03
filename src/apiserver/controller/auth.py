@@ -5,40 +5,32 @@ from urllib.parse import urlparse, parse_qs
 import jwt
 from loguru import logger
 from sanic import Blueprint
-from sanic.response import json as json_response
 from sanic_ext import openapi
 
-from src.apiserver.controller.types import ResponseBaseModel
-from src.apiserver.service import get_root_service
-from src.apiserver.service.auth import LoginCredential, TokenResponse
+from src.components.types import ResponseBaseModel
+from src.apiserver.service import RootService
+from src.components.auth.common import LoginCredential, TokenResponse, JWT_SECRET_KEYNAME, JWT_HEADER_NAME, \
+    JWT_ALGORITHM_KEYNAME, JWTTokenType, POLICY_DEVICE_TOKEN_RENEW_THRESHOLD_SECOND, POLICY_DEVICE_TOKEN_EXPIRE_SECOND, \
+    JWTTokenSchema
 from src.components import config
 from src.components.datamodels import UserRoleEnum
-from src.components.utils import parse_bearer
+from src.components.utils.parser import parse_bearer
+from src.components.utils.checkers import wrapped_model_response
 
 bp = Blueprint("auth", url_prefix="/auth", version=1)
 
-_unauthorized_basic_response = json_response(
-    body=ResponseBaseModel(
-        description='',
-        message='UNAUTHORIZED',
-        status=http.HTTPStatus.UNAUTHORIZED
-    ).model_dump(),
-    headers={
-        'WWW-Authenticate': "Basic realm=Auth Required"
-    },
-    status=http.HTTPStatus.UNAUTHORIZED
+_unauthorized_basic_response = wrapped_model_response(
+    ResponseBaseModel(message='UNAUTHORIZED', status=http.HTTPStatus.UNAUTHORIZED),
+    headers={'WWW-Authenticate': "Basic realm=Auth Required"},
 )
 
-_authorized_basic_response = json_response(
-    body=ResponseBaseModel(
-        description='',
-        message='AUTHORIZED',
-        status=http.HTTPStatus.OK
-    ).model_dump(),
-    headers={
-        'WWW-Authenticate': "Basic realm=Auth Required"
-    },
-    status=http.HTTPStatus.OK
+_authorized_basic_response = wrapped_model_response(
+    ResponseBaseModel(message='AUTHORIZED', status=http.HTTPStatus.OK),
+    headers={'WWW-Authenticate': "Basic realm=Auth Required"},
+)
+
+_bad_request_response = wrapped_model_response(
+    ResponseBaseModel(message='BAD_REQUEST', status=http.HTTPStatus.BAD_REQUEST),
 )
 
 
@@ -47,21 +39,14 @@ def get_authorized_token_response(token: str):
     This function returns an authorized response for token/validation endpoint
     It also sets a cookie config.CONFIG_AUTH_COOKIES_NAME=token
     """
-    r = json_response(
-        body=ResponseBaseModel(
-            description='',
-            message='AUTHORIZED',
-            status=http.HTTPStatus.OK
-        ).model_dump(),
-        headers={
-            'WWW-Authenticate': "Bearer"
-        },
-        status=http.HTTPStatus.OK
+    r = wrapped_model_response(
+        ResponseBaseModel(message='AUTHORIZED', status=http.HTTPStatus.OK),
+        headers={'WWW-Authenticate': "Bearer"},
     )
     r.add_cookie(
         config.CONFIG_AUTH_COOKIES_NAME,
         token,
-        max_age=config.CONFIG_DEVICE_TOKEN_EXPIRE_S
+        max_age=POLICY_DEVICE_TOKEN_EXPIRE_SECOND
     )
     return r
 
@@ -69,28 +54,13 @@ def get_authorized_token_response(token: str):
 def get_unauthorized_token_response():
     """
     This function returns an unauthorized response for token/validation endpoint
-    It also deletes a the cookie config.CONFIG_AUTH_COOKIES_NAME
+    It also deletes the cookie config.CONFIG_AUTH_COOKIES_NAME
     """
-    r = json_response(
-        body=ResponseBaseModel(
-            description='',
-            message='UNAUTHORIZED',
-            status=http.HTTPStatus.UNAUTHORIZED
-        ).model_dump(),
-        status=http.HTTPStatus.UNAUTHORIZED
+    r = wrapped_model_response(
+        ResponseBaseModel(message='UNAUTHORIZED', status=http.HTTPStatus.UNAUTHORIZED),
     )
     r.delete_cookie(config.CONFIG_AUTH_COOKIES_NAME)
     return r
-
-
-_bad_request_response = json_response(
-    body=ResponseBaseModel(
-        description='',
-        status=http.HTTPStatus.BAD_REQUEST,
-        message='BAD REQUEST',
-    ).model_dump(),
-    status=http.HTTPStatus.BAD_REQUEST
-)
 
 
 @bp.get("/basic/", name="basic", version=1)
@@ -103,21 +73,16 @@ _bad_request_response = json_response(
             {"application/json": _unauthorized_basic_response}, status=401
         ),
     ],
-    secured={"token": []}
+    secured={"http_basic": []}
 )
-async def basic(request):
+async def basic_all(request):
     """
     Basic auth for any user
     """
 
     # verify credential
-    ret = await get_root_service().auth_service.basic(
-        request.headers.authorization
-    )
-    if ret:
-        return _authorized_basic_response
-    else:
-        return _unauthorized_basic_response
+    ret = await RootService().auth_service.basic_login(request.app, request.headers.authorization)
+    return _authorized_basic_response if ret else _unauthorized_basic_response
 
 
 @bp.get("/basic/<username:str>", name="basic_user", version=1)
@@ -130,7 +95,7 @@ async def basic(request):
             {"application/json": _unauthorized_basic_response}, status=401
         ),
     ],
-    secured={"token": []}
+    secured={"http_basic": []}
 )
 async def basic_user(request, username: str):
     """
@@ -138,17 +103,15 @@ async def basic_user(request, username: str):
     """
 
     # verify credential
-    ret = await get_root_service().auth_service.basic(
+    ret = await RootService().auth_service.basic_login(
+        request.app,
         request.headers.authorization,
         username=username
     )
-    if ret:
-        return _authorized_basic_response
-    else:
-        return _unauthorized_basic_response
+    return _authorized_basic_response if ret else _unauthorized_basic_response
 
 
-@bp.post("/token/login", name="token_login", version=1)
+@bp.post("/jwt/login", name="jwt_token_login", version=1)
 @openapi.definition(
     body={'application/json': LoginCredential.model_json_schema(ref_template="#/components/schemas/{model}")},
     response=[
@@ -161,9 +124,9 @@ async def basic_user(request, username: str):
         ),
     ],
 )
-async def token_login(request):
+async def jwt_token_login(request):
     """
-    this is a hack to assign 10yr valid token to user
+    JWT Token login with credential
     """
 
     try:
@@ -173,25 +136,25 @@ async def token_login(request):
         return _bad_request_response
 
     # verify credential
-    access_token, err = await get_root_service().auth_service.token_login(cred)
+    access_token, refresh_token, err = await RootService().auth_service.jwt_token_login(request.app, cred)
 
     # return response
     if err is not None:
         return _unauthorized_basic_response
     else:
-        return json_response(
-            body=TokenResponse(
-                description='',
-                message='OK',
-                status=http.HTTPStatus.OK,
-                token=access_token
-            ).model_dump(),
-            status=http.HTTPStatus.OK
+        return wrapped_model_response(
+            TokenResponse(message='OK', status=http.HTTPStatus.OK, token=access_token, refresh_token=refresh_token),
         )
 
 
-@bp.post("/token/refresh", name="token_refresh", version=1)
+@bp.post("/jwt/refresh", name="jwt_token_refresh", version=1)
 @openapi.definition(
+    parameter=[
+        openapi.definitions.Parameter(
+            name="Authorization",
+            location="header",
+        )
+    ],
     response=[
         openapi.definitions.Response(
             {"application/json": TokenResponse.model_json_schema(ref_template="#/components/schemas/{model}")},
@@ -203,38 +166,40 @@ async def token_login(request):
     ],
     secured={"token": []}
 )
-async def token_refresh(request):
+async def jwt_token_refresh(request):
     """
-    this is a hack to verify the long-term token and sign short term token
+    JWT Token refresh with a long-term token
     """
+
     # first check the presence of header
-    old_token, err = parse_bearer(request.headers.authorization)
+    refresh_token, err = parse_bearer(request.headers.authorization)
     if err is not None:
         return _unauthorized_basic_response
 
     # refresh token, pass JWT_SECRET
-    access_token, err = await get_root_service().auth_service.user_token_refresh(
-        old_token,
-        request.app.config.get('JWT_SECRET')
+    access_token, err = await RootService().auth_service.jwt_token_refresh(
+        request.app,
+        refresh_token,
     )
 
     # return response
     if err is not None:
         return _unauthorized_basic_response
     else:
-        return json_response(
-            body=TokenResponse(
-                description='',
-                message='OK',
-                status=http.HTTPStatus.OK,
-                token=access_token
-            ).model_dump(),
-            status=http.HTTPStatus.OK
+        return wrapped_model_response(
+            TokenResponse(message='OK', status=http.HTTPStatus.OK, token=access_token),
         )
 
 
 @bp.get("/token/validate/<username:str>", name="token_validate_user", version=1)
+@bp.get("/jwt/validate/<username:str>", name="jwt_token_validate_user", version=1)
 @openapi.definition(
+    parameter=[
+        openapi.definitions.Parameter(
+            name=JWT_HEADER_NAME,
+            location="header",
+        )
+    ],
     response=[
         openapi.definitions.Response(
             status=200
@@ -245,19 +210,22 @@ async def token_refresh(request):
     ],
     secured={"token": []}
 )
-async def token_validate(request, username: str):
+async def jwt_token_validate(request, username: str):
     """
-    This function validates the token in:
-    - header.Authorization
-    - urlParam.clpl_auth_token
+    JWT Token validation endpoint.
+    """
 
-    If the validation succeed, return 200 OK and set cookie clpl_auth_token=${JWT}
-    """
+    # note: This function validates the token in:
+    #  - header.Authorization
+    #  - urlParam.{{ CONFIG_AUTH_COOKIES_NAME }}
+    #
+    #  If the validation succeed, return 200 OK and set cookie {{ CONFIG_AUTH_COOKIES_NAME }}=${JWT}
+
     # try to get from cookies
     cookies_token = request.cookies.get(config.CONFIG_AUTH_COOKIES_NAME, None)
     if cookies_token is None:
         # cookie does not exists, fallback to header
-        token, err = parse_bearer(request.headers.get('Authorization'))
+        token, err = parse_bearer(request.headers.get(JWT_HEADER_NAME))
         if err is not None:
             # header does not exists, fallback to query
             logger.debug(f"validation_err: {str(err)}, fallback to query")
@@ -279,10 +247,10 @@ async def token_validate(request, username: str):
 
     # decode the jwt and check the signature
     try:
-        payload = jwt.decode(
+        payload: JWTTokenSchema = jwt.decode(
             token,
-            request.app.config.get('JWT_SECRET'),
-            algorithms=request.app.config.get('JWT_ALGORITHM')
+            request.app.config.get(JWT_SECRET_KEYNAME),
+            algorithms=request.app.config.get(JWT_ALGORITHM_KEYNAME)
         )
     except Exception as e:
         logger.debug(f"validation_err: {str(e)}")
@@ -300,16 +268,16 @@ async def token_validate(request, username: str):
         # case 1: the token will expire in less than 6 days
         # case 2: the token is not device token
         if (
-                (payload['exp'] < (now + config.CONFIG_DEVICE_TOKEN_RENEW_THRESHOLD_S)) or
-                (payload['role'] != UserRoleEnum.device.value)
+                (payload['exp'] < (now + POLICY_DEVICE_TOKEN_RENEW_THRESHOLD_SECOND)) or
+                (payload['type'] != JWTTokenType.device.value)
         ):
-            logger.debug(f"validation_warning: token will expire in less "
-                         f"than {config.CONFIG_DEVICE_TOKEN_RENEW_THRESHOLD_S} seconds, rotate token")
-            payload['role'] = UserRoleEnum.device.value
-            token, err = await get_root_service().auth_service.jwt_token_rotate(
+            logger.debug(f"validation_notice: token will expire in less "
+                         f"than {POLICY_DEVICE_TOKEN_RENEW_THRESHOLD_SECOND} seconds, rotate token")
+            payload['type'] = UserRoleEnum.device.value
+            token, err = await RootService().auth_service.jwt_token_rotate(
                 payload,
-                request.app.config.get('JWT_SECRET'),
-                datetime.timedelta(seconds=config.CONFIG_DEVICE_TOKEN_EXPIRE_S)
+                request.app.config.get(JWT_SECRET_KEYNAME),
+                datetime.timedelta(seconds=POLICY_DEVICE_TOKEN_EXPIRE_SECOND)
             )
             if err is not None:
                 logger.debug(f"validation_err: {str(err)}")
@@ -318,3 +286,7 @@ async def token_validate(request, username: str):
         # return authorized response
         logger.debug(f"validation_success")
         return get_authorized_token_response(token=token)
+
+
+openapi.component(LoginCredential)
+openapi.component(TokenResponse)

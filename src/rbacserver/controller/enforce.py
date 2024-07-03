@@ -9,7 +9,7 @@ from sanic import Blueprint
 from sanic_ext import openapi
 
 from src.components.types import EnforceRequest, EnforceResponse, ResponseBaseModel
-from src.components.utils import unmarshal_json_request, wrapped_model_response
+from src.components.utils.checkers import unmarshal_json_request, wrapped_model_response
 
 bp = Blueprint("enforce", url_prefix="/enforce", version=1)
 

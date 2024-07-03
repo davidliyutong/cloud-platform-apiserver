@@ -6,13 +6,12 @@ import http
 
 from loguru import logger
 from sanic import Blueprint
-from sanic.response import json as json_response
 from sanic_ext import openapi
 
-import src.components.errors as errors
 from src.components.types import ResponseBaseModel
 from src.components.datamodels.rbac import RBACPolicyExchangeModelV2
-from src.components.utils import wrapped_model_response, unmarshal_json_request
+from src.components.utils.wrappers import wrapped_model_response
+from src.components.utils.checkers import unmarshal_json_request
 from src.rbacserver.datamodels import UpdateNotificationMsg
 
 bp = Blueprint("policy", url_prefix="/policy", version=1)
@@ -42,7 +41,7 @@ async def reload_policy(request):
                 sync_required=True,
             ))
         return wrapped_model_response(
-            ResponseBaseModel(status=http.HTTPStatus.OK, message="success", ),
+            ResponseBaseModel(status=http.HTTPStatus.OK, message="success"),
         )
 
     except Exception as err:

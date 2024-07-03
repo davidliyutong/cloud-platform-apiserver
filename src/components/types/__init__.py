@@ -2,11 +2,36 @@
 This file defines the types of the request and response of the apiserver.
 """
 import uuid
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple, Union
 
-from pydantic import BaseModel, EmailStr, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, field_validator, model_validator, Field, field_serializer, SecretStr
 
-import src.components.datamodels as datamodels
+from src.components.datamodels import (
+    TemplateModel,
+    PodModelV1,
+    PodStatusEnum,
+    RBACPolicyModelV2,
+    UserStatusEnum,
+    QuotaModelV2,
+    UserModelV2
+)
+from src.components.datamodels.group import GroupEnumInternal
+
+
+def _ensure_uuid_value(v):
+    if v == "" or v is None:
+        raise ValueError("uuid cannot be empty")
+    try:
+        _ = uuid.UUID(v)
+    except ValueError as e:
+        raise e
+    return v
+
+
+def _ensure_non_empty_value(v, field_name=""):
+    if v == "":
+        raise ValueError(f"field[{field_name}] cannot be empty")
+    return v
 
 
 class ListRequestBaseModel(BaseModel):
@@ -39,7 +64,14 @@ class UserListResponse(ResponseBaseModel):
     List response for users
     """
     total_users: int = 0
-    users: List[datamodels.UserModel] = []
+    users: List[UserModelV2] = []
+
+    @field_serializer('users')
+    def serialize_users(self, v: List[UserModelV2], _info):
+        for user in v:
+            user.password = SecretStr("******")
+            user.otp_secret = SecretStr("******")
+        return v
 
 
 class UserCreateRequest(BaseModel):
@@ -47,23 +79,28 @@ class UserCreateRequest(BaseModel):
     Create request for users
     """
     username: str
+    group: Optional[str] = GroupEnumInternal.default
     password: str
-    email: Optional[str]
-    role: str  # see datamodels.RoleEnum
+    email: Optional[str] = None
     quota: Optional[Dict[str, Any]] = None  # resource quota
 
     @field_validator('password')
     def password_must_be_valid(cls, v):
-        if v == "":
-            raise ValueError("password cannot be empty")
-        return v
+        return _ensure_non_empty_value(v, "password")
 
 
 class UserCreateResponse(ResponseBaseModel):
     """
     Create response for users
     """
-    user: datamodels.UserModel = None
+    user: Optional[UserModelV2] = None
+
+    @field_serializer('user')
+    def serialize_user(self, v: UserModelV2, _info):
+        if v is not None:
+            v.password = SecretStr("******")
+            v.otp_secret = SecretStr("******")
+        return v
 
 
 class UserGetRequest(BaseModel):
@@ -86,24 +123,37 @@ class UserUpdateRequest(BaseModel):
     None means no change.
     """
     username: str
-    old_password: Optional[str] = None
-    password: Optional[str] = None
-    status: Optional[str] = None
     email: Optional[EmailStr] = None
-    role: Optional[str] = None
-    quota: Optional[Dict[str, Any]] = None
-    _skip_password_check: bool = False
+    public_keys: Optional[List[str]] = None
+
+    update_password: bool = False
+    new_password: Optional[str] = None
+    old_password: Optional[str] = None
+
+    update_quota: bool = False
+    quota: Optional[QuotaModelV2] = None
+
+    update_group: bool = False
+    group: Optional[str] = None
+
+    update_status: bool = False
+    status: Optional[UserStatusEnum] = None
+
+    update_otp: bool = False
+    otp_secret: Optional[str] = None
+
+    update_otp_status: bool = False
+    otp_code: Optional[str] = None
+    otp_enabled: Optional[bool] = None
 
     @field_validator('username')
     def username_must_be_valid(cls, v):
-        if v == "" or v is None:
-            raise ValueError("username cannot be empty")
-        return v
+        return _ensure_non_empty_value(v, "username")
 
-    @field_validator('password')
-    def password_must_be_valid(cls, v):
-        if v == "":
-            raise ValueError("password cannot be empty")
+    @field_validator('new_password')
+    def new_password_must_be_valid(cls, v):
+        if v is not None:
+            return _ensure_non_empty_value(v, "new_password")
         return v
 
 
@@ -118,6 +168,8 @@ class UserDeleteRequest(UserGetRequest):
     """
     Delete request for users, the same as get request
     """
+    otp_code: Optional[str] = None
+    password: Optional[str] = None
     pass
 
 
@@ -140,7 +192,7 @@ class TemplateListResponse(ResponseBaseModel):
     List response for templates
     """
     total_templates: int = 0
-    templates: List[datamodels.TemplateModel] = []
+    templates: List[TemplateModel] = []
 
 
 class TemplateCreateRequest(BaseModel):
@@ -161,7 +213,7 @@ class TemplateCreateResponse(ResponseBaseModel):
     """
     Create response for templates
     """
-    template: datamodels.TemplateModel = None
+    template: TemplateModel = None
 
 
 class TemplateGetRequest(BaseModel):
@@ -224,7 +276,7 @@ class PodListResponse(ResponseBaseModel):
     List response for pods
     """
     total_pods: int = 0
-    pods: List[datamodels.PodModel] = []
+    pods: List[PodModelV1] = []
 
 
 class PodCreateRequest(BaseModel):
@@ -244,13 +296,7 @@ class PodCreateRequest(BaseModel):
 
     @field_validator('template_ref')
     def template_ref_must_be_valid(cls, v):
-        if v == "" or v is None:
-            raise ValueError("template_ref cannot be empty")
-        try:
-            _ = uuid.UUID(v)
-        except ValueError as e:
-            raise e
-        return v
+        return _ensure_uuid_value(v)
 
     @field_validator('cpu_lim_m_cpu')
     def cpu_lim_m_cpu_must_be_valid(cls, v):
@@ -285,7 +331,7 @@ class PodCreateResponse(ResponseBaseModel):
     """
     Create response for pods
     """
-    pod: datamodels.PodModel = None
+    pod: PodModelV1 = None
 
 
 class PodGetRequest(BaseModel):
@@ -316,7 +362,7 @@ class PodUpdateRequest(BaseModel):
     username: Optional[str] = None
     user_uuid: Optional[str] = None
     timeout_s: Optional[int] = None
-    target_status: Optional[datamodels.PodStatusEnum] = None
+    target_status: Optional[PodStatusEnum] = None
     force: bool = False
 
     @model_validator(mode="after")
@@ -330,34 +376,25 @@ class PodUpdateRequest(BaseModel):
     @field_validator('target_status')
     def target_status_must_be_valid(cls, v):
         if isinstance(v, str):
-            v = datamodels.PodStatusEnum(v)
-        if v is not None and v not in datamodels.PodStatusEnum:
+            v = PodStatusEnum(v)
+        if v is not None and v not in PodStatusEnum:
             raise ValueError('target_status must be valid PodStatusEnum')
 
-        if v not in [datamodels.PodStatusEnum.running, datamodels.PodStatusEnum.stopped]:
+        if v not in [PodStatusEnum.running, PodStatusEnum.stopped]:
             raise ValueError('target_status must be valid')
         return v
 
     @field_validator('cpu_lim_m_cpu')
     def cpu_lim_m_cpu_must_be_valid(cls, v):
-        if v is not None:
-            return PodCreateRequest.cpu_lim_m_cpu_must_be_valid(v)
-        else:
-            return v
+        return PodCreateRequest.cpu_lim_m_cpu_must_be_valid(v) if v is not None else v
 
     @field_validator('mem_lim_mb')
     def mem_lim_mb_must_be_valid(cls, v):
-        if v is not None:
-            return PodCreateRequest.mem_lim_mb_must_be_valid(v)
-        else:
-            return v
+        return PodCreateRequest.mem_lim_mb_must_be_valid(v) if v is not None else v
 
     @field_validator('storage_lim_mb')
     def storage_lim_mb_must_be_valid(cls, v):
-        if v is not None:
-            PodCreateRequest.storage_lim_mb_must_be_valid(v)
-        else:
-            return v
+        return PodCreateRequest.storage_lim_mb_must_be_valid(v) if v is not None else v
 
 
 class PodUpdateResponse(PodGetResponse):
@@ -386,7 +423,65 @@ class OIDCStatusResponse(BaseModel):
     path: str
 
 
-from sanic_ext import openapi
+class PolicyListRequest(ListRequestBaseModel):
+    pass
 
-# attention: registrate components
-openapi.component(OIDCStatusResponse)
+
+class PolicyListResponse(ResponseBaseModel):
+    policies: List[RBACPolicyModelV2] = []
+
+
+class PolicyCreateRequest(BaseModel):
+    subject_uuid: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str = ""
+    description: str = ""
+    policies: List[Union[Tuple[str, str, str], Tuple[str, str, str, str], List[str]]] = Field(default_factory=list)
+
+    @field_validator('subject_uuid')
+    def subject_uuid_must_be_valid(cls, v):
+        return _ensure_uuid_value(v if v is not None else str(uuid.uuid4()))
+
+
+class PolicyCreateResponse(ResponseBaseModel):
+    policy: RBACPolicyModelV2 = None
+
+
+class PolicyGetRequest(BaseModel):
+    subject_uuid: str = ""
+
+
+class PolicyGetResponse(ResponseBaseModel):
+    policy: RBACPolicyModelV2 = None
+
+
+class PolicyUpdateRequest(BaseModel):
+    subject_uuid: str
+    name: Optional[str] = None
+    description: Optional[str] = None
+    policies: Optional[List[Union[Tuple[str, str, str], Tuple[str, str, str, str], List[str]]]] = None
+
+
+class PolicyUpdateResponse(ResponseBaseModel):
+    pass
+
+
+class PolicyDeleteRequest(BaseModel):
+    subject_uuid: str = ""
+
+    @field_validator('subject_uuid')
+    def subject_uuid_must_be_valid(cls, v):
+        return _ensure_uuid_value(v)
+
+
+class PolicyDeleteResponse(ResponseBaseModel):
+    pass
+
+
+class EnforceRequest(BaseModel):
+    subject: str = ""
+    object: str = ""
+    action: str = ""
+
+
+class EnforceResponse(ResponseBaseModel):
+    result: bool = False
