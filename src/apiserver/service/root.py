@@ -15,9 +15,10 @@ from .heartbeat import HeartbeatService
 from .pod import PodService
 from .policy import PolicyService
 from .system import SystemService
-from .template import TemplateService
+from .template import PodTemplateService, VolumeTemplateService
 from .user import UserService
 from .volume import VolumeService
+from .project import ProjectService
 
 
 @singleton
@@ -29,10 +30,13 @@ class RootService():
     heartbeat_service: HeartbeatService = None
     pod_service: PodService = None
     system_service: SystemService = None
-    template_service: TemplateService = None
+    pod_template_service: PodTemplateService = None
+    volume_template_service: VolumeTemplateService = None
     user_service: UserService = None
     volume_service: VolumeService = None
     policy_service: PolicyService = None
+    project_service: ProjectService = None
+
 
     def __init__(
             self,
@@ -43,10 +47,12 @@ class RootService():
             heartbeat_service: HeartbeatService = None,
             pod_service: PodService = None,
             system_service: SystemService = None,
-            template_service: TemplateService = None,
+            pod_template_service: PodTemplateService = None,
+            volume_template_service: VolumeTemplateService = None,
             user_service: UserService = None,
             volume_service: VolumeService = None,
-            policy_service: PolicyService = None
+            policy_service: PolicyService = None,
+            project_service: ProjectService = None
     ):
         self.opt = opt
         self.auth_service = auth_service
@@ -67,8 +73,11 @@ class RootService():
         self.system_service = system_service
         self.system_service.root_service = self
 
-        self.template_service = template_service
-        self.template_service.root_service = self
+        self.pod_template_service = pod_template_service
+        self.pod_template_service.root_service = self
+
+        self.volume_template_service = volume_template_service
+        self.volume_template_service.root_service = self
 
         self.user_service = user_service
         self.user_service.root_service = self
@@ -78,6 +87,9 @@ class RootService():
 
         self.policy_service = policy_service
         self.policy_service.root_service = self
+
+        self.project_service = project_service
+        self.project_service.root_service = self
 
 
 def init_root_service(opt: APIServerConfig,
@@ -91,9 +103,11 @@ def init_root_service(opt: APIServerConfig,
         heartbeat_service=HeartbeatService(),
         pod_service=PodService(odm_engine),
         system_service=SystemService(odm_engine),
-        template_service=TemplateService(odm_engine),
+        pod_template_service=PodTemplateService(odm_engine),
+        volume_template_service=VolumeTemplateService(odm_engine),
         user_service=UserService(odm_engine),
         volume_service=VolumeService(odm_engine),
-        policy_service=PolicyService(odm_engine)
+        policy_service=PolicyService(odm_engine),
+        project_service=ProjectService(odm_engine)
     )
     return RootService()

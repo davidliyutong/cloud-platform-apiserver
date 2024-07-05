@@ -5,7 +5,8 @@ import sanic
 from loguru import logger
 from odmantic import SyncEngine
 
-from src.components import datamodels
+from src.components.datamodels import ResourceStatusEnum
+from src.components.datamodels.rbac import RBACPolicyModelV2
 from src.components.config import APIServerConfig
 from src.components.utils import get_mongo_db_connection
 from src.rbacserver.adapters import get_text_policy_iterator
@@ -21,16 +22,16 @@ def check_and_create_rbac_config(opt: APIServerConfig) -> Optional[Exception]:
     engine = SyncEngine(get_mongo_db_connection(opt), database=opt.db_database)
 
     try:
-        res = engine.find_one(datamodels.RBACPolicyModelV2, {"name": "default"})
+        res = engine.find_one(RBACPolicyModelV2, {"name": "default"})
         if res is None:
             logger.info("default policy not found, creating...")
-            p = datamodels.RBACPolicyModelV2(
+            p = RBACPolicyModelV2(
                 name="default",
                 description="default policy",
                 policies=list(
                     get_text_policy_iterator(system_policy_text)
                 ),
-                resource_status=datamodels.ResourceStatusEnum.committed
+                resource_status=ResourceStatusEnum.committed
             )
             engine.save(p)
         return None

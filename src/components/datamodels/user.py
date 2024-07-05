@@ -12,7 +12,7 @@ from odmantic import Model, Field
 from pydantic import EmailStr, SecretStr, field_validator, field_serializer
 
 from src import CONFIG_BUILD_VERSION
-from src.components.datamodels import user_collection_name
+from src.components.datamodels.names import user_collection_name
 from src.components.datamodels.common import ResourceStatusEnum
 from src.components.datamodels.group import GroupEnumInternal
 from src.components.datamodels.quota import QuotaModelV2
@@ -81,6 +81,8 @@ class UserModelV2(Model):
     @field_validator("username")
     def username_must_be_valid(cls, v):
         pattern = '^[0-9a-zA-Z\-_]*$'
+        if v.startswith('_') or v.startswith('-') or v.startswith('.'):
+            raise ValueError("username must not start with _, -, or .")
         if not re.match(pattern, v):
             raise ValueError("username must be alphanumeric")
         return v

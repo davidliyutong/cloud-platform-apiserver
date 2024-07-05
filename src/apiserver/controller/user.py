@@ -12,8 +12,13 @@ from src.components import errors
 from src.apiserver.service import RootService
 from src.components.auth.common import JWT_TOKEN_NAME
 from src.components.datamodels.group import GroupEnumInternal
-from src.components.types.user import UserListRequest, UserListResponse, UserCreateRequest, UserCreateResponse, \
-    UserGetRequest, UserGetResponse, UserUpdateRequest, UserUpdateResponse, UserDeleteRequest, UserDeleteResponse
+from src.components.types.user import (
+    UserListRequest, UserListResponse,
+    UserCreateRequest, UserCreateResponse,
+    UserGetRequest, UserGetResponse,
+    UserUpdateRequest, UserUpdateResponse,
+    UserDeleteRequest, UserDeleteResponse
+)
 from src.components.utils.wrappers import wrapped_model_response
 from src.components.utils.checkers import unmarshal_query_args, unmarshal_json_request
 

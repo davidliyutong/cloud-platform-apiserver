@@ -3,7 +3,7 @@ from typing import List, Optional, Union, Tuple
 
 from pydantic import BaseModel, Field, field_validator
 
-from src.components.datamodels import RBACPolicyModelV2
+from src.components.datamodels.rbac import RBACPolicyModelV2
 from src.components.types.common import _ensure_uuid_value, ListRequestBaseModel, ResponseBaseModel
 
 

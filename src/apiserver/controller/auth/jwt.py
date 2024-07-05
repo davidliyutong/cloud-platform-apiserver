@@ -11,9 +11,9 @@ from src.components.types.common import ResponseBaseModel
 from src.apiserver.service import RootService
 from src.components.auth.common import LoginCredential, TokenResponse, JWT_SECRET_KEYNAME, JWT_HEADER_NAME, \
     JWT_ALGORITHM_KEYNAME, JWTTokenType, POLICY_DEVICE_TOKEN_RENEW_THRESHOLD_SECOND, POLICY_DEVICE_TOKEN_EXPIRE_SECOND, \
-    JWTTokenSchema
+    JWTTokenSchema, JWT_TOKEN_NAME
 from src.components import config
-from src.components.datamodels import UserRoleEnum
+from src.components.datamodels.user import UserRoleEnum
 from src.components.utils.parser import parse_bearer
 from src.components.utils.checkers import wrapped_model_response
 
@@ -111,7 +111,7 @@ async def jwt_token_login(request):
             {"application/json": _unauthorized_basic_response}, status=401
         ),
     ],
-    secured={"token": []}
+    secured={JWT_TOKEN_NAME: []}
 )
 async def jwt_token_refresh(request):
     """
@@ -154,7 +154,7 @@ async def jwt_token_refresh(request):
             {"application/json": get_unauthorized_token_response()}, status=401
         ),
     ],
-    secured={"token": []}
+    secured={JWT_TOKEN_NAME: []}
 )
 async def jwt_token_validate(request, username: str):
     """

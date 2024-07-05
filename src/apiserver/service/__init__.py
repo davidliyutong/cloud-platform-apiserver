@@ -6,6 +6,6 @@ from .heartbeat import HeartbeatService
 from .pod import PodService
 from .root import RootService, init_root_service
 from .system import SystemService
-from .template import TemplateService
+from .template import PodTemplateService
 from .user import UserService
 from .volume import VolumeService

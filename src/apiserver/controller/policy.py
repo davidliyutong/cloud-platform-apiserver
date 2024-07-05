@@ -12,9 +12,13 @@ import src.components.auth.authn as authn
 import src.components.auth.common
 import src.components.errors as errors
 from src.apiserver.service import RootService
-from src.components.types.rbac import PolicyListRequest, PolicyListResponse, PolicyCreateRequest, \
-    PolicyCreateResponse, PolicyGetRequest, PolicyGetResponse, PolicyUpdateRequest, PolicyUpdateResponse, \
+from src.components.types.rbac import (
+    PolicyListRequest, PolicyListResponse,
+    PolicyCreateRequest, PolicyCreateResponse,
+    PolicyGetRequest, PolicyGetResponse,
+    PolicyUpdateRequest, PolicyUpdateResponse,
     PolicyDeleteRequest, PolicyDeleteResponse
+)
 from src.components.utils.checkers import unmarshal_json_request, unmarshal_query_args
 from src.components.utils.wrappers import wrapped_model_response
 from src.components.auth import authn, authz

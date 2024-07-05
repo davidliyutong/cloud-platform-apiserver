@@ -78,6 +78,15 @@ p, role::templates_owner, resources::/templates/*, delete
 p, role::templates_owner, resources::/templates/*, list
 p, role::templates_reader, resources::/templates/*, read
 p, role::templates_reader, resources::/templates/*, list
+p, role::pod_templates_reader, resources::/templates/pod/*, read
+p, role::pod_templates_reader, resources::/templates/pod/*, list
+p, role::pod_templates_public_reader, resources::/templates/pod/.public/*, read
+p, role::pod_templates_public_reader, resources::/templates/pod/.public/*, list
+p, role::volume_templates_reader, resources::/templates/volume/*, read
+p, role::volume_templates_reader, resources::/templates/volume/*, list
+p, role::volume_templates_public_reader, resources::/templates/volume/.public/*, read
+p, role::volume_templates_public_reader, resources::/templates/volume/.public/*, list
+
 
 p, role::users_owner, resources::/users/*, create
 p, role::users_owner, resources::/users/*, read
@@ -114,7 +123,8 @@ g, role::user, role::groups_reader
 g, role::user, role::pods_creator
 g, role::user, role::pod_owner
 g, role::user, role::projects_public_reader
-g, role::user, role::templates_reader
+g, role::user, role::pod_templates_reader
+g, role::user, role::volume_templates_public_reader
 g, role::user, role::volumes_creator
 g, role::user, role::volumes_public_reader
 
@@ -123,7 +133,7 @@ g, role::power_user, role::groups_creator
 g, role::power_user, role::groups_reader
 g, role::power_user, role::projects_creator
 g, role::power_user, role::projects_reader
-g, role::power_user, role::template_reader
+g, role::power_user, role::templates_reader
 g, role::power_user, role::volumes_reader
 g, role::power_user, role::users_creator
 g, role::power_user, role::users_reader

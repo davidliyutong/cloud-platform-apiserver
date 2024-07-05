@@ -3,7 +3,7 @@ import time
 import uuid
 
 import aio_pika
-from src.components import datamodels
+from src.components.datamodels.pod import PodModelV1
 
 URL = "amqp://clpl:clpl@127.0.0.1:5672/"
 
@@ -15,7 +15,7 @@ async def main():
         routing_key = "clpl_event_queue"
         channel = await connection.channel()
         while True:
-            message_body = datamodels.PodModelV1.new(
+            message_body = PodModelV1.new(
                 template_ref=str(uuid.uuid4()),
                 username='test_user',
             ).model_dump_json()

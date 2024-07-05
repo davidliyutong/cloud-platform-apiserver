@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 
 from pydantic import field_serializer, SecretStr, BaseModel, EmailStr, field_validator
 
-from src.components.datamodels import UserModelV2, QuotaModelV2, UserStatusEnum
+from src.components.datamodels.user import UserModelV2, QuotaModelV2, UserStatusEnum
 from src.components.datamodels.group import GroupEnumInternal
 from src.components.types.common import _ensure_non_empty_value, ListRequestBaseModel, ResponseBaseModel
 

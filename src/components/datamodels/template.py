@@ -8,7 +8,7 @@ from pydantic import BaseModel, UUID4, field_validator, field_serializer
 
 from src import CONFIG_BUILD_VERSION
 from src.components import config as config
-from . import template_collection_name
+from .names import pod_template_collection_name, volume_template_collection_name
 from .common import ResourceStatusEnum, FieldTypeEnum
 
 
@@ -103,20 +103,20 @@ class TemplateModel(BaseModel):
         return res
 
 
-class TemplateTypeEnum(str, Enum):
+class PodTemplateTypeEnum(str, Enum):
     """
-    Template type enum
+    Pod Template type enum
     """
     standard = "standard"
     custom = "custom"
 
 
-class TemplateModelV2(Model):
+class PodTemplateModelV2(Model):
     """
-    Template model, used to define template
+    Pod Template model, used to define template
     """
     model_config = {
-        "collection": template_collection_name,
+        "collection": pod_template_collection_name,
     }
     version: str = Field(default=CONFIG_BUILD_VERSION, key_name="_version")
     resource_status: ResourceStatusEnum = Field(default=ResourceStatusEnum.committed, key_name="_resource_status")
@@ -129,15 +129,63 @@ class TemplateModelV2(Model):
     name: str = Field(default="")
     description: str = Field(default="")
 
-    template_type: TemplateTypeEnum = Field(default=TemplateTypeEnum.standard)
+    template_type: PodTemplateTypeEnum = Field(default=PodTemplateTypeEnum.standard)
     image_ref: str = Field()
     template_str: Optional[str] = Field(default=None)
 
     # portMapping
     # mountPoints
     def verify(self) -> bool:
-        if self.template_type == TemplateTypeEnum.standard:
+        if self.template_type == PodTemplateTypeEnum.standard:
             return True
-        elif self.template_type == TemplateTypeEnum.custom:
+        elif self.template_type == PodTemplateTypeEnum.custom:
+            # TODO: verify template_str has correct format
+            return self.template_str is not None
+
+
+class VolumeTemplateTypeEnum(str, Enum):
+    """
+    Volume Template type enum
+    """
+    standard = "standard"
+    custom = "custom"
+
+
+class VolumeMountTypeEnum(str, Enum):
+    read_write_once = "ReadWriteOnce"
+    read_write_many = "ReadWriteMany"
+
+
+class VolumeTemplateModelV2(Model):
+    """
+    Volume Template model, used to define volume template
+    """
+    model_config = {
+        "collection": volume_template_collection_name,
+    }
+    version: str = Field(default=CONFIG_BUILD_VERSION, key_name="_version")
+    resource_status: ResourceStatusEnum = Field(default=ResourceStatusEnum.committed, key_name="_resource_status")
+    created_at: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        key_name="_created_at"
+    )
+
+    template_uuid: str = Field(index=True, primary_field=True, default_factory=lambda: str(uuid.uuid4()))
+    name: str = Field(default="")
+    description: str = Field(default="")
+
+    template_type: PodTemplateTypeEnum = Field(default=VolumeTemplateTypeEnum.standard)
+    storage_class: str = Field()
+    max_size_mb: int = Field(default=10240)
+    mount_type: VolumeMountTypeEnum = Field(default=VolumeMountTypeEnum.read_write_once)
+    template_str: Optional[str] = Field(default=None)
+
+    # portMapping
+    # mountPoints
+    def verify(self) -> bool:
+        if self.template_type == VolumeTemplateTypeEnum.standard:
+            # TODO: check existence of storage_class
+            return True
+        elif self.template_type == VolumeTemplateTypeEnum.custom:
             # TODO: verify template_str has correct format
             return self.template_str is not None

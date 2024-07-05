@@ -9,9 +9,9 @@ import jwt
 from loguru import logger
 from odmantic import AIOEngine
 
-from ...components.types.user import UserGetRequest
+from src.components.types.user import UserGetRequest
 from src.components import errors
-from src.components.datamodels import UserStatusEnum, UserModelV2
+from src.components.datamodels.user import UserStatusEnum, UserModelV2
 from src.components.utils import parse_basic
 from src.components.auth.common import (
     LoginCredential,

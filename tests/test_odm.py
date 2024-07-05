@@ -1,7 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from odmantic import AIOEngine
 import asyncio
-from src.components.datamodels import UserModelV2, UserRoleEnum, QuotaModelV2
+from src.components.datamodels.user import UserModelV2, UserRoleEnum
 
 db = AsyncIOMotorClient("mongodb://clpl:clpl@127.0.0.1")
 engine = AIOEngine(client=db, database="test_odmantic")

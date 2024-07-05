@@ -7,7 +7,7 @@ from odmantic import AIOEngine
 
 from src.apiserver.service import ServiceInterface
 from src.components import errors
-from src.components.datamodels import RBACPolicyModelV2, ResourceStatusEnum
+from src.components.datamodels.rbac import RBACPolicyModelV2, ResourceStatusEnum
 from src.components.types.rbac import PolicyListRequest, PolicyCreateRequest, PolicyGetRequest, PolicyUpdateRequest, \
     PolicyDeleteRequest
 from src.components.utils.checkers import unmarshal_mongodb_filter

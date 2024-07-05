@@ -5,7 +5,8 @@ from casbin.util import regex_match_func
 from loguru import logger
 from odmantic import AIOEngine
 
-from src.components import datamodels
+from src.components.datamodels.names import database_name
+from src.components.datamodels.rbac import RBACPolicyModelV2
 from src.components.config import APIServerConfig
 from src.components.utils import get_async_mongo_db_connection
 
@@ -152,7 +153,7 @@ class AsyncMongoDBAdapter(AsyncAdapter):
         self._save_policy_db(model)
 
     async def _load_policy_db(self, model):
-        policies = await self._engine.find(datamodels.RBACPolicyModelV2, {"policies": {"$exists": True}})
+        policies = await self._engine.find(RBACPolicyModelV2, {"policies": {"$exists": True}})
         if len(policies) == 0:
             logger.warning("no policy found in the database")
         else:
@@ -215,7 +216,7 @@ class AsyncMongoDBAdapter(AsyncAdapter):
 def build_casbin_enforcer(opt: APIServerConfig) -> AsyncEnforcer:
     model = casbin.Model()
     model.load_model_from_text(system_config_text)
-    engine = AIOEngine(client=get_async_mongo_db_connection(opt), database=datamodels.database_name)
+    engine = AIOEngine(client=get_async_mongo_db_connection(opt), database=database_name)
     adapter = AsyncMongoDBAdapter(engine)
     e = casbin.AsyncEnforcer(model, adapter)
     e.add_named_matching_func("keyMatch", regex_match_func)

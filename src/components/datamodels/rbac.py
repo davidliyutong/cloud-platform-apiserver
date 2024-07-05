@@ -6,7 +6,7 @@ from odmantic import Field, Model
 from pydantic import BaseModel
 
 from src import CONFIG_BUILD_VERSION
-from src.components.datamodels import policy_collection_name
+from src.components.datamodels.names import policy_collection_name
 from src.components.datamodels.common import ResourceStatusEnum
 
 

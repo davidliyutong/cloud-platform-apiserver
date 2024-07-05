@@ -8,7 +8,7 @@ from odmantic import AIOEngine
 from sanic import Sanic
 
 from src.components import errors
-from src.components.datamodels import UserModelV2, ResourceStatusEnum
+from src.components.datamodels.user import UserModelV2, ResourceStatusEnum
 from src.components.datamodels.user import RESERVED_USERNAMES
 from src.components.utils.checkers import unmarshal_mongodb_filter
 from src.components.utils.security import get_hashed_text

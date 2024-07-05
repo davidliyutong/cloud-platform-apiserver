@@ -8,24 +8,29 @@ import secrets
 import shortuuid
 from loguru import logger
 from odmantic import AIOEngine
-from sanic import Sanic
+from sanic import Sanic, Blueprint
 
 from src.apiserver.controller import controller_app
 # from src.apiserver.controller.admin_pod import bp as admin_pod_bp
 from src.apiserver.controller.auth.jwt import bp as auth_jwt_bp
 from src.apiserver.controller.auth.oidc import bp as auth_oidc_bp, OAuth2Config
+from src.apiserver.controller.auth.basic import bp as auth_basic_bp
+
 from src.apiserver.controller.heartbeat import bp as heartbeat_bp
 # from src.apiserver.controller.nonadmin_pod import bp as nonadmin_pod_bp
 from src.apiserver.controller.user import bp as user_bp
 from src.apiserver.controller.policy import bp as policy_bp
 from src.apiserver.controller.project import bp as project_bp
-from src.apiserver.controller.template import bp as template_bp
-
+from src.apiserver.controller.template.pod import bp as pod_template_bp
+from src.apiserver.controller.template.volume import bp as volume_template_bp
+template_group = Blueprint.group(
+    pod_template_bp, volume_template_bp, url_prefix="/template", name_prefix="template"
+)
 
 from src.apiserver.service import init_root_service
 from src.components.auth.common import JWT_SECRET_KEYNAME, JWT_ALGORITHM_KEYNAME
 from src.components.config import APIServerConfig, OIDCConfig, CONFIG_PROJECT_NAME, SiteConfig
-from src.components.datamodels import database_name
+from src.components.datamodels.names import database_name
 from src.components.tasks import check_and_create_admin_user, check_kubernetes_connection
 from src.components.tasks.crash import check_crash_flag
 from src.components.tasks.sanity_check import check_rbac_readiness, check_and_create_system_document
@@ -143,6 +148,7 @@ def apiserver_prepare_run(opt: APIServerConfig) -> Sanic:
     )
 
     # attach Blueprint to context
+    controller_app.blueprint(auth_basic_bp)
     controller_app.blueprint(auth_jwt_bp)
     if opt.config_use_oidc:
         controller_app.blueprint(auth_oidc_bp)
@@ -153,7 +159,7 @@ def apiserver_prepare_run(opt: APIServerConfig) -> Sanic:
     controller_app.blueprint(heartbeat_bp)
     controller_app.blueprint(policy_bp)
     controller_app.blueprint(project_bp)
-    controller_app.blueprint(template_bp)
+    controller_app.blueprint(template_group)
 
     # attach JWT secret to context
     controller_app.config.update({JWT_SECRET_KEYNAME: opt.config_token_secret})
