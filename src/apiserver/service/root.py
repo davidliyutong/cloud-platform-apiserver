@@ -18,7 +18,6 @@ from .system import SystemService
 from .template import PodTemplateService, VolumeTemplateService
 from .user import UserService
 from .volume import VolumeService
-from .project import ProjectService
 
 
 @singleton
@@ -35,8 +34,6 @@ class RootService():
     user_service: UserService = None
     volume_service: VolumeService = None
     policy_service: PolicyService = None
-    project_service: ProjectService = None
-
 
     def __init__(
             self,
@@ -52,7 +49,6 @@ class RootService():
             user_service: UserService = None,
             volume_service: VolumeService = None,
             policy_service: PolicyService = None,
-            project_service: ProjectService = None
     ):
         self.opt = opt
         self.auth_service = auth_service
@@ -88,9 +84,6 @@ class RootService():
         self.policy_service = policy_service
         self.policy_service.root_service = self
 
-        self.project_service = project_service
-        self.project_service.root_service = self
-
 
 def init_root_service(opt: APIServerConfig,
                       odm_engine: AIOEngine,
@@ -108,6 +101,5 @@ def init_root_service(opt: APIServerConfig,
         user_service=UserService(odm_engine),
         volume_service=VolumeService(odm_engine),
         policy_service=PolicyService(odm_engine),
-        project_service=ProjectService(odm_engine)
     )
     return RootService()

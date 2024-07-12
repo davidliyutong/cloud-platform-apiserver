@@ -31,6 +31,8 @@ class PodTemplateCreateRequest(BaseModel):
     """
     name: str
     description: str
+    public: bool = False
+
     template_type: PodTemplateTypeEnum = PodTemplateTypeEnum.standard
     image_ref: str
     template_str: Optional[str]
@@ -48,6 +50,7 @@ class PodTemplateGetRequest(BaseModel):
     Get request for templates
     """
     template_uuid: str
+    tag: str = None
 
 
 class PodTemplateGetResponse(PodTemplateCreateResponse):
@@ -64,6 +67,7 @@ class PodTemplateUpdateRequest(BaseModel):
     template_uuid: str
     name: Optional[str] = None
     description: Optional[str] = None
+    public: Optional[bool] = None
 
     template_type: Optional[PodTemplateTypeEnum] = None
     image_ref: Optional[str] = None
@@ -95,7 +99,6 @@ class VolumeTemplateListRequest(ListRequestBaseModel):
     """
     List request for volume templates
     """
-    tag: str = None
 
 
 class VolumeTemplateListResponse(ResponseBaseModel):
@@ -113,6 +116,8 @@ class VolumeTemplateCreateRequest(BaseModel):
     name: str
     description: str
     template_type: VolumeTemplateTypeEnum = VolumeTemplateTypeEnum.standard
+    public: bool = False
+
     storage_class: str
     max_size_mb: int = 10240
     mount_type: VolumeMountTypeEnum = VolumeMountTypeEnum.read_write_once
@@ -148,6 +153,8 @@ class VolumeTemplateUpdateRequest(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     template_type: Optional[VolumeTemplateTypeEnum] = None
+    public: Optional[bool] = None
+
     storage_class: Optional[str] = None
     max_size_mb: Optional[int] = None
     mount_type: Optional[VolumeMountTypeEnum] = None

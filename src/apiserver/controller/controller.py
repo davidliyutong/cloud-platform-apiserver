@@ -32,14 +32,14 @@ def _health(opt: APIServerConfig):
             },
             'oidc': None if not opt.config_use_oidc else OIDCStatusResponse(
                 name=opt.oidc_config.name,
-                path=app.url_for("root.auth_oidc.login")  # "/v1/auth/oidc/login"
+                path="/v1/auth/oidc/login"
             ).model_dump()
         },
         http.HTTPStatus.OK
     )
 
 
-@app.get("/health", name="health")
+@app.get("/health", name="health", version=1)
 async def health(request):
     """
     Health check. Return a 200 OK response.

@@ -128,6 +128,7 @@ class PodTemplateModelV2(Model):
     template_uuid: str = Field(index=True, primary_field=True, default_factory=lambda: str(uuid.uuid4()))
     name: str = Field(default="")
     description: str = Field(default="")
+    public: bool = Field(default=False)
 
     template_type: PodTemplateTypeEnum = Field(default=PodTemplateTypeEnum.standard)
     image_ref: str = Field()
@@ -173,6 +174,7 @@ class VolumeTemplateModelV2(Model):
     template_uuid: str = Field(index=True, primary_field=True, default_factory=lambda: str(uuid.uuid4()))
     name: str = Field(default="")
     description: str = Field(default="")
+    public: bool = Field(default=False)
 
     template_type: PodTemplateTypeEnum = Field(default=VolumeTemplateTypeEnum.standard)
     storage_class: str = Field()

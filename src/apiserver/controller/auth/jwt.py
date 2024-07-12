@@ -19,9 +19,8 @@ from src.components.utils.checkers import wrapped_model_response
 
 bp = Blueprint("auth_jwt", url_prefix="/auth/jwt", version=1)
 
-_unauthorized_basic_response = wrapped_model_response(
+_unauthorized_response = wrapped_model_response(
     ResponseBaseModel(message='UNAUTHORIZED', status=http.HTTPStatus.UNAUTHORIZED),
-    headers={'WWW-Authenticate': "Basic realm=Auth Required"},
 )
 
 _bad_request_response = wrapped_model_response(
@@ -67,7 +66,7 @@ def get_unauthorized_token_response():
             status=200
         ),
         openapi.definitions.Response(
-            {"application/json": _unauthorized_basic_response}, status=401
+            {"application/json": _unauthorized_response}, status=401
         ),
     ],
 )
@@ -84,10 +83,12 @@ async def jwt_token_login(request):
 
     # verify credential
     access_token, refresh_token, err = await RootService().auth_service.jwt_token_login(request.app, cred)
+    if not cred.keep_logged_in:
+        refresh_token = ''
 
     # return response
     if err is not None:
-        return _unauthorized_basic_response
+        return _unauthorized_response
     else:
         return wrapped_model_response(
             TokenResponse(message='OK', status=http.HTTPStatus.OK, token=access_token, refresh_token=refresh_token),
@@ -108,7 +109,7 @@ async def jwt_token_login(request):
             status=200
         ),
         openapi.definitions.Response(
-            {"application/json": _unauthorized_basic_response}, status=401
+            {"application/json": _unauthorized_response}, status=401
         ),
     ],
     secured={JWT_TOKEN_NAME: []}
@@ -121,7 +122,7 @@ async def jwt_token_refresh(request):
     # first check the presence of header
     refresh_token, err = parse_bearer(request.headers.authorization)
     if err is not None:
-        return _unauthorized_basic_response
+        return _unauthorized_response
 
     # refresh token, pass JWT_SECRET
     access_token, err = await RootService().auth_service.jwt_token_refresh(
@@ -131,7 +132,7 @@ async def jwt_token_refresh(request):
 
     # return response
     if err is not None:
-        return _unauthorized_basic_response
+        return _unauthorized_response
     else:
         return wrapped_model_response(
             TokenResponse(message='OK', status=http.HTTPStatus.OK, token=access_token),

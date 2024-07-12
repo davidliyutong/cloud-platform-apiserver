@@ -12,7 +12,7 @@ class ServiceInterface(metaclass=ABCMeta):
     Service interface. All baisc services should inherit from this class.
     """
     _engine: Optional[AIOEngine]
-    _root_service: Optional['RootService']
+    _root_service: Optional['src.apiserver.root.RootService']
 
     @property
     def valid(self) -> bool:

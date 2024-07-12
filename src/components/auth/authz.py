@@ -101,7 +101,7 @@ def enforce_rbac_any(subject_fmt: str = "{rbac_id}", action: str = "", resource_
                 rbac_group = request.ctx.rbac_group
                 if rbac_id is None or rbac_group is None:
                     return wrapped_model_response(
-                        JWTAuthenticationResponse(status=http.HTTPStatus.UNAUTHORIZED, message="")
+                        JWTAuthenticationResponse(status=http.HTTPStatus.FORBIDDEN, message="")
                     )
 
                 # kwargs is provided by sanic and contains the defined parameters
@@ -118,14 +118,14 @@ def enforce_rbac_any(subject_fmt: str = "{rbac_id}", action: str = "", resource_
                         return await f(request, *args, **kwargs)
 
                 return wrapped_model_response(
-                    JWTAuthenticationResponse(status=http.HTTPStatus.UNAUTHORIZED, message="Unauthorized")
+                    JWTAuthenticationResponse(status=http.HTTPStatus.FORBIDDEN, message="Forbidden")
                 )
 
             except Exception as e:
                 # logging the error
                 logger.debug(str(e))
                 return wrapped_model_response(
-                    JWTAuthenticationResponse(status=http.HTTPStatus.UNAUTHORIZED, message=str(e))
+                    JWTAuthenticationResponse(status=http.HTTPStatus.FORBIDDEN, message=str(e))
                 )
 
         return decorated_function

@@ -99,6 +99,9 @@ class AuthService(ServiceInterface):
         ]:
             return None, None, errors.user_not_allowed
 
+        if user.status != UserStatusEnum.active:
+            return None, None, errors.user_not_allowed
+
         # check password
         if user.challenge_password(cred.password):
             if user.otp_enabled:

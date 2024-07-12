@@ -2,6 +2,8 @@
 User service
 """
 from typing import Type, Optional, Tuple, List, Union
+
+from loguru import logger
 from pydantic import SecretStr
 
 from odmantic import AIOEngine
@@ -28,17 +30,16 @@ class UserService(ServiceInterface):
         """
         Commit a user.
         """
-        with self._engine.session() as session:
-            user = await session.find_one(UserModelV2, UserModelV2.username == username)
-            if user is None:
-                return errors.user_not_found
-            else:
-                user.resource_status = ResourceStatusEnum.committed
-                try:
-                    await session.save(user)
-                    return None
-                except Exception as e:
-                    return e
+        user = await self._engine.find_one(UserModelV2, UserModelV2.username == username)
+        if user is None:
+            return errors.user_not_found
+        else:
+            user.resource_status = ResourceStatusEnum.committed
+            try:
+                await self._engine.save(user)
+                return None
+            except Exception as e:
+                return e
 
     async def get(self,
                   app: Sanic,
@@ -50,7 +51,25 @@ class UserService(ServiceInterface):
             UserModelV2,
             UserModelV2.username == req.username  # and UserModelV2.resource_status != ResourceStatusEnum.deleted
         )
-        if res is None or res.resource_status in [ResourceStatusEnum.deleted, ResourceStatusEnum.finalizing]:
+        if res is None or res.resource_status in [
+            ResourceStatusEnum.deleted,
+            ResourceStatusEnum.finalizing,
+            ResourceStatusEnum.pending
+        ]:
+            return None, Exception(errors.user_not_found)
+
+        return res, None
+
+    async def get_by_uuid(self, uuid: str) -> Tuple[Optional[UserModelV2], Optional[Exception]]:
+        """
+        Get user by uuid.
+        """
+        res = await self._engine.find_one(UserModelV2, UserModelV2.uuid == uuid)
+        if res is None or res.resource_status in [
+            ResourceStatusEnum.deleted,
+            ResourceStatusEnum.finalizing,
+            ResourceStatusEnum.pending
+        ]:
             return None, Exception(errors.user_not_found)
 
         return res, None
@@ -66,6 +85,7 @@ class UserService(ServiceInterface):
         query_filter, err = unmarshal_mongodb_filter(req.extra_query_filter)
         if err is not None:
             return 0, [], err
+        query_filter = {"$and": [query_filter, {"_resource_status": {"$eq": ResourceStatusEnum.committed.value}}]}
 
         res = await self._engine.find(UserModelV2, query_filter, skip=req.skip, limit=req.limit)
         count = await self._engine.count(UserModelV2, query_filter)
@@ -93,6 +113,7 @@ class UserService(ServiceInterface):
             try:
                 req.password = get_hashed_text(req.password) if req.password else SecretStr("")
                 user = UserModelV2(**req.dict())
+                user.resource_status = ResourceStatusEnum.pending
                 await session.save(user)
             except Exception as e:
                 return None, e
@@ -110,10 +131,14 @@ class UserService(ServiceInterface):
                         ('p', f'user::{user.username}', f'resources::/users/{user.username}', 'delete'),
                         ('p', f'user::{user.username}', f'resources::/projects/.by_username/{user.username}/*', 'read'),
                         ('p', f'user::{user.username}', f'resources::/projects/.by_username/{user.username}/*', 'list'),
-                        ('p', f'user::{user.username}', f'resources::/projects/.by_username/{user.username}/*',
-                         'update'),
-                        ('p', f'user::{user.username}', f'resources::/projects/.by_username/{user.username}/*',
-                         'delete'),
+                        (
+                            'p', f'user::{user.username}', f'resources::/projects/.by_username/{user.username}/*',
+                            'update'
+                        ),
+                        (
+                            'p', f'user::{user.username}', f'resources::/projects/.by_username/{user.username}/*',
+                            'delete'
+                        ),
                         ('p', f'user::{user.username}', f'resources::/volumes/.by_username/{user.username}/*', 'read'),
                         ('p', f'user::{user.username}', f'resources::/volumes/.by_username/{user.username}/*', 'list'),
                         (
@@ -121,15 +146,17 @@ class UserService(ServiceInterface):
                             'update'),
                         (
                             'p', f'user::{user.username}', f'resources::/volumes/.by_username/{user.username}/*',
-                            'delete'),
+                            'delete'
+                        ),
                     ]
                 )
                 await self.root_service.policy_service.create(app, user_default_policy)
             except Exception as e:
                 return None, e
 
-            # TODO: create associated project
-            return user, None
+        await self.commit(user.username)
+
+        return user, None
 
     async def update(
             self,
@@ -211,7 +238,7 @@ class UserService(ServiceInterface):
             req: Union[UserDeleteRequest, Type[UserDeleteRequest]]
     ) -> Tuple[Optional[UserModelV2], Optional[Exception]]:
         """
-        Delete a user.
+        Delete a user. This is a soft delete.
         """
         user = await self._engine.find_one(UserModelV2, UserModelV2.username == req.username)
         if user is None or user.resource_status == ResourceStatusEnum.deleted:
@@ -231,19 +258,20 @@ class UserService(ServiceInterface):
                 return None, Exception(errors.otp_code_wrong)
 
         # mark user as deleted
-        async with self._engine.session() as session:
-            user.resource_status = ResourceStatusEnum.deleted
-            try:
-                await session.save(user)
-            except Exception as e:
-                return None, e
+        user.resource_status = ResourceStatusEnum.deleted
+        try:
+            await self._engine.save(user)
+        except Exception as e:
+            return None, e
 
-            # delete user policies
-            try:
-                req = PolicyDeleteRequest(subject_uuid=user.uuid)
-                await self.root_service.policy_service.delete(app, req)
-            except Exception as e:
-                return None, e
+        # delete user policies
+        try:
+            req = PolicyDeleteRequest(subject_uuid=user.uuid)
+            policy, err = await self.root_service.policy_service.delete(app, req)
+            if err is not None:
+                logger.error(f"failed to delete user policies: {err}")
+        except Exception as e:
+            logger.error(f"failed to delete user policies: {e}")
 
             # TODO: delete associated project
             # TODO: trigger user delete event

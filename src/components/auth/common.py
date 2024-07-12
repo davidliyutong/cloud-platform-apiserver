@@ -1,3 +1,4 @@
+from dataclasses import Field
 from enum import Enum
 from typing import Optional
 
@@ -10,6 +11,7 @@ class LoginCredential(BaseModel):
     username: str
     password: str
     otp_code: Optional[str] = None
+    keep_logged_in: bool = True  # if set to false, the refresh token will not be returned
 
 
 class TokenResponse(ResponseBaseModel):

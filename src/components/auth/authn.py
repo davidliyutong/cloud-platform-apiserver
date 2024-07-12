@@ -58,6 +58,8 @@ def protected(token_type: JWTTokenType = JWTTokenType.web):
             # hooks for rbac
             request.ctx.rbac_id = f"user::{payload.get('username')}"
             request.ctx.rbac_group = f"group::{payload.get('group')}"
+            request.ctx.user_uuid = payload.get('uuid')
+            request.ctx.username = payload.get('username')
 
             return await f(request, *args, **kwargs)
 

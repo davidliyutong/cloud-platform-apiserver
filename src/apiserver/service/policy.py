@@ -65,11 +65,11 @@ class PolicyService(ServiceInterface):
         try:
             policy = RBACPolicyModelV2(**req.dict())
             await self._engine.save(policy)
+            await self._notify_policy_add(policy)
         except Exception as e:
             return None, e
-
-        await self._notify_policy_add(policy)
-        return policy, None
+        finally:
+            return policy, None
 
     async def update(
             self,

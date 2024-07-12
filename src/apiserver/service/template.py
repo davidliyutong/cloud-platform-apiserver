@@ -9,7 +9,10 @@ from odmantic import AIOEngine
 from sanic import Sanic
 
 from src.components import errors
-from src.components.datamodels.template import PodTemplateModelV2, ResourceStatusEnum, VolumeTemplateModelV2
+from src.components.datamodels.template import (
+    PodTemplateModelV2, ResourceStatusEnum, VolumeTemplateModelV2,
+)
+
 from src.components.types.template import (
     PodTemplateListRequest,
     PodTemplateCreateRequest,
@@ -43,12 +46,16 @@ class PodTemplateService(ServiceInterface):
         return res, None if res is not None else Exception(errors.template_not_found)
 
     async def list(
-            self, app: Sanic, req: Union[PodTemplateListRequest, Type[PodTemplateListRequest]]
+            self, app: Sanic, req: Union[PodTemplateListRequest, Type[PodTemplateListRequest]],
+            public_only: bool = False
     ) -> Tuple[int, List[PodTemplateModelV2], Optional[Exception]]:
         """
         List pod templates.
         """
         query_filter, err = unmarshal_mongodb_filter(req.extra_query_filter)
+
+        if public_only:
+            query_filter = {"$and": [query_filter, {"public": True}]}
 
         if err is not None:
             return 0, [], err
@@ -90,6 +97,7 @@ class PodTemplateService(ServiceInterface):
         # selectively update fields
         template.name = req.name if req.name is not None else template.name
         template.description = req.description if req.description is not None else template.description
+        template.public = req.public if req.public is not None else template.public
 
         template.template_type = req.template_type if req.template_type is not None else template.template_type
         template.image_ref = req.image_ref if req.image_ref is not None else template.image_ref
@@ -142,7 +150,8 @@ class VolumeTemplateService(ServiceInterface):
         return res, None if res is not None else Exception(errors.template_not_found)
 
     async def list(
-            self, app: Sanic, req: Union[VolumeTemplateListRequest, Type[VolumeTemplateListRequest]]
+            self, app: Sanic, req: Union[VolumeTemplateListRequest, Type[VolumeTemplateListRequest]],
+            public_only: bool = False
     ) -> Tuple[int, List[VolumeTemplateModelV2], Optional[Exception]]:
         """
         List volume templates.
@@ -151,6 +160,9 @@ class VolumeTemplateService(ServiceInterface):
 
         if err is not None:
             return 0, [], err
+
+        if public_only:
+            query_filter = {"$and": [query_filter, {"public": True}]}
 
         res = await self._engine.find(VolumeTemplateModelV2, query_filter, skip=req.skip, limit=req.limit)
         count = await self._engine.count(VolumeTemplateModelV2, query_filter)
@@ -189,6 +201,7 @@ class VolumeTemplateService(ServiceInterface):
         # selectively update fields
         template.name = req.name if req.name is not None else template.name
         template.description = req.description if req.description is not None else template.description
+        template.public = req.public if req.public is not None else template.public
 
         template.template_type = req.template_type if req.template_type is not None else template.template_type
         template.storage_class = req.storage_class if req.storage_class is not None else template.storage_class
