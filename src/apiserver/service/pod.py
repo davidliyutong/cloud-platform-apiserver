@@ -1,19 +1,21 @@
 """
 Pod service
 """
-from enum import Enum
 import json
-from typing import Tuple, Union
+from enum import Enum
+from typing import List, Union, Tuple, Optional
 
 from loguru import logger
+from odmantic import AIOEngine
 from sanic import Sanic
 
-from src.apiserver.controller.types import *
-from src.apiserver.repo import PodRepo
+from src.apiserver.handlers.handler import handle_pod_create_update_event, handle_pod_delete_event
 from src.components import datamodels, errors
 from src.components.events import PodCreateUpdateEvent, PodDeleteEvent
+from src.components.datamodels.pod import PodModelV1, PodStatusEnum
+from src.components.datamodels.user import UserModelV2
+from src.components.types.pod import PodListRequest, PodCreateRequest, PodGetRequest, PodUpdateRequest, PodDeleteRequest
 from .common import ServiceInterface
-from .handler import handle_pod_create_update_event, handle_pod_delete_event
 
 
 class ModeEnum(str, Enum):
@@ -22,14 +24,15 @@ class ModeEnum(str, Enum):
 
 
 class PodService(ServiceInterface):
-    def __init__(self, pod_repo: PodRepo):
+    def __init__(self, odm_engine: AIOEngine):
         super().__init__()
-        self.repo: PodRepo = pod_repo
+        self.repo = None
+        self.engine = odm_engine
 
     @staticmethod
     def check_quota(
-            user: datamodels.UserModel,
-            pods: List[datamodels.PodModel],
+            user: UserModelV2,
+            pods: List[PodModelV1],
             req: Union[PodCreateRequest, PodUpdateRequest],
             mode: ModeEnum
     ) -> bool:
@@ -37,7 +40,7 @@ class PodService(ServiceInterface):
             return True
         else:
             if mode == ModeEnum.create:
-                running_pods = list(filter(lambda x: x.current_status == datamodels.PodStatusEnum.running, pods))
+                running_pods = list(filter(lambda x: x.current_status == PodStatusEnum.running, pods))
                 num_pods = len(pods) + 1
                 cpu_m = sum([pod.cpu_lim_m_cpu for pod in running_pods]) + req.cpu_lim_m_cpu
                 mem_mb = sum([pod.mem_lim_mb for pod in running_pods]) + req.mem_lim_mb
@@ -45,11 +48,11 @@ class PodService(ServiceInterface):
             elif mode == ModeEnum.update:
                 running_pods = list(
                     filter(
-                        lambda x: x.current_status == datamodels.PodStatusEnum.running and x.pod_id != req.pod_id,
+                        lambda x: x.current_status == PodStatusEnum.running and x.pod_id != req.pod_id,
                         pods
                     )
                 )
-                if req.target_status == datamodels.PodStatusEnum.running:
+                if req.target_status == PodStatusEnum.running:
                     num_pods = len(pods)
                     cpu_m = sum([pod.cpu_lim_m_cpu for pod in running_pods]) + req.cpu_lim_m_cpu
                     mem_mb = sum([pod.mem_lim_mb for pod in running_pods]) + req.mem_lim_mb
@@ -71,7 +74,7 @@ class PodService(ServiceInterface):
 
     async def get(self,
                   app: Sanic,
-                  req: PodGetRequest) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
+                  req: PodGetRequest) -> Tuple[Optional[PodModelV1], Optional[Exception]]:
         """
         Get pod.
         """
@@ -80,7 +83,7 @@ class PodService(ServiceInterface):
 
     async def list(self,
                    app: Sanic,
-                   req: PodListRequest) -> Tuple[int, List[datamodels.PodModel], Optional[Exception]]:
+                   req: PodListRequest) -> Tuple[int, List[PodModelV1], Optional[Exception]]:
         """
         List pods.
         """
@@ -100,7 +103,7 @@ class PodService(ServiceInterface):
 
     async def create(self,
                      app: Sanic,
-                     req: PodCreateRequest) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
+                     req: PodCreateRequest) -> Tuple[Optional[PodModelV1], Optional[Exception]]:
         """
         Create a pod.
         """
@@ -150,7 +153,7 @@ class PodService(ServiceInterface):
 
     async def update(self,
                      app: Sanic,
-                     req: PodUpdateRequest) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
+                     req: PodUpdateRequest) -> Tuple[Optional[PodModelV1], Optional[Exception]]:
         """
         Update a pod.
         """
@@ -205,7 +208,7 @@ class PodService(ServiceInterface):
 
     async def delete(self,
                      app: Sanic,
-                     req: PodDeleteRequest) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
+                     req: PodDeleteRequest) -> Tuple[Optional[PodModelV1], Optional[Exception]]:
         """
         Delete a pod.
         """

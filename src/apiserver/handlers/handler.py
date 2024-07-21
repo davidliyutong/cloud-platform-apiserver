@@ -8,7 +8,8 @@ from typing import Optional, Union
 from loguru import logger
 from pydantic import BaseModel
 
-from src.components.datamodels import UserStatusEnum, ResourceStatusEnum, PodStatusEnum
+from src.components.datamodels.user import UserStatusEnum, ResourceStatusEnum
+from src.components.datamodels.pod import PodStatusEnum
 from src.components.events import (
     TemplateCreateEvent, TemplateUpdateEvent, TemplateDeleteEvent,
     UserCreateEvent, UserUpdateEvent, UserDeleteEvent,

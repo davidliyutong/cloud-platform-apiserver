@@ -191,7 +191,6 @@ async def update(request, username: str):
             req.update_status
         ]):
             result = await RootService().policy_service.enforce(
-                request.app,
                 request.ctx.rbac_id, 'update', "resources::/users/*"
             )
             if not result:
@@ -250,7 +249,6 @@ async def delete(request, username: str):
             req.password is None,
         ]):
             result = await RootService().policy_service.enforce(
-                request.app,
                 request.ctx.rbac_id, 'delete', "resources::/users/*"
             )
             if not result:

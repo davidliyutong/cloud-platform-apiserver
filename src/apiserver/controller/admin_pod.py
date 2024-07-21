@@ -10,10 +10,11 @@ from sanic.response import json as json_response
 from sanic_ext import openapi
 from sanic_jwt import protected
 
-import src.components.authz as authn
+import src.components.auth.authz as authn
 import src.components.errors as errors
-from src.apiserver.service import get_root_service
-from .types import *
+from src.apiserver.service import RootService
+from src.components.types.pod import PodListRequest, PodListResponse, PodCreateRequest, PodCreateResponse, \
+    PodGetRequest, PodGetResponse, PodUpdateRequest, PodUpdateResponse, PodDeleteRequest, PodDeleteResponse
 
 bp = Blueprint("admin_pod", url_prefix="/admin/pods", version=1)
 
@@ -33,7 +34,7 @@ bp = Blueprint("admin_pod", url_prefix="/admin/pods", version=1)
     secured={"token": []}
 )
 @protected()
-@authn.validate_role(role=("admin", "super_admin"))
+@authn.validate_role_v1(role=("admin", "super_admin"))
 async def list(request):
     """
     List all pods.
@@ -47,7 +48,7 @@ async def list(request):
         req = PodListRequest(**{k: v for (k, v) in request.query_args})
 
     # list pods
-    count, pods, err = await get_root_service().pod_service.list(request.app, req)
+    count, pods, err = await RootService().pod_service.list(request.app, req)
 
     # return response
     if err is not None:
@@ -81,7 +82,7 @@ async def list(request):
     secured={"token": []}
 )
 @protected()
-@authn.validate_role(role=("admin", "super_admin"))
+@authn.validate_role_v1(role=("admin", "super_admin"))
 async def create(request):
     """
     Create a pod.
@@ -112,7 +113,7 @@ async def create(request):
             )
 
         # create pod
-        pod, err = await get_root_service().pod_service.create(request.app, req)
+        pod, err = await RootService().pod_service.create(request.app, req)
 
         # return response
         if err is not None:
@@ -145,7 +146,7 @@ async def create(request):
     secured={"token": []}
 )
 @protected()
-@authn.validate_role(role=("admin", "super_admin"))
+@authn.validate_role_v1(role=("admin", "super_admin"))
 async def get(request, pod_id: str):
     """
     Get a pod.
@@ -164,7 +165,7 @@ async def get(request, pod_id: str):
     else:
         # get pod
         req = PodGetRequest(pod_id=pod_id)
-        pod, err = await get_root_service().pod_service.get(request.app, req)
+        pod, err = await RootService().pod_service.get(request.app, req)
 
         # return response
         if err is not None:
@@ -197,7 +198,7 @@ async def get(request, pod_id: str):
     secured={"token": []}
 )
 @protected()
-@authn.validate_role(role=("admin", "super_admin"))
+@authn.validate_role_v1(role=("admin", "super_admin"))
 async def update(request, pod_id: str):
     """
     Update a pod.
@@ -220,7 +221,7 @@ async def update(request, pod_id: str):
         req.pod_id = pod_id  # set pod_id to request
 
         # update pod
-        pod, err = await get_root_service().pod_service.update(request.app, req)
+        pod, err = await RootService().pod_service.update(request.app, req)
 
         # return response
         if err is not None:
@@ -252,7 +253,7 @@ async def update(request, pod_id: str):
     secured={"token": []}
 )
 @protected()
-@authn.validate_role(role=("admin", "super_admin"))
+@authn.validate_role_v1(role=("admin", "super_admin"))
 async def delete(request, pod_id: str):
     """
     Delete a pod. This will mark the pod as deleted.
@@ -271,7 +272,7 @@ async def delete(request, pod_id: str):
     else:
         # delete pod
         req = PodDeleteRequest(pod_id=pod_id)
-        deleted_pod, err = await get_root_service().pod_service.delete(request.app, req)
+        deleted_pod, err = await RootService().pod_service.delete(request.app, req)
 
         # return response
         if err is not None:

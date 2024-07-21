@@ -33,7 +33,7 @@ class PodRepo:
         else:
             return None
 
-    async def get(self, pod_id: str) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
+    async def get(self, pod_id: str) -> Tuple[Optional[datamodels.PodModelV1], Optional[Exception]]:
         """
         Get a pod by pod_id.
         """
@@ -43,14 +43,14 @@ class PodRepo:
         if res is None:
             return None, errors.pod_not_found
         else:
-            return datamodels.PodModel(**res), None
+            return datamodels.PodModelV1(**res), None
 
     async def list(
             self,
             index_start: int = -1,
             index_end: int = -1,
             extra_query_filter: Dict[str, Any] = None
-    ) -> Tuple[int, List[datamodels.PodModel], Optional[Exception]]:
+    ) -> Tuple[int, List[datamodels.PodModelV1], Optional[Exception]]:
         """
         List pods.
         """
@@ -70,7 +70,7 @@ class PodRepo:
             # read from cursor
             res = []
             async for document in cursor:
-                res.append(datamodels.PodModel(**document))
+                res.append(datamodels.PodModelV1(**document))
 
             # return sliced result
             return num_document, res[_start:_end], None
@@ -89,7 +89,7 @@ class PodRepo:
                      username: str,
                      user_uuid: str,
                      timeout_s: int,
-                     values: Optional[Dict[str, Any]]) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
+                     values: Optional[Dict[str, Any]]) -> Tuple[Optional[datamodels.PodModelV1], Optional[Exception]]:
         """
         Create a pod.
         """
@@ -98,7 +98,7 @@ class PodRepo:
             collection = self.db.get_db_collection(datamodels.database_name, datamodels.pod_collection_name)
 
             # build pod model
-            pod = datamodels.PodModel.new(
+            pod = datamodels.PodModelV1.new(
                 template_ref=template_ref,
                 username=username,
                 user_uuid=user_uuid,
@@ -135,7 +135,7 @@ class PodRepo:
             accessed_at: Optional[datetime.datetime] = None,  # hidden argument
             current_status: Optional[datamodels.PodStatusEnum] = None,  # hidden argument
             template_str: Optional[str] = None,  # hidden argument
-    ) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
+    ) -> Tuple[Optional[datamodels.PodModelV1], Optional[Exception]]:
         """
         Update a pod.
         """
@@ -174,7 +174,7 @@ class PodRepo:
                     pod['resource_status'] = datamodels.ResourceStatusEnum.pending.value
 
                 # check if the profile is valid
-                pod_model = datamodels.PodModel(**pod)  # check if the pod model is valid
+                pod_model = datamodels.PodModelV1(**pod)  # check if the pod model is valid
 
             except Exception as e:
                 logger.error(f"update pod {pod} wrong profile: {e} ")
@@ -192,7 +192,7 @@ class PodRepo:
             logger.error(f"get_collection error: {e}")
             return None, errors.db_connection_error
 
-    async def delete(self, pod_id: str) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
+    async def delete(self, pod_id: str) -> Tuple[Optional[datamodels.PodModelV1], Optional[Exception]]:
         """
         Delete a pod. (set resource_status to deleted)
         """
@@ -206,7 +206,7 @@ class PodRepo:
                 return None, errors.pod_not_found
             else:
                 # build pod model
-                pod = datamodels.PodModel(**res)
+                pod = datamodels.PodModelV1(**res)
 
                 # delete pod (set resource_status to deleted)
                 ret = await collection.find_one_and_update(
@@ -221,7 +221,7 @@ class PodRepo:
             logger.error(f"get_collection error: {e}")
             return None, errors.db_connection_error
 
-    async def purge(self, pod_id: str) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
+    async def purge(self, pod_id: str) -> Tuple[Optional[datamodels.PodModelV1], Optional[Exception]]:
         """
         Purge a pod.
         """
@@ -235,7 +235,7 @@ class PodRepo:
                 return None, errors.pod_not_found
             else:
                 # build pod model
-                pod = datamodels.PodModel(**res)
+                pod = datamodels.PodModelV1(**res)
 
                 # delete pod
                 ret = await collection.delete_one({'pod_id': pod_id})

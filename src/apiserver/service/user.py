@@ -273,9 +273,8 @@ class UserService(ServiceInterface):
         except Exception as e:
             logger.error(f"failed to delete user policies: {e}")
 
-            # TODO: delete associated project
-            # TODO: trigger user delete event
-            return user, None
+        # TODO: trigger user delete event that deletes all associated resources, projects
+        return user, None
 
     async def purge(self, username: str) -> Optional[Exception]:
         """

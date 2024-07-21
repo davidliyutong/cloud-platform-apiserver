@@ -37,6 +37,13 @@ def unmarshal_json_request(
                 ),
                 status_code=http.HTTPStatus.BAD_REQUEST
             ), e
+
+        try:
+            req.rbac_username = request.ctx.username
+            req.rbac_group_name = request.ctx.group_name
+        except Exception:
+            pass
+
         return req, None, None
     pass
 
@@ -73,6 +80,12 @@ def unmarshal_query_args(
                 ),
                 status_code=http.HTTPStatus.BAD_REQUEST
             ), e
+
+    try:
+        req.rbac_username = request.ctx.username
+        req.rbac_group_name = request.ctx.group_name
+    except Exception:
+        pass
 
     return req, None, None
 

@@ -1,5 +1,6 @@
 """
 This module contains tasks that are executed periodically / once.
+# TODO: replace this mechanism with a service
 """
 import asyncio
 import datetime
@@ -8,9 +9,9 @@ from typing import List
 import sanic
 from loguru import logger
 
-from src.components.types import PodUpdateRequest
+from src.components.types.pod import PodUpdateRequest
 from src.components import config
-from src.components.datamodels import PodModelV1, PodStatusEnum
+from src.components.datamodels.pod import PodModelV1, PodStatusEnum
 from .common import AsyncTask
 
 

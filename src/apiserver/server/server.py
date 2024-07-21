@@ -19,7 +19,6 @@ from src.apiserver.controller.auth.basic import bp as auth_basic_bp
 from src.apiserver.controller.heartbeat import bp as heartbeat_bp
 # from src.apiserver.controller.nonadmin_pod import bp as nonadmin_pod_bp
 from src.apiserver.controller.user import bp as user_bp
-from src.apiserver.controller.policy import bp as policy_bp
 from src.apiserver.controller.template.pod import bp as pod_template_bp
 from src.apiserver.controller.template.volume import bp as volume_template_bp
 template_group = Blueprint.group(
@@ -156,7 +155,6 @@ def apiserver_prepare_run(opt: APIServerConfig) -> Sanic:
         controller_app.ctx.oauth_client = _oauth2_cfg.get_async_client()
     controller_app.blueprint(user_bp)
     controller_app.blueprint(heartbeat_bp)
-    controller_app.blueprint(policy_bp)
     controller_app.blueprint(template_group)
 
     # attach JWT secret to context

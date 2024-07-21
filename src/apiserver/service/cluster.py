@@ -13,22 +13,22 @@ from kubernetes import client
 from kubernetes.client import ApiException
 from loguru import logger
 
+from src import CONFIG_PROJECT_NAME
 from src.components import errors
 from src.components.config import (
     CONFIG_K8S_CREDENTIAL_FMT,
     CONFIG_K8S_POD_LABEL_FMT,
     CONFIG_K8S_POD_LABEL_KEY,
-    CONFIG_K8S_NAMESPACE,
     CONFIG_K8S_SERVICE_FMT, CONFIG_K8S_DEPLOYMENT_FMT
 )
-from src.components.datamodels import PodStatusEnum
+from src.components.datamodels.pod import PodStatusEnum
 from src.components.resources import K8SIngressResource
 from .common import ServiceInterface
 
 
 class K8SOperatorService(ServiceInterface):
 
-    def __init__(self, c: Optional[client], namespace: str = CONFIG_K8S_NAMESPACE):
+    def __init__(self, c: Optional[client], namespace: str = CONFIG_PROJECT_NAME):
         super().__init__()
         self.client = c
         self.namespace = namespace

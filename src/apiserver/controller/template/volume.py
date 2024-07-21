@@ -11,26 +11,30 @@ from sanic_ext import openapi
 import src.components.errors as errors
 from src.apiserver.service import RootService
 from src.components.auth.common import JWT_TOKEN_NAME
-from src.components.types.template import (
-    VolumeTemplateListRequest, VolumeTemplateListResponse,
-    VolumeTemplateCreateRequest, VolumeTemplateCreateResponse,
-    VolumeTemplateGetRequest, VolumeTemplateGetResponse,
-    VolumeTemplateUpdateRequest, VolumeTemplateUpdateResponse,
-    VolumeTemplateDeleteRequest, VolumeTemplateDeleteResponse
-)
+
+from src.components.types.template import VolumeTemplateListRequest as ListRequest
+from src.components.types.template import VolumeTemplateListResponse as ListResponse
+from src.components.types.template import VolumeTemplateCreateRequest as CreateRequest
+from src.components.types.template import VolumeTemplateCreateResponse as CreateResponse
+from src.components.types.template import VolumeTemplateGetRequest as GetRequest
+from src.components.types.template import VolumeTemplateGetResponse as GetResponse
+from src.components.types.template import VolumeTemplateUpdateRequest as UpdateRequest
+from src.components.types.template import VolumeTemplateUpdateResponse as UpdateResponse
+from src.components.types.template import VolumeTemplateDeleteRequest as DeleteRequest
+from src.components.types.template import VolumeTemplateDeleteResponse as DeleteResponse
 from src.components.utils.checkers import unmarshal_json_request, unmarshal_query_args
-from src.components.utils.wrappers import wrapped_model_response
+from src.components.utils.wrappers import wrapped_model_response as wrapped
 
 from src.components.auth import authn, authz
 
 bp = Blueprint("volume_template", url_prefix="/volume", version=1)
 
 
-@bp.get("/<tag:str>/", name="volume_template_list_tag")
+@bp.get("/", name="volume_template_list")
 @openapi.definition(
     response=[
         openapi.definitions.Response(
-            {'application/json': VolumeTemplateListResponse.model_json_schema(
+            {'application/json': ListResponse.model_json_schema(
                 ref_template="#/components/schemas/{model}")},
             status=200)
     ],
@@ -42,10 +46,6 @@ bp = Blueprint("volume_template", url_prefix="/volume", version=1)
     secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
-@authz.enforce_rbac_any(
-    action="list",
-    resource_fmts=["resources::/templates/volume/*", "resources::/templates/volume/{tag}/*"]
-)
 async def list_volume_templates(request, tag: str = "_"):
     """
     List all volume templates.
@@ -53,41 +53,34 @@ async def list_volume_templates(request, tag: str = "_"):
     logger.debug(f"{request.method} {request.path} invoked")
 
     # parse query args
-    req, err_resp, err = unmarshal_query_args(request, VolumeTemplateListRequest, VolumeTemplateListResponse)
+    req, err_resp, err = unmarshal_query_args(request, ListRequest, ListResponse)
     if err is not None:
         return err_resp
-    req.tag = tag
 
     # list templates
     count, res, err = await RootService().volume_template_service.list(request.app, req)
 
     # return response
     if err is not None:
-        return wrapped_model_response(
-            VolumeTemplateListResponse(status=http.HTTPStatus.INTERNAL_SERVER_ERROR, message=str(err))
-        )
+        return wrapped(ListResponse(status=http.HTTPStatus.INTERNAL_SERVER_ERROR, message=str(err)))
     else:
-        return wrapped_model_response(
-            VolumeTemplateListResponse(status=http.HTTPStatus.OK, message="success", total_templates=count,
-                                       templates=res)
-        )
+        return wrapped(ListResponse(status=http.HTTPStatus.OK, message="success", total_templates=count, templates=res))
 
 
 @bp.post("/", name="volume_template_create")
 @openapi.definition(
     body={
-        'application/json': VolumeTemplateCreateRequest.model_json_schema(ref_template="#/components/schemas/{model}")
+        'application/json': CreateRequest.model_json_schema(ref_template="#/components/schemas/{model}")
     },
     response=[
         openapi.definitions.Response(
-            {'application/json': VolumeTemplateCreateResponse.model_json_schema(
+            {'application/json': CreateResponse.model_json_schema(
                 ref_template="#/components/schemas/{model}")},
             status=200)
     ],
     secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
-@authz.enforce_rbac_any(action="create", resource_fmts=["resources::/templates/volume/*"])
 async def create_volume_template(request):
     """
     Create a new volume template.
@@ -95,7 +88,7 @@ async def create_volume_template(request):
     logger.debug(f"{request.method} {request.path} invoked")
 
     # parse request body
-    req, err_resp, err = unmarshal_json_request(request, VolumeTemplateCreateRequest, VolumeTemplateCreateResponse)
+    req, err_resp, err = unmarshal_json_request(request, CreateRequest, CreateResponse)
     if err is not None:
         return err_resp
 
@@ -104,31 +97,23 @@ async def create_volume_template(request):
 
     # return response
     if err is not None:
-        return wrapped_model_response(
-            VolumeTemplateCreateResponse(status=http.HTTPStatus.INTERNAL_SERVER_ERROR, message=str(err))
-        )
+        return wrapped(CreateResponse(status=err.code, message=str(err)))
     else:
-        return wrapped_model_response(
-            VolumeTemplateCreateResponse(status=http.HTTPStatus.OK, message="success", template=res)
-        )
+        return wrapped(CreateResponse(status=http.HTTPStatus.OK, message="success", template=res))
 
 
-@bp.get("/<tag:str>/<template_uuid:str>", name="volume_template_get")
+@bp.get("/<template_uuid:str>", name="volume_template_get")
 @openapi.definition(
     response=[
         openapi.definitions.Response(
-            {'application/json': VolumeTemplateGetResponse.model_json_schema(
+            {'application/json': GetResponse.model_json_schema(
                 ref_template="#/components/schemas/{model}")},
             status=200)
     ],
     secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
-@authz.enforce_rbac_any(
-    action="read",
-    resource_fmts=["resources::/templates/volume/*", "resources::/templates/volume/{tag}/*"]
-)
-async def get_volume_template(request, tag: str = "_", template_uuid: str = None):
+async def get_volume_template(request, template_uuid: str = None):
     """
     Get a volume template.
     """
@@ -136,41 +121,37 @@ async def get_volume_template(request, tag: str = "_", template_uuid: str = None
 
     # check template_uuid param in url
     if template_uuid is None or template_uuid == "":
-        return wrapped_model_response(
-            VolumeTemplateGetResponse(status=http.HTTPStatus.BAD_REQUEST, message=str(errors.invalid_request_body))
-        )
+        return wrapped(GetResponse(status=http.HTTPStatus.BAD_REQUEST, message=str(errors.invalid_request_body)))
     else:
         # get template
-        req = VolumeTemplateGetRequest(template_uuid=template_uuid)
-        req.tag = tag
+        req = GetRequest(
+            rbac_username=request.ctx.username,
+            rbac_group_name=request.ctx.group_name,
+            template_uuid=template_uuid
+        )
 
         res, err = await RootService().volume_template_service.get(request.app, req)
 
         # return response
         if err is not None:
-            return wrapped_model_response(
-                VolumeTemplateGetResponse(status=http.HTTPStatus.BAD_REQUEST, message=str(err))
-            )
+            return wrapped(GetResponse(status=err.code, message=str(err)))
         else:
-            return wrapped_model_response(
-                VolumeTemplateGetResponse(status=http.HTTPStatus.OK, message="success", template=res)
-            )
+            return wrapped(GetResponse(status=http.HTTPStatus.OK, message="success", template=res))
 
 
 @bp.put("/<template_uuid:str>", name="volume_template_update")
 @openapi.definition(
     body={
-        'application/json': VolumeTemplateUpdateRequest.model_json_schema(ref_template="#/components/schemas/{model}")},
+        'application/json': UpdateRequest.model_json_schema(ref_template="#/components/schemas/{model}")},
     response=[
         openapi.definitions.Response(
-            {'application/json': VolumeTemplateUpdateResponse.model_json_schema(
+            {'application/json': UpdateResponse.model_json_schema(
                 ref_template="#/components/schemas/{model}")},
             status=200)
     ],
     secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
-@authz.enforce_rbac_any(action="update", resource_fmts=["resources::/templates/volume/*"])
 async def update_volume_template(request, template_uuid: str):
     """
     Update a volume template.
@@ -179,11 +160,9 @@ async def update_volume_template(request, template_uuid: str):
 
     # check template param in url
     if template_uuid is None or template_uuid == "":
-        return wrapped_model_response(
-            VolumeTemplateUpdateResponse(status=http.HTTPStatus.BAD_REQUEST, message=str(errors.invalid_request_body))
-        )
+        return wrapped(UpdateResponse(status=http.HTTPStatus.BAD_REQUEST, message=str(errors.invalid_request_body)))
     else:
-        req, err_resp, err = unmarshal_json_request(request, VolumeTemplateUpdateRequest, VolumeTemplateUpdateResponse)
+        req, err_resp, err = unmarshal_json_request(request, UpdateRequest, UpdateResponse)
         if err is not None:
             return err_resp
 
@@ -194,27 +173,22 @@ async def update_volume_template(request, template_uuid: str):
 
         # return response
         if err is not None:
-            return wrapped_model_response(
-                VolumeTemplateUpdateResponse(status=http.HTTPStatus.INTERNAL_SERVER_ERROR, message=str(err))
-            )
+            return wrapped(UpdateResponse(status=err.code, message=str(err)))
         else:
-            return wrapped_model_response(
-                VolumeTemplateUpdateResponse(status=http.HTTPStatus.OK, message="success", template=res)
-            )
+            return wrapped(UpdateResponse(status=http.HTTPStatus.OK, message="success", template=res))
 
 
 @bp.delete("/<template_uuid:str>", name="volume_template_delete")
 @openapi.definition(
     response=[
         openapi.definitions.Response(
-            {'application/json': VolumeTemplateDeleteResponse.model_json_schema(
+            {'application/json': DeleteResponse.model_json_schema(
                 ref_template="#/components/schemas/{model}")},
             status=200)
     ],
     secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
-@authz.enforce_rbac_any(action="delete", resource_fmts=["resources::/templates/volume/*"])
 async def delete_volume_template(request, template_uuid: str):
     """
     Delete a volume template.
@@ -225,32 +199,30 @@ async def delete_volume_template(request, template_uuid: str):
 
     # check template_uuid param in url
     if template_uuid is None or template_uuid == "":
-        return wrapped_model_response(
-            VolumeTemplateDeleteResponse(status=http.HTTPStatus.BAD_REQUEST, message=str(errors.invalid_request_body))
-        )
+        return wrapped(DeleteResponse(status=http.HTTPStatus.BAD_REQUEST, message=str(errors.invalid_request_body)))
     else:
         # delete template
-        req = VolumeTemplateDeleteRequest(template_uuid=template_uuid)
+        req = DeleteRequest(
+            rbac_username=request.ctx.username,
+            rbac_group_name=request.ctx.group_name,
+            template_uuid=template_uuid
+        )
         res, err = await RootService().volume_template_service.delete(request.app, req)
 
         # return response
         if err is not None:
-            return wrapped_model_response(
-                VolumeTemplateDeleteResponse(status=http.HTTPStatus.INTERNAL_SERVER_ERROR, message=str(err))
-            )
+            return wrapped(DeleteResponse(status=err.code, message=str(err)))
         else:
-            return wrapped_model_response(
-                VolumeTemplateDeleteResponse(status=http.HTTPStatus.OK, message="success", template=res)
-            )
+            return wrapped(DeleteResponse(status=http.HTTPStatus.OK, message="success", template=res))
 
 
-openapi.component(VolumeTemplateGetRequest)
-openapi.component(VolumeTemplateGetResponse)
-openapi.component(VolumeTemplateListRequest)
-openapi.component(VolumeTemplateListResponse)
-openapi.component(VolumeTemplateCreateRequest)
-openapi.component(VolumeTemplateCreateResponse)
-openapi.component(VolumeTemplateUpdateRequest)
-openapi.component(VolumeTemplateUpdateResponse)
-openapi.component(VolumeTemplateDeleteRequest)
-openapi.component(VolumeTemplateDeleteResponse)
+openapi.component(GetRequest)
+openapi.component(GetResponse)
+openapi.component(ListRequest)
+openapi.component(ListResponse)
+openapi.component(CreateRequest)
+openapi.component(CreateResponse)
+openapi.component(UpdateRequest)
+openapi.component(UpdateResponse)
+openapi.component(DeleteRequest)
+openapi.component(DeleteResponse)

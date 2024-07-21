@@ -7,6 +7,7 @@ from typing import Dict
 from kubernetes import client
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorCollection
 
+from src.components.config import APIServerConfig
 from src.components.utils import singleton
 
 
@@ -21,20 +22,20 @@ class DBRepo:
 
     motor_uri = ''
 
-    options = {}
+    opt: APIServerConfig
 
-    def __init__(self, options):
+    def __init__(self, opt: APIServerConfig):
         self.motor_uri = ''
-        self.options = options
+        self.opt = opt
 
     def get_db_client(self) -> AsyncIOMotorClient:
         # motor uri
         self.motor_uri = 'mongodb://{account}{host}:{port}'.format(
             account='{username}:{password}@'.format(
-                username=self.options['DB_USERNAME'],
-                password=self.options['DB_PASSWORD']) if self.options['DB_USERNAME'] else '',
-            host=self.options['DB_HOST'] if self.options['DB_HOST'] else '127.0.0.1',
-            port=self.options['DB_PORT'] if self.options['DB_PORT'] else 27017)
+                username=self.opt.db_username,
+                password=self.opt.db_password) if self.opt.db_username else '',
+            host=self.opt.db_host if self.opt.db_host else '127.0.0.1',
+            port=self.opt.db_port if self.opt.db_port else 27017)
         return AsyncIOMotorClient(self.motor_uri)
 
     def get_db(self, db: str) -> AsyncIOMotorDatabase:

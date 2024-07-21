@@ -26,7 +26,7 @@ from src.components.auth import authn, authz
 bp = Blueprint("pod_template", url_prefix="/pod", version=1)
 
 
-@bp.get("/<tag:str>/", name="pod_template_list_tag")
+@bp.get("/", name="pod_template_list")
 @openapi.definition(
     response=[
         openapi.definitions.Response(
@@ -42,11 +42,7 @@ bp = Blueprint("pod_template", url_prefix="/pod", version=1)
     secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
-@authz.enforce_rbac_any(
-    action="list",
-    resource_fmts=["resources::/templates/pod/*", "resources::/templates/pod/{tag}/*"]
-)
-async def list_pod_templates(request, tag: str = "_"):
+async def list_pod_templates(request):
     """
     List all pod templates.
     """
@@ -56,7 +52,6 @@ async def list_pod_templates(request, tag: str = "_"):
     req, err_resp, err = unmarshal_query_args(request, PodTemplateListRequest, PodTemplateListResponse)
     if err is not None:
         return err_resp
-    req.tag = tag
 
     # list templates
     count, res, err = await RootService().pod_template_service.list(request.app, req)
@@ -64,7 +59,7 @@ async def list_pod_templates(request, tag: str = "_"):
     # return response
     if err is not None:
         return wrapped_model_response(
-            PodTemplateListResponse(status=http.HTTPStatus.INTERNAL_SERVER_ERROR, message=str(err))
+            PodTemplateListResponse(status=err.code, message=str(err))
         )
     else:
         return wrapped_model_response(
@@ -86,7 +81,6 @@ async def list_pod_templates(request, tag: str = "_"):
     secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
-@authz.enforce_rbac_any(action="create", resource_fmts=["resources::/templates/pod/*"])
 async def create_pod_template(request):
     """
     Create a new pod template.
@@ -104,7 +98,7 @@ async def create_pod_template(request):
     # return response
     if err is not None:
         return wrapped_model_response(
-            PodTemplateCreateResponse(status=http.HTTPStatus.INTERNAL_SERVER_ERROR, message=str(err))
+            PodTemplateCreateResponse(status=err.code, message=str(err))
         )
     else:
         return wrapped_model_response(
@@ -112,7 +106,7 @@ async def create_pod_template(request):
         )
 
 
-@bp.get("/<tag:str>/<template_uuid:str>", name="pod_template_get")
+@bp.get("/<template_uuid:str>", name="pod_template_get")
 @openapi.definition(
     response=[
         openapi.definitions.Response(
@@ -122,11 +116,7 @@ async def create_pod_template(request):
     secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
-@authz.enforce_rbac_any(
-    action="read",
-    resource_fmts=["resources::/templates/pod/*", "resources::/templates/pod/{tag}/*"]
-)
-async def get_pod_template(request, tag: str = "_", template_uuid: str = None):
+async def get_pod_template(request, template_uuid: str = None):
     """
     Get a pod template.
     """
@@ -139,15 +129,17 @@ async def get_pod_template(request, tag: str = "_", template_uuid: str = None):
         )
     else:
         # get template
-        req = PodTemplateGetRequest(template_uuid=template_uuid)
-        req.tag = tag
-
+        req = PodTemplateGetRequest(
+            rbac_username=request.ctx.username,
+            rbac_group_name=request.ctx.group_name,
+            template_uuid=template_uuid
+        )
         res, err = await RootService().pod_template_service.get(request.app, req)
 
         # return response
         if err is not None:
             return wrapped_model_response(
-                PodTemplateGetResponse(status=http.HTTPStatus.BAD_REQUEST, message=str(err))
+                PodTemplateGetResponse(status=err.code, message=str(err))
             )
         else:
             return wrapped_model_response(
@@ -167,7 +159,6 @@ async def get_pod_template(request, tag: str = "_", template_uuid: str = None):
     secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
-@authz.enforce_rbac_any(action="update", resource_fmts=["resources::/templates/pod/*"])
 async def update_pod_template(request, template_uuid: str):
     """
     Update a pod template.
@@ -192,7 +183,7 @@ async def update_pod_template(request, template_uuid: str):
         # return response
         if err is not None:
             return wrapped_model_response(
-                PodTemplateUpdateResponse(status=http.HTTPStatus.INTERNAL_SERVER_ERROR, message=str(err))
+                PodTemplateUpdateResponse(status=err.code, message=str(err))
             )
         else:
             return wrapped_model_response(
@@ -211,7 +202,6 @@ async def update_pod_template(request, template_uuid: str):
     secured={JWT_TOKEN_NAME: []}
 )
 @authn.protected()
-@authz.enforce_rbac_any(action="delete", resource_fmts=["resources::/templates/pod/*"])
 async def delete_pod_template(request, template_uuid: str):
     """
     Delete a pod template.
@@ -227,13 +217,17 @@ async def delete_pod_template(request, template_uuid: str):
         )
     else:
         # delete template
-        req = PodTemplateDeleteRequest(template_uuid=template_uuid)
+        req = PodTemplateDeleteRequest(
+            rbac_username=request.ctx.username,
+            rbac_group_name=request.ctx.group_name,
+            template_uuid=template_uuid
+        )
         res, err = await RootService().pod_template_service.delete(request.app, req)
 
         # return response
         if err is not None:
             return wrapped_model_response(
-                PodTemplateDeleteResponse(status=http.HTTPStatus.INTERNAL_SERVER_ERROR, message=str(err))
+                PodTemplateDeleteResponse(status=err.code, message=str(err))
             )
         else:
             return wrapped_model_response(

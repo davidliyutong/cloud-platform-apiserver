@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 
 from pydantic import BaseModel, field_validator, model_validator
 
-from src.components.datamodels import PodModelV1, PodStatusEnum
+from src.components.datamodels.pod import PodModelV1, PodStatusEnum
 from src.components.types.common import _ensure_uuid_value, ListRequestBaseModel, ResponseBaseModel
 
 

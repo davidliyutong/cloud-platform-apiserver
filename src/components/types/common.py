@@ -20,7 +20,12 @@ def _ensure_non_empty_value(v, field_name=""):
     return v
 
 
-class ListRequestBaseModel(BaseModel):
+class RequestBaseModel(BaseModel):
+    rbac_username: Optional[str] = None
+    rbac_group_name: Optional[str] = None
+
+
+class ListRequestBaseModel(RequestBaseModel):
     """
     Base model for list request
     """

@@ -10,10 +10,11 @@ from sanic.response import json as json_response
 from sanic_ext import openapi
 from sanic_jwt import protected
 
-import src.components.authz as authn
+import src.components.auth.authz as authn
 import src.components.errors as errors
-from src.apiserver.service import get_root_service
-from .types import *
+from src.apiserver.service import RootService
+from src.components.types.pod import PodListRequest, PodListResponse, PodCreateRequest, PodCreateResponse, \
+    PodGetRequest, PodGetResponse, PodUpdateRequest, PodUpdateResponse, PodDeleteRequest, PodDeleteResponse
 
 bp = Blueprint("nonadmin_pod", url_prefix="/pods", version=1)
 
@@ -33,7 +34,7 @@ bp = Blueprint("nonadmin_pod", url_prefix="/pods", version=1)
     secured={"token": []}
 )
 @protected()
-@authn.validate_role()
+@authn.validate_role_v1()
 async def list(request):
     """
     List all pods. Only pods owned by the user will be returned.
@@ -48,7 +49,7 @@ async def list(request):
     # legal client will add 'username=<username>' to extra_query_filter
 
     # list pods
-    count, pods, err = await get_root_service().pod_service.list(request.app, req)
+    count, pods, err = await RootService().pod_service.list(request.app, req)
     pods = [p for p in pods if p.username == request.ctx.user['username']]  # filter out pods not owned by the user
     count = len(pods)  # update count
 
@@ -84,7 +85,7 @@ async def list(request):
     secured={"token": []}
 )
 @protected()
-@authn.validate_role()
+@authn.validate_role_v1()
 async def create(request):
     """
     Create a pod owned by the user.
@@ -115,7 +116,7 @@ async def create(request):
             )
 
         # create pod
-        pod, err = await get_root_service().pod_service.create(request.app, req)
+        pod, err = await RootService().pod_service.create(request.app, req)
 
         # return response
         if err is not None:
@@ -148,7 +149,7 @@ async def create(request):
     secured={"token": []}
 )
 @protected()
-@authn.validate_role()
+@authn.validate_role_v1()
 async def get(request, pod_id: str):
     """
     Get a pod owned by the user.
@@ -167,7 +168,7 @@ async def get(request, pod_id: str):
     else:
         # get pod
         req = PodGetRequest(pod_id=pod_id)
-        pod, err = await get_root_service().pod_service.get(request.app, req)
+        pod, err = await RootService().pod_service.get(request.app, req)
         if err is not None:
             return json_response(
                 PodGetResponse(
@@ -219,7 +220,7 @@ async def get(request, pod_id: str):
     secured={"token": []}
 )
 @protected()
-@authn.validate_role()
+@authn.validate_role_v1()
 async def update(request, pod_id: str):
     """
     Update a pod owned by the user.
@@ -240,7 +241,7 @@ async def update(request, pod_id: str):
         req = PodGetRequest(pod_id=pod_id)
 
         # check if pod exists
-        pod, err = await get_root_service().pod_service.get(request.app, req)
+        pod, err = await RootService().pod_service.get(request.app, req)
         if err is not None:
             return json_response(
                 PodGetResponse(
@@ -274,7 +275,7 @@ async def update(request, pod_id: str):
                 status=http.HTTPStatus.BAD_REQUEST
             )
         req.pod_id = pod_id  # set pod_id to the one in url
-        pod, err = await get_root_service().pod_service.update(request.app, req)
+        pod, err = await RootService().pod_service.update(request.app, req)
 
         # return response
         if err is not None:
@@ -306,7 +307,7 @@ async def update(request, pod_id: str):
     secured={"token": []}
 )
 @protected()
-@authn.validate_role()
+@authn.validate_role_v1()
 async def delete(request, pod_id: str):
     """
     Delete a pod owned by the user.
@@ -325,7 +326,7 @@ async def delete(request, pod_id: str):
     else:
         # check if pod exists
         req = PodGetRequest(pod_id=pod_id)
-        pod, err = await get_root_service().pod_service.get(request.app, req)
+        pod, err = await RootService().pod_service.get(request.app, req)
         if err is not None:
             return json_response(
                 PodGetResponse(
@@ -348,7 +349,7 @@ async def delete(request, pod_id: str):
 
         # delete pod
         req = PodDeleteRequest(pod_id=pod_id)
-        deleted_pod, err = await get_root_service().pod_service.delete(request.app, req)
+        deleted_pod, err = await RootService().pod_service.delete(request.app, req)
 
         # return response
         if err is not None:

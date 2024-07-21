@@ -13,6 +13,7 @@ from loguru import logger
 from sanic.response import json as json_response
 
 from src.apiserver.service import RootService
+from src.components import errors
 from src.components.auth.common import JWTAuthenticationResponse
 from src.components.utils import parse_bearer
 from src.components.utils.wrappers import wrapped_model_response
@@ -111,7 +112,6 @@ def enforce_rbac_any(subject_fmt: str = "{rbac_id}", action: str = "", resource_
 
                 for subject, resource in itertools.product(subjects, resources):
                     result = await RootService().policy_service.enforce(
-                        request.app,
                         subject, action, resource
                     )
                     if result:

@@ -1,5 +1,6 @@
 """
 This file contains K8S resources used to operate
+# TODO: get rid of this
 """
 import io
 from typing import Dict, Any, Self, List
@@ -9,7 +10,7 @@ from pydantic import BaseModel, model_validator
 
 from src.components import config
 from src.components.config import APIServerConfig
-from src.components.datamodels import PodModel
+from src.components.datamodels.pod import PodModelV1
 from src.components.utils import render_template_str
 
 
@@ -30,7 +31,7 @@ metadata:
     # nginx.ingress.kubernetes.io/auth-type: basic
     nginx.ingress.kubernetes.io/auth-always-set-cookie: 'true'
     nginx.ingress.kubernetes.io/auth-cache-key: $cookie__${{ CONFIG_AUTH_COOKIES_NAME }}
-    nginx.ingress.kubernetes.io/auth-url: ${{ CONFIG_AUTH_ENDPOINT }}/v1/auth/token/validate/${{ POD_USERNAME }}
+    nginx.ingress.kubernetes.io/auth-url: ${{ CONFIG_AUTH_ENDPOINT }}/v1/auth/jwt/validate/${{ POD_USERNAME }}
   name: clpl-ingress-${{ POD_ID }}
 spec:
   ingressClassName: ${{ CONFIG_NGINX_CLASS }} # CHANGE ME
@@ -89,13 +90,25 @@ spec:
     - ${{ POD_ID }}.${{ CONFIG_SSH_HOSTNAME }} # CHANGE ME hostname
     secretName: ${{ CONFIG_SSH_TLS_SECRET }} # CHANGE ME TLS Secret
 """
+# app.kubernetes.io/managed-by: CLPL
 
     @classmethod
-    def new(cls, pod: PodModel, opt: APIServerConfig) -> Self:
+    def new(cls, pod: PodModelV1, opt: APIServerConfig) -> Self:
         return cls(
             pod_values=pod.values,
-            auth_values=opt.auth_config_values,
-            k8s_values=opt.k8s_config_values
+            auth_values={
+                "CONFIG_AUTH_COOKIES_NAME": config.CONFIG_AUTH_COOKIES_NAME,
+                "CONFIG_AUTH_ENDPOINT": opt.site_config.auth_endpoint
+            },
+            k8s_values={
+                "CONFIG_CODER_HOSTNAME": opt.site_config.coder_hostname,
+                "CONFIG_CODER_TLS_SECRET": opt.site_config.coder_tls_secret,
+                "CONFIG_VNC_HOSTNAME": opt.site_config.vnc_hostname,
+                "CONFIG_VNC_TLS_SECRET": opt.site_config.vnc_tls_secret,
+                "CONFIG_SSH_HOSTNAME": opt.site_config.ssh_hostname,
+                "CONFIG_SSH_TLS_SECRET": opt.site_config.ssh_tls_secret,
+                "CONFIG_NGINX_CLASS": opt.site_config.nginx_class,
+            }
         )
 
     __EXAMPLE_VALUES__ = {

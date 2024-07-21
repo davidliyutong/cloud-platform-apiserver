@@ -27,7 +27,7 @@ class PolicyService(ServiceInterface):
             host=RBAC_DEFAULT_ENDPOINT
         )
 
-    async def get(self, app, req: PolicyGetRequest) -> Tuple[Optional[RBACPolicyModelV2], Optional[Exception]]:
+    async def get(self, req: PolicyGetRequest) -> Tuple[Optional[RBACPolicyModelV2], Optional[Exception]]:
         """
         Get Policy.
         """
@@ -36,7 +36,6 @@ class PolicyService(ServiceInterface):
 
     async def list(
             self,
-            app,
             req: Union[PolicyListRequest, Type[PolicyListRequest]]
     ) -> Tuple[int, List[RBACPolicyModelV2], Optional[Exception]]:
         """
@@ -56,7 +55,6 @@ class PolicyService(ServiceInterface):
 
     async def create(
             self,
-            app,
             req: Union[PolicyCreateRequest, Type[PolicyCreateRequest]]
     ) -> Tuple[Optional[RBACPolicyModelV2], Optional[Exception]]:
         """
@@ -66,14 +64,12 @@ class PolicyService(ServiceInterface):
             policy = RBACPolicyModelV2(**req.dict())
             await self._engine.save(policy)
             await self._notify_policy_add(policy)
+            return policy, None
         except Exception as e:
             return None, e
-        finally:
-            return policy, None
 
     async def update(
             self,
-            app,
             req: Union[PolicyUpdateRequest, Type[PolicyUpdateRequest]]
     ) -> Tuple[Optional[RBACPolicyModelV2], Optional[Exception]]:
         """
@@ -103,7 +99,6 @@ class PolicyService(ServiceInterface):
 
     async def delete(
             self,
-            app,
             req: Union[PolicyDeleteRequest, Type[PolicyDeleteRequest]]
     ) -> Tuple[Optional[RBACPolicyModelV2], Optional[Exception]]:
         """
@@ -142,7 +137,7 @@ class PolicyService(ServiceInterface):
         # TODO: currently not implemented because its less important, just reload the policy every time
         return await self._notify_policy_reload()
 
-    async def enforce(self, app, subject: str, action: str, resource: str) -> bool:
+    async def enforce(self, subject: str, action: str, resource: str) -> bool:
         """
         Enforce a policy.
         """
@@ -158,3 +153,25 @@ class PolicyService(ServiceInterface):
             except aiohttp.ClientError as e:
                 logger.exception(e)
                 return False
+
+    async def enforce_username(self, username: str, action: str, resource: str) -> bool:
+        """
+        Enforce a policy by username.
+        """
+        subject = f"user::{username}"
+        return await self.enforce(subject, action, resource)
+
+    async def enforce_group_name(self, group_name: str, action: str, resource: str) -> bool:
+        """
+        Enforce a policy by group name.
+        """
+        subject = f"group::{group_name}"
+        return await self.enforce(subject, action, resource)
+
+    async def enforce_user(self, username: str, group_name: str, action: str, resource: str) -> bool:
+        """
+        Enforce a policy by username and group name.
+        """
+        subject = f"user::{username}"
+        group = f"group::{group_name}"
+        return await self.enforce(subject, action, resource) or await self.enforce(group, action, resource)

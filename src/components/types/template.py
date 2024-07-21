@@ -6,7 +6,7 @@ from src.components.datamodels.template import (
     PodTemplateTypeEnum, PodTemplateModelV2,
     VolumeTemplateTypeEnum, VolumeTemplateModelV2, VolumeMountTypeEnum
 )
-from src.components.types.common import ListRequestBaseModel, ResponseBaseModel
+from src.components.types.common import ListRequestBaseModel, ResponseBaseModel, RequestBaseModel
 
 
 class PodTemplateListRequest(ListRequestBaseModel):
@@ -24,7 +24,7 @@ class PodTemplateListResponse(ResponseBaseModel):
     templates: List[PodTemplateModelV2] = []
 
 
-class PodTemplateCreateRequest(BaseModel):
+class PodTemplateCreateRequest(RequestBaseModel):
     """
     Create request for templates.
     fields and defaults are optional and not yet used.
@@ -45,7 +45,7 @@ class PodTemplateCreateResponse(ResponseBaseModel):
     template: PodTemplateModelV2 = None
 
 
-class PodTemplateGetRequest(BaseModel):
+class PodTemplateGetRequest(RequestBaseModel):
     """
     Get request for templates
     """
@@ -60,7 +60,7 @@ class PodTemplateGetResponse(PodTemplateCreateResponse):
     pass
 
 
-class PodTemplateUpdateRequest(BaseModel):
+class PodTemplateUpdateRequest(RequestBaseModel):
     """
     Update request for templates, all fields except template_id are optional.
     """
@@ -109,7 +109,7 @@ class VolumeTemplateListResponse(ResponseBaseModel):
     templates: List[VolumeTemplateModelV2] = []
 
 
-class VolumeTemplateCreateRequest(BaseModel):
+class VolumeTemplateCreateRequest(RequestBaseModel):
     """
     Create request for volume templates.
     """
@@ -131,7 +131,7 @@ class VolumeTemplateCreateResponse(ResponseBaseModel):
     template: VolumeTemplateModelV2 = None
 
 
-class VolumeTemplateGetRequest(BaseModel):
+class VolumeTemplateGetRequest(RequestBaseModel):
     """
     Get request for volume templates
     """
@@ -145,7 +145,7 @@ class VolumeTemplateGetResponse(VolumeTemplateCreateResponse):
     pass
 
 
-class VolumeTemplateUpdateRequest(BaseModel):
+class VolumeTemplateUpdateRequest(RequestBaseModel):
     """
     Update request for volume templates, all fields except template_uuid are optional.
     """

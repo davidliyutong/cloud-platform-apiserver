@@ -4,6 +4,7 @@ This module implements the heartbeat controller.
 
 import asyncio
 import http
+from typing import Optional, Union
 
 import jwt
 from loguru import logger
@@ -11,23 +12,44 @@ from sanic import Blueprint
 from sanic.server.websockets.impl import WebsocketImplProtocol
 from sanic_ext import openapi
 
-from src.apiserver.service import get_root_service
-from src.apiserver.service.handler import handle_user_heartbeat_event
+from src.apiserver.service import RootService
 from src.components import config
+from src.components.auth.common import JWT_SECRET_KEYNAME, JWT_ALGORITHM_KEYNAME
 from src.components.events import UserHeartbeatEvent
 
 bp = Blueprint("heartbeat", url_prefix="/heartbeat", version=1)
 
 
+async def handle_user_heartbeat_event(srv: RootService, ev: UserHeartbeatEvent) -> Optional[Exception]:
+    # list pods
+    # TODO Fix this mechanism
+    _, pods, err = await srv.pod_service.repo.list(extra_query_filter={"$and": [
+        {'username': ev.username},
+        {'current_status': 'running'}
+    ]})
+    if err is not None:
+        logger.error(f"handle_user_heartbeat_event failed to list pods: {err}")
+        return err
+
+    # update running pod.access_at owned by current user
+    tasks = [srv.pod_service.repo.update(pod_id=pod.pod_id) for pod in pods]
+    await asyncio.gather(*tasks)
+    return None
+
+
 async def sender(ws: WebsocketImplProtocol, username: str):
     # get root service
-    srv = get_root_service()
+    srv = RootService()
     ev = UserHeartbeatEvent(username=username)
     while True:
         try:
             # send ping message
-            await ws.send('ping')
-            await handle_user_heartbeat_event(srv, ev)  # update user's heartbeat timestamp
+            await ws.send('')
+            # TODO Fix this mechanism
+            # err = await handle_user_heartbeat_event(srv, ev)  # update user's heartbeat timestamp
+            # if err is not None:
+            #     logger.error(f"failed to update user's heartbeat timestamp: {err}")
+            #     break
             await asyncio.sleep(config.CONFIG_HEARTBEAT_INTERVAL_S)  # wait for 120 seconds
         except Exception as e:
             logger.error(f"connection closed: {e}")
@@ -57,13 +79,10 @@ async def user_heartbeat_ws(request, ws: WebsocketImplProtocol):
     else:
         try:
             # decode jwt token
-            # attention: request.app.config.get('JWT_SECRET') is created by sanic-jwt and attached to the app at startup
-            # attention: request.app.config.get('JWT_ALGORITHM') is created by sanic-jwt and attached to the app at \
-            # startup
             payload = jwt.decode(
                 token,
-                request.app.config.get('JWT_SECRET'),
-                algorithms=request.app.config.get('JWT_ALGORITHM')
+                request.app.config.get(JWT_SECRET_KEYNAME),
+                algorithms=request.app.config.get(JWT_ALGORITHM_KEYNAME)
             )
         except Exception as e:
             logger.error(f"failed to decode jwt token: {e}")
