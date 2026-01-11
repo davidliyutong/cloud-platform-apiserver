@@ -25,9 +25,6 @@ metadata:
     k8s-app: ${{ POD_LABEL }}
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "40960M"
-    # nginx.ingress.kubernetes.io/auth-realm: Enter your credentials
-    # nginx.ingress.kubernetes.io/auth-secret: ${{ POD_AUTH }}
-    # nginx.ingress.kubernetes.io/auth-type: basic
     nginx.ingress.kubernetes.io/auth-always-set-cookie: 'true'
     nginx.ingress.kubernetes.io/auth-cache-key: $cookie__${{ CONFIG_AUTH_COOKIES_NAME }}
     nginx.ingress.kubernetes.io/auth-url: ${{ CONFIG_AUTH_ENDPOINT }}/v1/auth/token/validate/${{ POD_USERNAME }}
@@ -42,8 +39,8 @@ spec:
           service:
             name: clpl-svc-${{ POD_ID }}
             port:
-              number: 3000
-        path: /
+              number: 80
+        path: /coder/
         pathType: Prefix
   - host: ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME
     http:
@@ -52,8 +49,18 @@ spec:
           service:
             name: clpl-svc-${{ POD_ID }}
             port:
-              number: 6080
-        path: /
+              number: 80
+        path: /vnc/
+        pathType: Prefix
+  - host: ${{ POD_ID }}.${{ CONFIG_SSH_HOSTNAME }} # CHANGE ME
+    http:
+      paths:
+      - backend:
+          service:
+            name: clpl-svc-${{ POD_ID }}
+            port:
+              number: 80
+        path: /ssh/
         pathType: Prefix
   tls:
   - hosts:
@@ -62,29 +69,6 @@ spec:
   - hosts:
     - ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME hostname
     secretName: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGE ME TLS Secret
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  labels:
-    k8s-app: ${{ POD_LABEL }}
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "40960M"
-  name: clpl-ingress-${{ POD_ID }}-ssh
-spec:
-  ingressClassName: ${{ CONFIG_NGINX_CLASS }} # CHANGE ME
-  rules:
-  - host: ${{ POD_ID }}.${{ CONFIG_SSH_HOSTNAME }} # CHANGE ME
-    http:
-      paths:
-      - backend:
-          service:
-            name: clpl-svc-${{ POD_ID }}
-            port:
-              number: 22
-        path: /
-        pathType: Prefix
-  tls:
   - hosts:
     - ${{ POD_ID }}.${{ CONFIG_SSH_HOSTNAME }} # CHANGE ME hostname
     secretName: ${{ CONFIG_SSH_TLS_SECRET }} # CHANGE ME TLS Secret
