@@ -91,15 +91,11 @@ class APIServerConfig(BaseModel):
     bootstrap_admin_username: str = "admin"
     bootstrap_admin_password: str = "admin"
 
-    config_token_secret: str = None
+    config_token_secret: Optional[str] = None
     config_token_expire_s: int = 3600
     config_auth_endpoint: str = ""
-    config_coder_hostname: str = ""
-    config_coder_tls_secret: str = ""
-    config_vnc_hostname: str = ""
-    config_vnc_tls_secret: str = ""
-    config_ssh_hostname: str = ""
-    config_ssh_tls_secret: str = ""
+    config_workspace_hostname: str = ""
+    config_workspace_tls_secret: str = ""
     config_nginx_class: str = "nginx"
     config_use_oidc: bool = False
 
@@ -158,12 +154,8 @@ class APIServerConfig(BaseModel):
         self.config_token_secret = str(d["config"]["tokenSecret"])
         self.config_token_expire_s = int(d["config"]["tokenExpireS"])
         self.config_auth_endpoint = str(d["config"]["authEndpoint"])
-        self.config_coder_hostname = str(d["config"]["coderHostname"])
-        self.config_coder_tls_secret = str(d["config"]["coderTLSSecret"])
-        self.config_vnc_hostname = str(d["config"]["vncHostname"])
-        self.config_vnc_tls_secret = str(d["config"]["vncTLSSecret"])
-        self.config_ssh_hostname = str(d["config"]["sshHostname"])
-        self.config_ssh_tls_secret = str(d["config"]["sshTLSSecret"])
+        self.config_workspace_hostname = str(d["config"]["workspaceHostname"])
+        self.config_workspace_tls_secret = str(d["config"]["workspaceTLSSecret"])
         self.config_nginx_class = str(d["config"]["nginxClass"])
         self.config_use_oidc = bool(d["config"]["useOIDC"])
         # <<< Define Values <<<
@@ -224,12 +216,8 @@ class APIServerConfig(BaseModel):
         self.config_token_secret = v.get_string("config.tokenSecret")
         self.config_token_expire_s = v.get_int("config.tokenExpireS")
         self.config_auth_endpoint = v.get_string("config.authEndpoint")
-        self.config_coder_hostname = v.get_string("config.coderHostname")
-        self.config_coder_tls_secret = v.get_string("config.coderTLSSecret")
-        self.config_vnc_hostname = v.get_string("config.vncHostname")
-        self.config_vnc_tls_secret = v.get_string("config.vncTLSSecret")
-        self.config_ssh_hostname = v.get_string("config.sshHostname")
-        self.config_ssh_tls_secret = v.get_string("config.sshTLSSecret")
+        self.config_workspace_hostname = v.get_string("config.workspaceHostname")
+        self.config_workspace_tls_secret = v.get_string("config.workspaceTLSSecret")
         self.config_nginx_class = v.get_string("config.nginxClass")
         self.config_use_oidc = v.get_bool("config.useOIDC")
         # <<< Define Values <<<
@@ -297,12 +285,8 @@ class APIServerConfig(BaseModel):
                 "tokenSecret": self.config_token_secret,
                 "tokenExpireS": self.config_token_expire_s,
                 "authEndpoint": self.config_auth_endpoint,
-                "coderHostname": self.config_coder_hostname,
-                "coderTLSSecret": self.config_coder_tls_secret,
-                "vncHostname": self.config_vnc_hostname,
-                "vncTLSSecret": self.config_vnc_tls_secret,
-                "sshHostname": self.config_ssh_hostname,
-                "sshTLSSecret": self.config_ssh_tls_secret,
+                "workspaceHostname": self.config_workspace_hostname,
+                "workspaceTLSSecret": self.config_workspace_tls_secret,
                 "nginxClass": self.config_nginx_class,
                 "useOIDC": self.config_use_oidc,
             }
@@ -357,12 +341,8 @@ class APIServerConfig(BaseModel):
             "CONFIG_TOKEN_SECRET": self.config_token_secret,
             "CONFIG_TOKEN_EXPIRE_S": self.config_token_expire_s,
             "CONFIG_AUTH_ENDPOINT": self.config_auth_endpoint,
-            "CONFIG_CODER_HOSTNAME": self.config_coder_hostname,
-            "CONFIG_CODER_TLS_SECRET": self.config_coder_tls_secret,
-            "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
-            "CONFIG_VNC_TLS_SECRET": self.config_vnc_tls_secret,
-            "CONFIG_SSH_HOSTNAME": self.config_ssh_hostname,
-            "CONFIG_SSH_TLS_SECRET": self.config_ssh_tls_secret,
+            "CONFIG_WORKSPACE_HOSTNAME": self.config_workspace_hostname,
+            "CONFIG_WORKSPACE_TLS_SECRET": self.config_workspace_tls_secret,
             "CONFIG_NGINX_CLASS": self.config_nginx_class,
             "CONFIG_USE_OIDC": self.config_use_oidc,
         }
@@ -426,12 +406,8 @@ class APIServerConfig(BaseModel):
         v.set_default("config.tokenSecret", _DEFAULT.config_token_secret)
         v.set_default("config.tokenExpireS", _DEFAULT.config_token_expire_s)
         v.set_default("config.authEndpoint", _DEFAULT.config_auth_endpoint)
-        v.set_default("config.coderHostname", _DEFAULT.config_coder_hostname)
-        v.set_default("config.coderTLSSecret", _DEFAULT.config_coder_tls_secret)
-        v.set_default("config.vncHostname", _DEFAULT.config_vnc_hostname)
-        v.set_default("config.vncTLSSecret", _DEFAULT.config_vnc_tls_secret)
-        v.set_default("config.sshHostname", _DEFAULT.config_ssh_hostname)
-        v.set_default("config.sshTLSSecret", _DEFAULT.config_ssh_tls_secret)
+        v.set_default("config.workspaceHostname", _DEFAULT.config_workspace_hostname)
+        v.set_default("config.workspaceTLSSecret", _DEFAULT.config_workspace_tls_secret)
         v.set_default("config.nginxClass", _DEFAULT.config_nginx_class)
         v.set_default("config.useOIDC", _DEFAULT.config_use_oidc)
         # <<< Set Default Values <<<
@@ -496,12 +472,8 @@ class APIServerConfig(BaseModel):
         parser.add_argument("--config.tokenSecret", type=str, help="config tokenSecret")
         parser.add_argument("--config.tokenExpireS", type=int, help="config tokenExpireS")
         parser.add_argument("--config.authEndpoint", type=str, help="config authEndpoint")
-        parser.add_argument("--config.coderHostname", type=str, help="config code hostname")
-        parser.add_argument("--config.coderTLSSecret", type=str, help="config code tlsSecret")
-        parser.add_argument("--config.vncHostname", type=str, help="config vnc hostname")
-        parser.add_argument("--config.vncTLSSecret", type=str, help="config vnc tlsSecret")
-        parser.add_argument("--config.sshHostname", type=str, help="config ssh hostname")
-        parser.add_argument("--config.sshTLSSecret", type=str, help="config ssh tlsSecret")
+        parser.add_argument("--config.workspaceHostname", type=str, help="config workspace hostname")
+        parser.add_argument("--config.workspaceTLSSecret", type=str, help="config workspace tlsSecret")
         parser.add_argument("--config.nginxClass", type=str, help="config nginx class")
         parser.add_argument("--config.useOIDC", type=bool, help="config useOIDC")
         # <<< Set Default Values <<<
@@ -586,12 +558,8 @@ class APIServerConfig(BaseModel):
         v.bind_env("config.tokenSecret")
         v.bind_env("config.tokenExpireS")
         v.bind_env("config.authEndpoint")
-        v.bind_env("config.coderHostname")
-        v.bind_env("config.coderTLSSecret")
-        v.bind_env("config.vncHostname")
-        v.bind_env("config.vncTLSSecret")
-        v.bind_env("config.sshHostname")
-        v.bind_env("config.sshTLSSecret")
+        v.bind_env("config.workspaceHostname")
+        v.bind_env("config.workspaceTLSSecret")
         v.bind_env("config.nginxClass")
         v.bind_env("config.useOIDC")
         # <<< Set Env Values <<<
@@ -624,12 +592,8 @@ class APIServerConfig(BaseModel):
     @property
     def k8s_config_values(self):
         return {
-            "CONFIG_CODER_HOSTNAME": self.config_coder_hostname,
-            "CONFIG_CODER_TLS_SECRET": self.config_coder_tls_secret,
-            "CONFIG_VNC_HOSTNAME": self.config_vnc_hostname,
-            "CONFIG_VNC_TLS_SECRET": self.config_vnc_tls_secret,
-            "CONFIG_SSH_HOSTNAME": self.config_ssh_hostname,
-            "CONFIG_SSH_TLS_SECRET": self.config_ssh_tls_secret,
+            "CONFIG_WORKSPACE_HOSTNAME": self.config_workspace_hostname,
+            "CONFIG_WORKSPACE_TLS_SECRET": self.config_workspace_tls_secret,
             "CONFIG_NGINX_CLASS": self.config_nginx_class,
         }
 
@@ -650,12 +614,8 @@ class APIServerConfig(BaseModel):
                 self.oidc_client_secret == "" and (msg.append("no oidc_client_secret") == None),
                 self.oidc_redirect_url == "" and (msg.append("no oidc_redirect_url") == None),
             ]),
-            self.config_coder_hostname == "" and (msg.append("no config_coder_hostname") == None),
-            self.config_coder_tls_secret == "" and (msg.append("no config_coder_tls_secret") == None),
-            self.config_vnc_hostname == "" and (msg.append("no config_vnc_hostname") == None),
-            self.config_vnc_tls_secret == "" and (msg.append("no config_vnc_tls_secret") == None),
-            self.config_ssh_hostname == "" and (msg.append("no config_ssh_hostname") == None),
-            self.config_ssh_tls_secret == "" and (msg.append("no config_ssh_tls_secret") == None)
+            self.config_workspace_hostname == "" and (msg.append("no config_workspace_hostname") == None),
+            self.config_workspace_tls_secret == "" and (msg.append("no config_workspace_tls_secret") == None),
         ]):
             return False, Exception("\n".join(msg))
         else:

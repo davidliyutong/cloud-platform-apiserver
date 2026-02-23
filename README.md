@@ -106,42 +106,41 @@ kubectl apply -f manifests/k8s/deployment.yaml
 The apiserver can be configured with environment variables, command line arguments or configuration files. The following
 table lists all the parameters.
 
-| Name                                | CLI                         | ENV                            | Description                                          | Default                                                | 
-|-------------------------------------|-----------------------------|--------------------------------|------------------------------------------------------|--------------------------------------------------------|
-| Number of Workers                   | `--api.numWorkers`          | `CLPL_API_NUMWORKERS`          | Number of workers to launch                          | `4`                                                    |
-| API Host                            | `--api.host`                | `CLPL_API_HOST`                | API Hostname                                         | `0.0.0.0`                                              |
-| API Port                            | `--api.port`                | `CLPL_API_PORT`                | Port for the API server, default                     | `8080`                                                 |
-| API Access Log                      | `--api.accessLog`           | `CLPL_API_ACCESSLOG`           | Boolean flag for logging API access, might slow down | `false`                                                |
-| Database Host                       | `--db.host`                 | `CLPL_DB_HOST`                 | Hostname of the mongodb server                       | `127.0.0.1`                                            |
-| Database Port                       | `--db.port`                 | `CLPL_DB_PORT`                 | Port of the mongodb server                           | `27017`                                                |
-| Database Username                   | `--db.username`             | `CLPL_DB_USERNAME`             | Username for the database                            | `clpl`                                                 |
-| Database Password                   | `--db.password`             | `CLPL_DB_PASSWORD`             | Password for the database                            | `clpl`                                                 |
-| Database Name                       | `--db.database`             | `CLPL_DB_DATABASE`             | Name of the database                                 | `clpl`                                                 |
-| MQ Host                             | `--mq.host`                 | `CLPL_MQ_HOST`                 | Hostname of the MQ server (not used)                 | `127.0.0.1`                                            |
-| MQ Port                             | `--mq.port`                 | `CLPL_MQ_PORT`                 | Port of the MQ server (not used)                     | `5672`                                                 |
-| MQ Username                         | `--mq.username`             | `CLPL_MQ_USERNAME`             | Username for the MQ server (not used)                | `clpl`                                                 |
-| MQ Password                         | `--mq.password`             | `CLPL_MQ_PASSWORD`             | Password for the MQ server (not used)                | `clpl`                                                 |
-| MQ Exchange                         | `--mq.exchange`             | `CLPL_MQ_EXCHANGE`             | Name of the MQ exchange (not used)                   | ``                                                     |
-| Kubernetes Host                     | `--k8s.host`                | `CLPL_K8S_HOST`                | Kubernetes Hostname                                  | `10.96.0.1`                                            |
-| Kubernetes Port                     | `--k8s.port`                | `CLPL_K8S_PORT`                | Kubernetes Port                                      | `6443`                                                 |
-| Kubernetes CA certificate path      | `--k8s.caCert`              | `CLPL_K8S_CACERT`              | Path of Kubernetes CA certificate                    | `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` |
-| Kubernetes Token                    | `--k8s.token`               | `CLPL_K8S_TOKEN`               | Kubernetes token                                     | `/var/run/secrets/kubernetes.io/serviceaccount/token`  |
-| Kubernetes SSL Verification         | `--k8s.verifySSL`           | `CLPL_K8S_VERIFYSSL`           | Boolean flag for Kubernetes SSL verification         | `false`                                                |
-| Kubernetes Namespace                | `--k8s.namespace`           | `CLPL_K8S_NAMESPACE`           | Kubernetes namespace                                 | `clpl`                                                 |
-| Bootstrap Admin Username            | `--bootstrap.adminUsername` | `CLPL_BOOTSTRAP_ADMINUSERNAME` | Default admin username                               | `admin`                                                |
-| Bootstrap Admin Password            | `--bootstrap.adminPassword` | `CLPL_BOOTSTRAP_ADMINPASSWORD` | Default admin password                               | `admin`                                                |
-| Configuration Token Secret          | `--config.tokenSecret`      | `CLPL_CONFIG_TOKENSECRET`      | Secret key for sign long-term token, must be strong  | `null`                                                 |
-| Configuration Token Expiration Time | `--config.tokenExpireS`     | `CLPL_CONFIG_TOKENEXPIRES`     | Expiration time for jwt token                        | `3600`                                                 |
-| Configuration Coder Hostname        | `--config.coderHostname`    | `CLPL_CONFIG_CODERHOSTNAME`    | Hostname for the code ingress                        | `null`                                                 |
-| Configuration Coder TLS Secret      | `--config.coderTLSSecret`   | `CLPL_CONFIG_CODERTLSSECRET`   | Secret name for the code ingress tls                 | `null`                                                 |
-| Configuration VNC Hostname          | `--config.vncHostname`      | `CLPL_CONFIG_VNCHOSTNAME`      | Hostname for the vnc ingress                         | `null`                                                 |
-| Configuration VNC TLS Secret        | `--config.vncTLSSecret`     | `CLPL_CONFIG_VNCTLSECRET`      | Secret key for the vnc ingress tls                   | `null`                                                 |
-| Configuration USE OIDC              | `--config.useOIDC`          | `CLPL_CONFIG_USEOIDC`          | Use OIDC or not                                      | `false`                                                |
+| Name                                | CLI                           | ENV                              | Description                                          | Default                                                |
+| ----------------------------------- | ----------------------------- | -------------------------------- | ---------------------------------------------------- | ------------------------------------------------------ |
+| Number of Workers                   | `--api.numWorkers`            | `CLPL_API_NUMWORKERS`            | Number of workers to launch                          | `4`                                                    |
+| API Host                            | `--api.host`                  | `CLPL_API_HOST`                  | API Hostname                                         | `0.0.0.0`                                              |
+| API Port                            | `--api.port`                  | `CLPL_API_PORT`                  | Port for the API server, default                     | `8080`                                                 |
+| API Access Log                      | `--api.accessLog`             | `CLPL_API_ACCESSLOG`             | Boolean flag for logging API access, might slow down | `false`                                                |
+| Database Host                       | `--db.host`                   | `CLPL_DB_HOST`                   | Hostname of the mongodb server                       | `127.0.0.1`                                            |
+| Database Port                       | `--db.port`                   | `CLPL_DB_PORT`                   | Port of the mongodb server                           | `27017`                                                |
+| Database Username                   | `--db.username`               | `CLPL_DB_USERNAME`               | Username for the database                            | `clpl`                                                 |
+| Database Password                   | `--db.password`               | `CLPL_DB_PASSWORD`               | Password for the database                            | `clpl`                                                 |
+| Database Name                       | `--db.database`               | `CLPL_DB_DATABASE`               | Name of the database                                 | `clpl`                                                 |
+| MQ Host                             | `--mq.host`                   | `CLPL_MQ_HOST`                   | Hostname of the MQ server (not used)                 | `127.0.0.1`                                            |
+| MQ Port                             | `--mq.port`                   | `CLPL_MQ_PORT`                   | Port of the MQ server (not used)                     | `5672`                                                 |
+| MQ Username                         | `--mq.username`               | `CLPL_MQ_USERNAME`               | Username for the MQ server (not used)                | `clpl`                                                 |
+| MQ Password                         | `--mq.password`               | `CLPL_MQ_PASSWORD`               | Password for the MQ server (not used)                | `clpl`                                                 |
+
+| MQ Exchange                         | `--mq.exchange`               | `CLPL_MQ_EXCHANGE`               | Name of the MQ exchange (not used)                   | ``                                                     |
+| Kubernetes Host                     | `--k8s.host`                  | `CLPL_K8S_HOST`                  | Kubernetes Hostname                                  | `10.96.0.1`                                            |
+| Kubernetes Port                     | `--k8s.port`                  | `CLPL_K8S_PORT`                  | Kubernetes Port                                      | `6443`                                                 |
+| Kubernetes CA certificate path      | `--k8s.caCert`                | `CLPL_K8S_CACERT`                | Path of Kubernetes CA certificate                    | `/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` |
+| Kubernetes Token                    | `--k8s.token`                 | `CLPL_K8S_TOKEN`                 | Kubernetes token                                     | `/var/run/secrets/kubernetes.io/serviceaccount/token`  |
+| Kubernetes SSL Verification         | `--k8s.verifySSL`             | `CLPL_K8S_VERIFYSSL`             | Boolean flag for Kubernetes SSL verification         | `false`                                                |
+| Kubernetes Namespace                | `--k8s.namespace`             | `CLPL_K8S_NAMESPACE`             | Kubernetes namespace                                 | `clpl`                                                 |
+| Bootstrap Admin Username            | `--bootstrap.adminUsername`   | `CLPL_BOOTSTRAP_ADMINUSERNAME`   | Default admin username                               | `admin`                                                |
+| Bootstrap Admin Password            | `--bootstrap.adminPassword`   | `CLPL_BOOTSTRAP_ADMINPASSWORD`   | Default admin password                               | `admin`                                                |
+| Configuration Token Secret          | `--config.tokenSecret`        | `CLPL_CONFIG_TOKENSECRET`        | Secret key for sign long-term token, must be strong  | `null`                                                 |
+| Configuration Token Expiration Time | `--config.tokenExpireS`       | `CLPL_CONFIG_TOKENEXPIRES`       | Expiration time for jwt token                        | `3600`                                                 |
+| Configuration Workspace Hostname    | `--config.workspaceHostname`  | `CLPL_CONFIG_WORKSPACEHOSTNAME`  | Hostname for the workspace ingress                   | `null`                                                 |
+| Configuration Workspace TLS Secret  | `--config.workspaceTLSSecret` | `CLPL_CONFIG_WORKSPACETLSSECRET` | Secret name for the workspace ingress tls            | `null`                                                 |
+| Configuration USE OIDC              | `--config.useOIDC`            | `CLPL_CONFIG_USEOIDC`            | Use OIDC or not                                      | `false`                                                |
 
 The platform supports login via OpenID Connect. It is tested with [Authentik](https://goauthentik.io/) identity provider. Here are OIDC configurations if you want to use OIDC:
 
-| Name                    | CLI                       | ENV                          | Description                                                                                                  | Default                         | 
-|-------------------------|---------------------------|------------------------------|--------------------------------------------------------------------------------------------------------------|---------------------------------|
+| Name                    | CLI                       | ENV                          | Description                                                                                                  | Default                         |
+| ----------------------- | ------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------- |
 | OIDC Name               | `--oidc.name`             | `CLPL_OIDC_NAME`             | Name of the OIDC provider, usually the application name                                                      | `clpl`                          |
 | OIDC Base URL           | `--oidc.baseURL`          | `CLPL_OIDC_BASEURL`          | Base URL of the OIDC provider                                                                                | `https://authentik.example.com` |
 | OIDC Authorization URL  | `--oidc.authorizationURL` | `CLPL_OIDC_AUTHORIZATIONURL` | Authorization URL of the OIDC provider, defaults to `$CLPL_OIDC_BASEURL/authorize/`                          | `null`                          |
@@ -162,7 +161,7 @@ The platform supports login via OpenID Connect. It is tested with [Authentik](ht
 | OIDC Username Path      | `--oidc.usernamePath`     | `CLPL_OIDC_USERNAMEPATH`     | Username Path of the OIDC provider, should be jsonpath of username string in user information                | `preferred_username`            |
 | OIDC Email Path         | `--oidc.emailPath`        | `CLPL_OIDC_EMAILPATH`        | Email Path of the OIDC provider, should be jsonpath of email string in user information                      | `email`                         |
 
-# TODO
+## TODO
 
 - migration mechanism
 - Audit

@@ -24,9 +24,7 @@ def _health(opt: APIServerConfig):
             'message': "OK",
             'version': config.CONFIG_BUILD_VERSION,
             'config': {
-                'coder_hostname': opt.config_coder_hostname,
-                'vnc_hostname': opt.config_vnc_hostname,
-                'ssh_hostname': opt.config_ssh_hostname,
+                'workspace_hostname': opt.config_workspace_hostname,
             },
             'oidc': None if not opt.config_use_oidc else OIDCStatusResponse(
                 name=opt.oidc_name,

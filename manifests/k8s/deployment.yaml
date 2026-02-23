@@ -107,18 +107,10 @@ spec:
               value: clpl # CHANGE ME
             - name: CLPL_CONFIG_TOKENSECRET
               value: top-secret # CHANGE ME
-            - name: CLPL_CONFIG_CODERHOSTNAME
-              value: ${{ CONFIG_CODER_HOSTNAME }} # CHANGE ME
-            - name: CLPL_CONFIG_CODERTLSSECRET
-              value: ${{ CONFIG_CODER_TLS_SECRET }} # CHANGE ME
-            - name: CLPL_CONFIG_VNCHOSTNAME
-              value: ${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME
-            - name: CLPL_CONFIG_VNCTLSSECRET
-              value: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGE ME
-            - name: CLPL_CONFIG_SSHHOSTNAME
-              value: ${{ CONFIG_SSH_HOSTNAME }} # CHANGE ME
-            - name: CLPL_CONFIG_SSHTLSSECRET
-              value: ${{ CONFIG_SSH_SECRET }} # CHANGE ME
+            - name: CLPL_CONFIG_WORKSPACEHOSTNAME
+              value: ${{ CONFIG_WORKSPACE_HOSTNAME }} # CHANGE ME
+            - name: CLPL_CONFIG_WORKSPACETLSSECRET
+              value: ${{ CONFIG_WORKSPACE_TLS_SECRET }} # CHANGE ME
             - name: CLPL_CONFIG_NGINXCLASS
               value: nginx # CHANGE ME
             - name: CLPL_CONFIG_AUTHENDPOINT

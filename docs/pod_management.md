@@ -12,10 +12,8 @@ A template has the `template_str` attribute which is a template to be filled wit
 - `POD_STORAGE_LIM`: the storage of the pod, e.g. 10000MiB
 - `POD_AUTH`: the authentication secret of the pod, e.g. user-basic-auth
 - `TEMPLATE_IMAGE_REF`: image reference
-- `CONFIG_CODER_HOSTNAME`: a host name for IDE
-- `CONFIG_CODER_TLS_SECRET`: a tls secret for IDE hostname
-- `CONFIG_VNC_HOSTNAME`: a hostname for VNC
-- `CONFIG_VNC_TLS_SECRET`: a tls secret for VNC hostname
+- `CONFIG_WORKSPACE_HOSTNAME`: a host name for workspace
+- `CONFIG_WORKSPACE_TLS_SECRET`: a tls secret for workspace hostname
 
 For example:
 
@@ -27,10 +25,8 @@ For example:
         "POD_STORAGE_LIM": "10Mi",
         "POD_AUTH": "833c2ccc-afb6-4093-8f2c-ec1087c67d47-basic-auth",
         "TEMPLATE_IMAGE_REF": "davidliyutong/code-server-speit:latest",
-        "CONFIG_CODER_HOSTNAME": "code.example.org",
-        "CONFIG_CODER_TLS_SECRET": "code-tls-secret",
-        "CONFIG_VNC_HOSTNAME": "vnc.example.org",
-        "CONFIG_VNC_TLS_SECRET": "vnc-tls-secret",
+        "CONFIG_WORKSPACE_HOSTNAME": "workspace.example.org",
+        "CONFIG_WORKSPACE_TLS_SECRET": "workspace-tls-secret",
 }
 
 ```

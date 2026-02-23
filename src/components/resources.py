@@ -32,7 +32,7 @@ metadata:
 spec:
   ingressClassName: ${{ CONFIG_NGINX_CLASS }} # CHANGE ME
   rules:
-  - host: ${{ POD_ID }}.${{ CONFIG_CODER_HOSTNAME }} # CHANGE ME
+  - host: ${{ POD_ID }}.${{ CONFIG_WORKSPACE_HOSTNAME }} # CHANGE ME
     http:
       paths:
       - backend:
@@ -40,38 +40,12 @@ spec:
             name: clpl-svc-${{ POD_ID }}
             port:
               number: 80
-        path: /coder/
-        pathType: Prefix
-  - host: ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME
-    http:
-      paths:
-      - backend:
-          service:
-            name: clpl-svc-${{ POD_ID }}
-            port:
-              number: 80
-        path: /vnc/
-        pathType: Prefix
-  - host: ${{ POD_ID }}.${{ CONFIG_SSH_HOSTNAME }} # CHANGE ME
-    http:
-      paths:
-      - backend:
-          service:
-            name: clpl-svc-${{ POD_ID }}
-            port:
-              number: 80
-        path: /ssh/
+        path: /
         pathType: Prefix
   tls:
   - hosts:
-    - ${{ POD_ID }}.${{ CONFIG_CODER_HOSTNAME }} # CHANGE ME hostname
-    secretName: ${{ CONFIG_CODER_TLS_SECRET }} # CHANGE ME TLS Secret
-  - hosts:
-    - ${{ POD_ID }}.${{ CONFIG_VNC_HOSTNAME }} # CHANGE ME hostname
-    secretName: ${{ CONFIG_VNC_TLS_SECRET }} # CHANGE ME TLS Secret
-  - hosts:
-    - ${{ POD_ID }}.${{ CONFIG_SSH_HOSTNAME }} # CHANGE ME hostname
-    secretName: ${{ CONFIG_SSH_TLS_SECRET }} # CHANGE ME TLS Secret
+    - ${{ POD_ID }}.${{ CONFIG_WORKSPACE_HOSTNAME }} # CHANGE ME hostname
+    secretName: ${{ CONFIG_WORKSPACE_TLS_SECRET }} # CHANGE ME TLS Secret
 """
 
     @classmethod
@@ -89,12 +63,8 @@ spec:
         "POD_USERNAME": "username",
         "TEMPLATE_IMAGE_REF": "davidliyutong/code-server-speit:latest",
         "CONFIG_AUTH_COOKIES_NAME": "clpl_auth_token",
-        "CONFIG_CODER_HOSTNAME": "code.example.org",
-        "CONFIG_CODER_TLS_SECRET": "code-tls-secret",
-        "CONFIG_VNC_HOSTNAME": "vnc.example.org",
-        "CONFIG_VNC_TLS_SECRET": "vnc-tls-secret",
-        "CONFIG_SSH_HOSTNAME": "ssh.example.org",
-        "CONFIG_SSH_TLS_SECRET": "ssh-tls-secret",
+        "CONFIG_WORKSPACE_HOSTNAME": "workspace.example.org",
+        "CONFIG_WORKSPACE_TLS_SECRET": "workspace-tls-secret",
         "CONFIG_NGINX_CLASS": "nginx",
     }
 
