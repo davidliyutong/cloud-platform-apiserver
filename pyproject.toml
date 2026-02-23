@@ -1,0 +1,28 @@
+[project]
+name = "cloud-platform-apiserver"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "bcrypt>=4.0.1",
+    "click==8.1.6",
+    "email-validator>=2.3.0",
+    "httpx>=0.23.3",
+    "jsonpath-ng>=1.5.3",
+    "kubernetes>=27.2.0",
+    "loguru>=0.7.0",
+    "mongoquery>=1.4.2",
+    "motor>=3.2.0",
+    "pydantic>=2.0.2",
+    "pyjwt>=2.8.0",
+    "pymongo>=4.4.1",
+    "pyyaml>=6.0",
+    "sanic==25.12.0",
+    "sanic-ext==25.12.0",
+    "sanic-jwt>=1.8.0",
+    "sanic-validation>=0.5.1",
+    "shortuuid>=1.0.11",
+    "urllib3~=1.26.16",
+    "vyper-config>=1.1.1",
+]

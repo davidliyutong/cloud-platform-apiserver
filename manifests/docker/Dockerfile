@@ -3,10 +3,12 @@ FROM python:3.11-bookworm
 WORKDIR /opt/app
 ENV PYTHONPATH "${PYTHONPATH}:/opt/app"
 
-COPY requirements.txt /tmp/requirements.txt
-RUN pip config set global.index-url https://mirror.sjtu.edu.cn/pypi/web/simple && \
-    pip install -r /tmp/requirements.txt
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+COPY pyproject.toml uv.lock .python-version ./
+RUN uv sync --frozen --no-dev
 
 COPY src ./src
 
-ENTRYPOINT ["python", "src", "serve"]
+ENTRYPOINT ["uv", "run", "-m", "src", "serve"]

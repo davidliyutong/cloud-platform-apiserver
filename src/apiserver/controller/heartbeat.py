@@ -3,7 +3,6 @@ This module implements the heartbeat controller.
 """
 
 import asyncio
-import http
 
 import jwt
 from loguru import logger
@@ -53,7 +52,8 @@ async def user_heartbeat_ws(request, ws: WebsocketImplProtocol):
     # parse query args, token should be encoded jwt
     token = request.args.get("token")
     if token is None or token == "":
-        return http.HTTPStatus.UNAUTHORIZED
+        await ws.close(code=4401, reason="Unauthorized")
+        return
     else:
         try:
             # decode jwt token
@@ -67,12 +67,14 @@ async def user_heartbeat_ws(request, ws: WebsocketImplProtocol):
             )
         except Exception as e:
             logger.error(f"failed to decode jwt token: {e}")
-            return http.HTTPStatus.UNAUTHORIZED
+            await ws.close(code=4401, reason="Unauthorized")
+            return
 
         # get username from payload
         username = payload.get('username')
         if username is None:
-            return http.HTTPStatus.UNAUTHORIZED
+            await ws.close(code=4401, reason="Unauthorized")
+            return
 
     # start sender task with username
     request.app.add_task(sender(ws, username), name=task_name)
