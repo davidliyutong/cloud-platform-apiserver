@@ -38,10 +38,12 @@ class PodService(ServiceInterface):
         else:
             if mode == ModeEnum.create:
                 running_pods = list(filter(lambda x: x.current_status == datamodels.PodStatusEnum.running, pods))
+                req_gpu = req.gpu if req.gpu is not None else 0
                 num_pods = len(pods) + 1
                 cpu_m = sum([pod.cpu_lim_m_cpu for pod in running_pods]) + req.cpu_lim_m_cpu
                 mem_mb = sum([pod.mem_lim_mb for pod in running_pods]) + req.mem_lim_mb
                 storage_mb = sum([pod.storage_lim_mb for pod in pods]) + req.storage_lim_mb
+                gpu = sum([pod.gpu for pod in running_pods]) + req_gpu
             elif mode == ModeEnum.update:
                 running_pods = list(
                     filter(
@@ -50,10 +52,12 @@ class PodService(ServiceInterface):
                     )
                 )
                 if req.target_status == datamodels.PodStatusEnum.running:
+                    req_gpu = req.gpu if req.gpu is not None else 0
                     num_pods = len(pods)
                     cpu_m = sum([pod.cpu_lim_m_cpu for pod in running_pods]) + req.cpu_lim_m_cpu
                     mem_mb = sum([pod.mem_lim_mb for pod in running_pods]) + req.mem_lim_mb
                     storage_mb = sum([pod.storage_lim_mb for pod in pods])
+                    gpu = sum([pod.gpu for pod in running_pods]) + req_gpu
                 else:
                     return True
             else:
@@ -64,6 +68,7 @@ class PodService(ServiceInterface):
                 cpu_m > user.quota.cpu_m,
                 mem_mb > user.quota.memory_mb,
                 storage_mb > user.quota.storage_mb,
+                gpu > user.quota.gpu,
             ]):
                 return False
             else:
@@ -131,6 +136,7 @@ class PodService(ServiceInterface):
             cpu_lim_m_cpu=req.cpu_lim_m_cpu,
             mem_lim_mb=req.mem_lim_mb,
             storage_lim_mb=req.storage_lim_mb,
+            gpu=req.gpu,
             username=req.username,
             user_uuid=str(user.uuid),
             timeout_s=req.timeout_s,
@@ -177,6 +183,7 @@ class PodService(ServiceInterface):
         req.cpu_lim_m_cpu = old_pod.cpu_lim_m_cpu
         req.mem_lim_mb = old_pod.mem_lim_mb
         req.storage_lim_mb = old_pod.storage_lim_mb
+        req.gpu = old_pod.gpu
 
         ret = self.check_quota(user, pods, req, mode=ModeEnum.update)
         if not ret:

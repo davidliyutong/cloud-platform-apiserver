@@ -57,6 +57,7 @@ The template string should contain following symbols:
 - `POD_CPU_LIM`: e.g. "2000m",
 - `POD_MEM_LIM`: e.g. "4096Mi",
 - `POD_STORAGE_LIM`: e.g. "10Mi",
+- `POD_GPU_LIM`: e.g. "0" (optional)
 - `POD_REPLICAS`: e.g. "1",
 - `TEMPLATE_IMAGE_REF`: e.g. "davidliyutong/code-server-speit:latest"
 

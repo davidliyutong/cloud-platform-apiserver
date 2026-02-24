@@ -238,6 +238,7 @@ class PodCreateRequest(BaseModel):
     cpu_lim_m_cpu: int
     mem_lim_mb: int
     storage_lim_mb: int
+    gpu: int = 0
     username: Optional[str] = None
     timeout_s: Optional[int] = None
     values: Optional[Dict[str, Any]] = None
@@ -268,6 +269,12 @@ class PodCreateRequest(BaseModel):
     def storage_lim_mb_must_be_valid(cls, v):
         if v < 10240:
             raise ValueError('storage_lim_mb must be greater than 10240 MB')
+        return v
+
+    @field_validator('gpu')
+    def gpu_must_be_valid(cls, v):
+        if v < 0:
+            raise ValueError('gpu must be non-negative')
         return v
 
     @field_validator('timeout_s')
@@ -313,6 +320,7 @@ class PodUpdateRequest(BaseModel):
     cpu_lim_m_cpu: Optional[int] = None
     mem_lim_mb: Optional[int] = None
     storage_lim_mb: Optional[int] = None
+    gpu: Optional[int] = None
     username: Optional[str] = None
     user_uuid: Optional[str] = None
     timeout_s: Optional[int] = None
@@ -356,6 +364,15 @@ class PodUpdateRequest(BaseModel):
     def storage_lim_mb_must_be_valid(cls, v):
         if v is not None:
             PodCreateRequest.storage_lim_mb_must_be_valid(v)
+        else:
+            return v
+
+    @field_validator('gpu')
+    def gpu_must_be_valid(cls, v):
+        if v is not None:
+            if v < 0:
+                raise ValueError('gpu must be non-negative')
+            return v
         else:
             return v
 

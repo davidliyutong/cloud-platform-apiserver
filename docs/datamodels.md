@@ -24,6 +24,7 @@
 - **cpu_lim_m_cpu**: limit of cpu, integer, immutable
 - **mem_lim_mb**: limit of memory, integer, immutable
 - **storage_lim_mb**: limit of storage, integer, immutable
+- **gpu**: limit of gpu, integer, immutable
 - **username**: username of owner, string, immutable
 - **user_uuid**: unique id of owner, uuid, immutable
 - **created_at**: timestamp, date, immutable, autogen
@@ -47,6 +48,6 @@
 - **cpu**: micro cpus, int, mutable
 - **memory**: number of MBs, int, mutable
 - **storage**: number of MBs, int, mutable
-- **gpu**: TBD
+- **gpu**: gpu quota for running pods, int, mutable
 - **network**: TBD
 - **pod**: number of pods, int, mutable

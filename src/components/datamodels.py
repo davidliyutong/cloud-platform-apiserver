@@ -355,14 +355,18 @@ class TemplateModel(BaseModel):
         "POD_CPU_LIM": "2000m",
         "POD_MEM_LIM": "4096Mi",
         "POD_STORAGE_LIM": "10Mi",
+        "POD_GPU_LIM": "0",
         "POD_REPLICAS": "1",
         # there is no POD_USERNAME, POD_AUTH
         "TEMPLATE_IMAGE_REF": "davidliyutong/code-server-speit:latest",
     }
+    __OPTIONAL_EXAMPLE_KEYS__ = {"POD_GPU_LIM"}
 
     def verify(self) -> bool:
         template_str, used_keys, _ = render_template_str(self.template_str, self.__EXAMPLE_VALUES__)
-        return len(set(used_keys)) == len(self.__EXAMPLE_VALUES__)
+        _ = template_str
+        required_keys = set(self.__EXAMPLE_VALUES__.keys()) - self.__OPTIONAL_EXAMPLE_KEYS__
+        return required_keys.issubset(set(used_keys))
 
     @property
     def values(self):
@@ -391,6 +395,7 @@ class PodModel(BaseModel):
     cpu_lim_m_cpu: int
     mem_lim_mb: int
     storage_lim_mb: int
+    gpu: int = 0
     username: str
     user_uuid: UUID4
     created_at: datetime.datetime
@@ -456,6 +461,7 @@ class PodModel(BaseModel):
             "POD_CPU_LIM": str(self.cpu_lim_m_cpu) + "m",
             "POD_MEM_LIM": str(self.mem_lim_mb) + "Mi",
             "POD_STORAGE_LIM": str(self.storage_lim_mb) + "Mi",
+            "POD_GPU_LIM": str(self.gpu),
             "POD_AUTH": config.CONFIG_K8S_CREDENTIAL_FMT.format(str(self.user_uuid)),
             "POD_USERNAME": self.username,
             "POD_REPLICAS": "1" if self.target_status == PodStatusEnum.running else "0",
@@ -471,6 +477,7 @@ class PodModel(BaseModel):
             cpu_lim_m_cpu: int = 1000,
             mem_lim_mb: int = 512,
             storage_lim_mb: int = 10240,
+            gpu: int = 0,
             timeout_s: int = 3600):
         return cls(
             version=config.CONFIG_BUILD_VERSION,
@@ -482,6 +489,7 @@ class PodModel(BaseModel):
             cpu_lim_m_cpu=cpu_lim_m_cpu,
             mem_lim_mb=mem_lim_mb,
             storage_lim_mb=storage_lim_mb,
+            gpu=gpu,
             username=username,
             user_uuid=uuid.UUID(user_uuid),
             created_at=datetime.datetime.utcnow(),
@@ -494,6 +502,8 @@ class PodModel(BaseModel):
 
     @classmethod
     def upgrade(cls, d: Dict[str, Any]) -> Self:
+        if 'gpu' not in d:
+            d['gpu'] = 0
         res = cls(**d)
         res.version = config.CONFIG_BUILD_VERSION
         return res

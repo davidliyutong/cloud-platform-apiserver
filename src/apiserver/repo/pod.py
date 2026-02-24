@@ -86,6 +86,7 @@ class PodRepo:
                      cpu_lim_m_cpu: int,
                      mem_lim_mb: int,
                      storage_lim_mb: int,
+                     gpu: int,
                      username: str,
                      user_uuid: str,
                      timeout_s: int,
@@ -107,6 +108,7 @@ class PodRepo:
                 cpu_lim_m_cpu=cpu_lim_m_cpu,
                 mem_lim_mb=mem_lim_mb,
                 storage_lim_mb=storage_lim_mb,
+                gpu=gpu,
                 timeout_s=timeout_s,
             )
             _ = values  # TODO: use these values
