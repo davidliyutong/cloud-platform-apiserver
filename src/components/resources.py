@@ -46,6 +46,32 @@ spec:
   - hosts:
     - ${{ POD_ID }}.${{ CONFIG_WORKSPACE_HOSTNAME }} # CHANGE ME hostname
     secretName: ${{ CONFIG_WORKSPACE_TLS_SECRET }} # CHANGE ME TLS Secret
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    k8s-app: ${{ POD_LABEL }}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "40960M"
+  name: clpl-ingress-${{ POD_ID }}-ssh
+spec:
+  ingressClassName: ${{ CONFIG_NGINX_CLASS }} # CHANGE ME
+  rules:
+  - host: ${{ POD_ID }}.${{ CONFIG_WORKSPACE_HOSTNAME }} # CHANGE ME
+    http:
+      paths:
+      - backend:
+          service:
+            name: clpl-svc-${{ POD_ID }}
+            port:
+              number: 80
+        path: /ssh/
+        pathType: Prefix
+  tls:
+  - hosts:
+    - ${{ POD_ID }}.${{ CONFIG_WORKSPACE_HOSTNAME }} # CHANGE ME hostname
+    secretName: ${{ CONFIG_WORKSPACE_TLS_SECRET }} # CHANGE ME TLS Secret
 """
 
     @classmethod
