@@ -35,44 +35,48 @@ class PodService(ServiceInterface):
     ) -> bool:
         if user.quota is None:
             return True
-        else:
-            if mode == ModeEnum.create:
-                running_pods = list(filter(lambda x: x.current_status == datamodels.PodStatusEnum.running, pods))
-                req_gpu = req.gpu if req.gpu is not None else 0
-                num_pods = len(pods) + 1
-                cpu_m = sum([pod.cpu_lim_m_cpu for pod in running_pods]) + req.cpu_lim_m_cpu
-                mem_mb = sum([pod.mem_lim_mb for pod in running_pods]) + req.mem_lim_mb
-                storage_mb = sum([pod.storage_lim_mb for pod in pods]) + req.storage_lim_mb
-                gpu = sum([pod.gpu for pod in running_pods]) + req_gpu
-            elif mode == ModeEnum.update:
-                running_pods = list(
-                    filter(
-                        lambda x: x.current_status == datamodels.PodStatusEnum.running and x.pod_id != req.pod_id,
-                        pods
-                    )
-                )
-                if req.target_status == datamodels.PodStatusEnum.running:
-                    req_gpu = req.gpu if req.gpu is not None else 0
-                    num_pods = len(pods)
-                    cpu_m = sum([pod.cpu_lim_m_cpu for pod in running_pods]) + req.cpu_lim_m_cpu
-                    mem_mb = sum([pod.mem_lim_mb for pod in running_pods]) + req.mem_lim_mb
-                    storage_mb = sum([pod.storage_lim_mb for pod in pods])
-                    gpu = sum([pod.gpu for pod in running_pods]) + req_gpu
-                else:
-                    return True
-            else:
-                return False
+
+        if mode == ModeEnum.create:
+            # Create mode: only check pod count and storage (total across all pods)
+            # CPU/mem/GPU checks are deferred to when the pod is started (update to running)
+            num_pods = len(pods) + 1
+            storage_mb = sum([pod.storage_lim_mb for pod in pods]) + req.storage_lim_mb
 
             if any([
                 num_pods > user.quota.pod_n,
+                storage_mb > user.quota.storage_mb,
+            ]):
+                return False
+            return True
+
+        elif mode == ModeEnum.update:
+            if req.target_status != datamodels.PodStatusEnum.running:
+                return True
+
+            # Update to running: check cpu/mem/gpu against running pods only
+            running_pods = list(
+                filter(
+                    lambda x: x.current_status == datamodels.PodStatusEnum.running and x.pod_id != req.pod_id,
+                    pods
+                )
+            )
+            req_gpu = req.gpu if req.gpu is not None else 0
+            cpu_m = sum([pod.cpu_lim_m_cpu for pod in running_pods]) + req.cpu_lim_m_cpu
+            mem_mb = sum([pod.mem_lim_mb for pod in running_pods]) + req.mem_lim_mb
+            storage_mb = sum([pod.storage_lim_mb for pod in pods])
+            gpu = sum([pod.gpu for pod in running_pods]) + req_gpu
+
+            if any([
                 cpu_m > user.quota.cpu_m,
                 mem_mb > user.quota.memory_mb,
                 storage_mb > user.quota.storage_mb,
                 gpu > user.quota.gpu,
             ]):
                 return False
-            else:
-                return True
+            return True
+
+        else:
+            return False
 
     async def get(self,
                   app: Sanic,
