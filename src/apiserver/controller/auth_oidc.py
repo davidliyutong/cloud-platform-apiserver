@@ -16,7 +16,7 @@ from sanic_ext import openapi
 from src.apiserver.service import get_root_service, UserService
 from src.components import errors
 from src.components.config import APIServerConfig
-from src.components.datamodels import UserRoleEnum, QuotaModel
+from src.components.datamodels import UserRoleEnum, UserStatusEnum, QuotaModel
 from src.components.utils import UserFilter, random_password
 
 bp = Blueprint("auth_oidc", url_prefix="/auth/oidc", version=1)
@@ -350,53 +350,59 @@ async def create_or_login(cfg: OAuth2Config, user_info: dict) -> Tuple[Optional[
     This function checks if the user exists, if not, create user
     """
     _f: UserFilter = cfg.get_user_filter_instance()
-    if all([
-        _f.filter(user_info),
-    ]):
-        # try parse username and email
-        try:
-            username_expr = cfg.get_user_expr_instance()
-            username = username_expr.find(user_info)[0].value
-        except Exception as e:
-            logger.error(f"failed to parse username: {e}")
-            return None, errors.user_failed_to_parse
+    user_allowed = _f.filter(user_info)
 
-        try:
-            email_expr = cfg.get_email_expr_instance()
-            email = email_expr.find(user_info)[0].value
-        except Exception as e:
-            logger.warning(f"failed to parse email: {e}")
-            email = None
+    # try parse username and email
+    try:
+        username_expr = cfg.get_user_expr_instance()
+        username = username_expr.find(user_info)[0].value
+    except Exception as e:
+        logger.error(f"failed to parse username: {e}")
+        return None, errors.user_failed_to_parse
 
-        # get a service
-        srv: UserService = get_root_service().user_service
+    try:
+        email_expr = cfg.get_email_expr_instance()
+        email = email_expr.find(user_info)[0].value
+    except Exception as e:
+        logger.warning(f"failed to parse email: {e}")
+        email = None
 
-        # find user
-        user, err = await srv.repo.get(username)
-        if err is not None:
-            # create the user it not exists
-            user, err = await srv.repo.create(username=username,
-                                              password="",  # empty password prevent user from login
-                                              email=email,
-                                              role=UserRoleEnum.user,
-                                              quota=QuotaModel.default_quota().model_dump(
-                                                  exclude={"version", "committed"}),
-                                              extra_info=user_info)
-            if err is not None:
-                return None, err
-        else:
-            # super_admin is not allowed to log in
-            if user.role in ['super_admin']:
-                return None, errors.user_not_allowed
+    # get a service
+    srv: UserService = get_root_service().user_service
 
-        # generate jwt token
-        access_token, err = await get_root_service().auth_service.generate_jwt_token(user)
+    # find user
+    user, err = await srv.repo.get(username)
+    if err is not None:
+        # create the user if not exists
+        user, err = await srv.repo.create(username=username,
+                                          password="",  # empty password prevent user from login
+                                          email=email,
+                                          role=UserRoleEnum.user,
+                                          quota=QuotaModel.default_quota().model_dump(
+                                              exclude={"version", "committed"}),
+                                          extra_info=user_info)
         if err is not None:
             return None, err
-        else:
-            return access_token, None
+        # if user does not match filter rules, set as inactive
+        if not user_allowed:
+            await srv.repo.update(username=username, password=None,
+                                  status=UserStatusEnum.inactive, email=None,
+                                  role=None, quota=None)
+            return None, errors.user_not_allowed
     else:
-        return None, errors.user_not_allowed
+        # super_admin is not allowed to log in
+        if user.role in ['super_admin']:
+            return None, errors.user_not_allowed
+        # existing user not matching filter is not allowed to log in
+        if not user_allowed:
+            return None, errors.user_not_allowed
+
+    # generate jwt token
+    access_token, err = await get_root_service().auth_service.generate_jwt_token(user)
+    if err is not None:
+        return None, err
+    else:
+        return access_token, None
 
 
 @bp.get("/authorize", name="authorize", version=1)
