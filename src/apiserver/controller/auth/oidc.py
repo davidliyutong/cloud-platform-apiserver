@@ -18,6 +18,7 @@ from src.components import errors
 from src.components.auth.common import POLICY_ACCESS_TOKEN_DURATION_SECOND
 from src.components.config import APIServerConfig, OIDCConfig
 from src.components.datamodels.group import GroupEnumInternal
+from src.components.datamodels.user import UserStatusEnum
 from src.components.utils import UserFilter
 from src.components.utils.wrappers import wrapped_model_response
 
@@ -325,58 +326,61 @@ async def create_or_login(
     """
     _f: UserFilter
     _f, err = cfg.get_user_filter_instance()
-    if all([
-        _f(user_info),
-    ]):
-        # try parse username and email
-        try:
-            username_expr = cfg.get_user_expr_instance()
-            username = username_expr.find(user_info)[0].value
-        except Exception as e:
-            logger.error(f"failed to parse username: {e}")
-            return None, None, errors.user_failed_to_parse
+    filter_passed = _f(user_info)
 
-        try:
-            email_expr = cfg.get_email_expr_instance()
-            email = email_expr.find(user_info)[0].value
-        except Exception as e:
-            logger.warning(f"failed to parse email: {e}")
-            email = None
+    # try parse username and email
+    try:
+        username_expr = cfg.get_user_expr_instance()
+        username = username_expr.find(user_info)[0].value
+    except Exception as e:
+        logger.error(f"failed to parse username: {e}")
+        return None, None, errors.user_failed_to_parse
 
-        # get a service
-        srv: UserService = RootService().user_service
+    try:
+        email_expr = cfg.get_email_expr_instance()
+        email = email_expr.find(user_info)[0].value
+    except Exception as e:
+        logger.warning(f"failed to parse email: {e}")
+        email = None
 
-        # find user
-        user, err = await srv.get(app, UserGetRequest(username=username))
-        if err is not None:
-            # create the user it not exists
-            req = UserCreateRequest(
-                username=username,
-                group=GroupEnumInternal.default,
-                password="",
-                email=email,
-                quota=None,
-                extra_info=user_info
-            )
-            user, err = await srv.create(app, req, registration=True)
-            if err is not None:
-                return None, None, err
-        else:
-            # guest and admin and parked users are allowed to log in
-            if user.group in [
-                GroupEnumInternal.guest.value,
-                GroupEnumInternal.parked.value
-            ]:
-                return None, None, errors.user_not_allowed
+    # get a service
+    srv: UserService = RootService().user_service
 
-        # generate jwt token
-        access_token, refresh_token, err = await RootService().auth_service.generate_oidc_token(user)
+    # find user
+    user, err = await srv.get(app, UserGetRequest(username=username))
+    if err is not None:
+        # create the user it not exists; users that don't match the filter
+        # are still created but marked inactive so they cannot log in until
+        # an admin activates them
+        req = UserCreateRequest(
+            username=username,
+            group=GroupEnumInternal.default,
+            password="",
+            email=email,
+            quota=None,
+            extra_info=user_info,
+            status=UserStatusEnum.active if filter_passed else UserStatusEnum.inactive,
+        )
+        user, err = await srv.create(app, req, registration=True)
         if err is not None:
             return None, None, err
-        else:
-            return access_token, refresh_token, None
     else:
+        # guest and admin and parked users are allowed to log in
+        if user.group in [
+            GroupEnumInternal.guest.value,
+            GroupEnumInternal.parked.value
+        ]:
+            return None, None, errors.user_not_allowed
+
+    if not filter_passed or user.status != UserStatusEnum.active:
         return None, None, errors.user_not_allowed
+
+    # generate jwt token
+    access_token, refresh_token, err = await RootService().auth_service.generate_oidc_token(user)
+    if err is not None:
+        return None, None, err
+    else:
+        return access_token, refresh_token, None
 
 
 @bp.get("/authorize", name="authorize", version=1)

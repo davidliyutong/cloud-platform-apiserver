@@ -39,6 +39,7 @@ class UserCreateRequest(BaseModel):
     email: Optional[str] = None
     quota: Optional[Dict[str, Any]] = None  # resource quota
     extra_info: Optional[Dict[str, Any]] = None  # extra info
+    status: UserStatusEnum = UserStatusEnum.active
 
 
 class UserCreateResponse(ResponseBaseModel):
