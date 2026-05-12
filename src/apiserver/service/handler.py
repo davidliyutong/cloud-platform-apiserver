@@ -233,6 +233,16 @@ async def handle_pod_create_update_event(srv: Optional['src.apiserver.service.Ro
         logger.error(f"handle_pod_create_update_event failed to parse template {pod.template_ref}: {err}")
         return err
 
+    # If the template content changed since the last successful apply, delete old
+    # non-PVC resources so stale Deployments/Services from the previous template
+    # are removed before the new manifest is applied.
+    if pod.template_str is not None and pod.template_str != "" and pod.template_str != original_template_str:
+        logger.info(f"template changed for pod {pod.pod_id}, cleaning up non-PVC resources")
+        err = await srv.k8s_operator_service.delete_pod_except_pvc(pod.pod_id)
+        if err is not None:
+            logger.error(f"handle_pod_create_update_event failed to clean up old resources for pod {pod.pod_id}: {err}")
+            return err
+
     # create pod ingress
     ingress_resource = K8SIngressResource.new(pod, srv.opt)
     err = await srv.k8s_operator_service.create_apply_ingress(ingress_resource)

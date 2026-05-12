@@ -544,6 +544,7 @@ All payload fields are optional; omitted fields are left unchanged. Limited to a
     {
         "name": "",
         "description": "",
+        "template_ref": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
         "cpu_lim_m_cpu": 1000,
         "mem_lim_mb": 1024,
         "storage_lim_mb": 10240,
@@ -860,6 +861,11 @@ so a pod must always be stopped before its spec can be changed. This lets a
 user shrink a pod whose original spec no longer fits the cluster's available
 resources, then start it.
 
+`template_ref` can also be changed while the pod is `stopped`. The target
+template must be in `committed` state. On the next start, old Kubernetes
+resources (Deployment, Service, Ingress) are replaced with those from the new
+template; PersistentVolumeClaims are preserved so existing data is not lost.
+
 Every request — whether it changes specs, just sets `target_status: running`,
 or both — is validated against the user's quota using the *effective* spec
 (request value falling back to the pod's stored value), so a user can never
@@ -883,6 +889,7 @@ edit the spec and retry.
     {
         "name": "",
         "description": "",
+        "template_ref": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
         "cpu_lim_m_cpu": 1000,
         "mem_lim_mb": 1024,
         "storage_lim_mb": 10240,
@@ -908,6 +915,8 @@ edit the spec and retry.
     ```json
     {"status": 400, "message": "pod must be stopped to edit its specs"}
     {"status": 400, "message": "quota exceeded"}
+    {"status": 400, "message": "template is not committed"}
+    {"status": 404, "message": "template not found"}
     ```
 
 #### DELETE /v1/pods/:pod_id

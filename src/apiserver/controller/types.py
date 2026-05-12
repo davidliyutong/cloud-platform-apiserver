@@ -317,6 +317,7 @@ class PodUpdateRequest(BaseModel):
     pod_id: Optional[str]
     name: Optional[str] = None
     description: Optional[str] = None
+    template_ref: Optional[str] = None
     cpu_lim_m_cpu: Optional[int] = None
     mem_lim_mb: Optional[int] = None
     storage_lim_mb: Optional[int] = None
@@ -366,6 +367,16 @@ class PodUpdateRequest(BaseModel):
     def storage_lim_mb_must_be_valid(cls, v):
         if v is not None:
             raise ValueError('storage cannot be changed after pod creation')
+        return v
+
+    @field_validator('template_ref')
+    def template_ref_must_be_valid(cls, v):
+        if v is None:
+            return v
+        try:
+            _ = uuid.UUID(v)
+        except ValueError as e:
+            raise e
         return v
 
     @field_validator('gpu')
