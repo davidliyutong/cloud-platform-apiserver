@@ -470,8 +470,12 @@ Create pod. Payload is pod profile. Limited to admins.
         "name": "",
         "description": "",
         "template_ref": "",
-        "uid": "",
-        "timeout_s": 1,
+        "cpu_lim_m_cpu": 1000,
+        "mem_lim_mb": 1024,
+        "storage_lim_mb": 10240,
+        "gpu": 0,
+        "username": "",
+        "timeout_s": 3600,
         "values": {}
     }
     ```
@@ -516,7 +520,16 @@ Get a single pod's status. Limited to admins.
 
 #### PUT /v1/admin/pods/:pod_id
 
-Modify a single pod's status. Limited to admins.
+Modify a single pod. Same field semantics as `PUT /v1/pods/:pod_id`.
+
+Spec edits (`cpu_lim_m_cpu`, `mem_lim_mb`, `storage_lim_mb`, `gpu`) are only
+accepted when the pod's `current_status` is `stopped`. **This guard applies
+to admins too** — editing the spec of a running pod would race against the
+live k8s deployment, so the API returns `400 pod must be stopped to edit
+its specs` regardless of role. Stop the pod first
+(`{"target_status": "stopped"}`), then resize.
+
+All payload fields are optional; omitted fields are left unchanged. Limited to admins.
 
 - Request Header:
 
@@ -529,13 +542,15 @@ Modify a single pod's status. Limited to admins.
 
     ```json
     {
-        "pod_id": "",
         "name": "",
         "description": "",
-        "template_ref": "",
-        "uid": "",
-        "timeout_s": "",
-        "target_status": ""
+        "cpu_lim_m_cpu": 1000,
+        "mem_lim_mb": 1024,
+        "storage_lim_mb": 10240,
+        "gpu": 0,
+        "username": "",
+        "timeout_s": 3600,
+        "target_status": "running"
     }
     ```
 
@@ -760,7 +775,13 @@ pods and total number of pods.
 
 #### POST /v1/pods
 
-Create pod. Payload is pod profile. Users will be limited on their quota. Admins are not limited by default.
+Create pod. Payload is pod profile. The user's quota is enforced on
+`storage_lim_mb` and the total number of pods at create time;
+`cpu_lim_m_cpu`, `mem_lim_mb` and `gpu` are charged against the quota
+only when the pod is started (see `PUT /v1/pods/:pod_id`).
+
+`cpu_lim_m_cpu` must be ≥ 500, `mem_lim_mb` ≥ 512, `storage_lim_mb` ≥ 10240,
+`gpu` ≥ 0, `timeout_s` between 0 and 86400.
 
 - Request Header:
 
@@ -776,8 +797,11 @@ Create pod. Payload is pod profile. Users will be limited on their quota. Admins
         "name": "",
         "description": "",
         "template_ref": "",
-        "uid": "",
-        "timeout_s": 1,
+        "cpu_lim_m_cpu": 1000,
+        "mem_lim_mb": 1024,
+        "storage_lim_mb": 10240,
+        "gpu": 0,
+        "timeout_s": 3600,
         "values": {}
     }
     ```
@@ -795,7 +819,10 @@ Create pod. Payload is pod profile. Users will be limited on their quota. Admins
 
 #### GET /v1/pods/:pod_id
 
-Get a single pod's status owned by current user.
+Get a single pod owned by current user. The returned `pod.current_status_reason`
+carries a short human-readable explanation when `current_status` is `failed`
+(e.g. `Unschedulable: 0/3 nodes available: 3 Insufficient memory`,
+`ImagePullBackOff: ...`). It is `null` while the pod is healthy.
 
 - Request Header:
 
@@ -822,7 +849,26 @@ Get a single pod's status owned by current user.
 
 #### PUT /v1/pods/:pod_id
 
-Modify a single pod's status. User can only modify their own pod. Admins can modify any.
+Modify a single pod owned by current user. All payload fields are optional;
+omitted fields are left unchanged.
+
+Spec edits (`cpu_lim_m_cpu`, `mem_lim_mb`, `storage_lim_mb`, `gpu`) are only
+accepted when the pod's `current_status` is `stopped` — attempts to resize a
+running or pending pod return `400 pod must be stopped to edit its specs`.
+The same guard applies to the admin endpoint (`PUT /v1/admin/pods/:pod_id`),
+so a pod must always be stopped before its spec can be changed. This lets a
+user shrink a pod whose original spec no longer fits the cluster's available
+resources, then start it.
+
+Every request — whether it changes specs, just sets `target_status: running`,
+or both — is validated against the user's quota using the *effective* spec
+(request value falling back to the pod's stored value), so a user can never
+exceed their allowance. If the check fails the API returns `400 quota exceeded`.
+
+If the cluster cannot fit the pod (insufficient cpu/memory/gpu, unschedulable,
+image pull failure, etc.) the pod transitions to `current_status: failed`
+and a short reason is written to `current_status_reason`; the user can then
+edit the spec and retry.
 
 - Request Header:
 
@@ -835,13 +881,14 @@ Modify a single pod's status. User can only modify their own pod. Admins can mod
 
     ```json
     {
-        "pod_id": "",
         "name": "",
         "description": "",
-        "template_ref": "",
-        "uid": "",
-        "timeout_s": "",
-        "target_status": ""
+        "cpu_lim_m_cpu": 1000,
+        "mem_lim_mb": 1024,
+        "storage_lim_mb": 10240,
+        "gpu": 0,
+        "timeout_s": 3600,
+        "target_status": "running"
     }
     ```
 
@@ -854,6 +901,13 @@ Modify a single pod's status. User can only modify their own pod. Admins can mod
         "message":"",
         "pod": {}
     }
+    ```
+
+- Error responses:
+
+    ```json
+    {"status": 400, "message": "pod must be stopped to edit its specs"}
+    {"status": 400, "message": "quota exceeded"}
     ```
 
 #### DELETE /v1/pods/:pod_id

@@ -103,13 +103,13 @@ class QuotaModel(BaseModel):
     """
     Quota model, used to define user quota
     """
-    version: str
+    version: str = config.CONFIG_BUILD_VERSION
     committed: bool = False
     cpu_m: int
     memory_mb: int
     storage_mb: int
-    gpu: int  # attention: not used
-    network_mb: int  # attention: not used
+    gpu: int = 0  # attention: not used
+    network_mb: int = 0  # attention: not used
     pod_n: int
 
     @field_validator("version")
@@ -404,6 +404,7 @@ class PodModel(BaseModel):
     timeout_s: int
     current_status: PodStatusEnum
     target_status: PodStatusEnum
+    current_status_reason: Optional[str] = None  # populated when scheduling/start fails
 
     @field_validator("version")
     def version_must_be_valid(cls, v):
@@ -498,12 +499,15 @@ class PodModel(BaseModel):
             timeout_s=timeout_s,
             current_status=PodStatusEnum.pending,
             target_status=PodStatusEnum.running,
+            current_status_reason=None,
         )
 
     @classmethod
     def upgrade(cls, d: Dict[str, Any]) -> Self:
         if 'gpu' not in d:
             d['gpu'] = 0
+        if 'current_status_reason' not in d:
+            d['current_status_reason'] = None
         res = cls(**d)
         res.version = config.CONFIG_BUILD_VERSION
         return res

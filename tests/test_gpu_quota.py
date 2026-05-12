@@ -1,6 +1,6 @@
 import uuid
 
-from src.apiserver.controller.types import PodCreateRequest
+from src.apiserver.controller.types import PodCreateRequest, PodUpdateRequest
 from src.apiserver.service.pod import PodService, ModeEnum
 from src.components import datamodels
 
@@ -60,12 +60,23 @@ def test_gpu_quota_counts_running_pods_only():
     assert PodService.check_quota(user, pods, req, mode=ModeEnum.create) is True
 
 
-def test_gpu_quota_exceeded_with_running_pods():
+def test_gpu_quota_exceeded_when_starting_pod():
+    """GPU is checked only when a pod is started (target_status=running)."""
     user = _new_user_with_gpu_quota(gpu_quota=3)
-    pods = [_new_pod(gpu=2, status=datamodels.PodStatusEnum.running)]
-    req = _new_create_request(gpu=2)
+    running = _new_pod(gpu=2, status=datamodels.PodStatusEnum.running)
+    stopped = _new_pod(gpu=2, status=datamodels.PodStatusEnum.stopped)
+    stopped.pod_id = "target"
 
-    assert PodService.check_quota(user, pods, req, mode=ModeEnum.create) is False
+    req = PodUpdateRequest(
+        pod_id="target",
+        cpu_lim_m_cpu=1000,
+        mem_lim_mb=1024,
+        storage_lim_mb=10240,
+        gpu=2,
+        target_status=datamodels.PodStatusEnum.running,
+    )
+
+    assert PodService.check_quota(user, [running, stopped], req, mode=ModeEnum.update) is False
 
 
 def test_template_verify_allows_optional_pod_gpu_lim():

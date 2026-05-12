@@ -224,12 +224,13 @@ async def update(request, pod_id: str):
 
         # return response
         if err is not None:
+            status_code = errors.http_status_for(err)
             return json_response(
                 PodUpdateResponse(
-                    status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                    status=status_code,
                     message=str(err)
                 ).model_dump(),
-                status=http.HTTPStatus.INTERNAL_SERVER_ERROR
+                status=status_code
             )
         else:
             return json_response(
