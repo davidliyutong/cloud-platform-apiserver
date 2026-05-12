@@ -201,10 +201,10 @@ class PodService(ServiceInterface):
         ])
 
         # Spec edits are only allowed when the pod is currently stopped.
-        # Admins (force=True) may override this guard.
-        if spec_requested and not req.force:
-            if old_pod.current_status != datamodels.PodStatusEnum.stopped:
-                return None, errors.pod_not_stopped
+        # This applies to admins too: editing a running pod's spec would race
+        # with the live k8s deployment and is rejected to avoid ambiguity.
+        if spec_requested and old_pod.current_status != datamodels.PodStatusEnum.stopped:
+            return None, errors.pod_not_stopped
 
         # Effective spec used for both the quota check and the persisted update.
         effective_cpu = req.cpu_lim_m_cpu if req.cpu_lim_m_cpu is not None else old_pod.cpu_lim_m_cpu

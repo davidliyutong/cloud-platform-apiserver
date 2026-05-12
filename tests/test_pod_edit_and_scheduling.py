@@ -2,13 +2,14 @@
 Tests for: editing stopped-pod specs, quota enforcement on edits, and the
 scheduling-failure reason extraction.
 """
+import asyncio
 import uuid
 from types import SimpleNamespace
 
 from src.apiserver.controller.types import PodUpdateRequest
 from src.apiserver.service.operator import K8SOperatorService
 from src.apiserver.service.pod import PodService, ModeEnum
-from src.components import datamodels
+from src.components import datamodels, errors
 
 
 def _new_user(
@@ -148,6 +149,84 @@ def test_pod_model_upgrade_backfills_status_reason():
 
     pod = datamodels.PodModel.upgrade(legacy)
     assert pod.current_status_reason is None
+
+
+# --- spec-edit guard ----------------------------------------------------------
+
+
+class _FakePodRepo:
+    def __init__(self, pod):
+        self._pod = pod
+
+    async def get(self, pod_id):
+        return self._pod, None
+
+    async def list(self, extra_query_filter=None):
+        return 1, [self._pod], None
+
+    async def update(self, **kwargs):  # pragma: no cover - shouldn't be reached on guarded paths
+        raise AssertionError("repo.update must not be called when the guard rejects the request")
+
+
+class _FakeUserRepo:
+    def __init__(self, user):
+        self._user = user
+
+    async def get(self, username):
+        return self._user, None
+
+
+class _FakeApp:
+    async def add_task(self, *_a, **_kw):  # pragma: no cover
+        pass
+
+
+def _make_service(user, pod):
+    service = PodService.__new__(PodService)
+    service.repo = _FakePodRepo(pod)
+    service.parent = SimpleNamespace(
+        user_service=SimpleNamespace(repo=_FakeUserRepo(user)),
+        pod_service=SimpleNamespace(repo=service.repo),
+    )
+    return service
+
+
+def _spec_update_req(pod_id, force=False):
+    return PodUpdateRequest(
+        pod_id=pod_id,
+        cpu_lim_m_cpu=2000,
+        mem_lim_mb=2048,
+        storage_lim_mb=20480,
+        force=force,
+    )
+
+
+def test_spec_edit_rejected_on_running_pod_even_with_force():
+    """Force (admin) does not bypass the stopped-only guard — editing a
+    running pod's spec is ambiguous against the live deployment."""
+    user = _new_user()
+    pod = _new_pod(status=datamodels.PodStatusEnum.running, pod_id="p1")
+    service = _make_service(user, pod)
+
+    req = _spec_update_req("p1", force=True)
+    result, err = asyncio.get_event_loop().run_until_complete(
+        service.update(_FakeApp(), req)
+    )
+    assert result is None
+    assert err is errors.pod_not_stopped
+
+
+def test_spec_edit_rejected_on_running_pod_for_user():
+    user = _new_user()
+    pod = _new_pod(status=datamodels.PodStatusEnum.running, pod_id="p1")
+    service = _make_service(user, pod)
+
+    req = _spec_update_req("p1", force=False)
+    result, err = asyncio.get_event_loop().run_until_complete(
+        service.update(_FakeApp(), req)
+    )
+    assert result is None
+    assert err is errors.pod_not_stopped
 
 
 # --- scheduling failure reason extraction -------------------------------------

@@ -520,10 +520,14 @@ Get a single pod's status. Limited to admins.
 
 #### PUT /v1/admin/pods/:pod_id
 
-Modify a single pod. Admins may edit any field (including `cpu_lim_m_cpu`,
-`mem_lim_mb`, `storage_lim_mb`, `gpu`) regardless of the pod's current
-status; non-admin users may only edit those spec fields when the pod is
-`stopped` (see `PUT /v1/pods/:pod_id`).
+Modify a single pod. Same field semantics as `PUT /v1/pods/:pod_id`.
+
+Spec edits (`cpu_lim_m_cpu`, `mem_lim_mb`, `storage_lim_mb`, `gpu`) are only
+accepted when the pod's `current_status` is `stopped`. **This guard applies
+to admins too** — editing the spec of a running pod would race against the
+live k8s deployment, so the API returns `400 pod must be stopped to edit
+its specs` regardless of role. Stop the pod first
+(`{"target_status": "stopped"}`), then resize.
 
 All payload fields are optional; omitted fields are left unchanged. Limited to admins.
 
@@ -851,8 +855,10 @@ omitted fields are left unchanged.
 Spec edits (`cpu_lim_m_cpu`, `mem_lim_mb`, `storage_lim_mb`, `gpu`) are only
 accepted when the pod's `current_status` is `stopped` — attempts to resize a
 running or pending pod return `400 pod must be stopped to edit its specs`.
-This lets a user shrink a pod whose original spec no longer fits the
-cluster's available resources, then start it.
+The same guard applies to the admin endpoint (`PUT /v1/admin/pods/:pod_id`),
+so a pod must always be stopped before its spec can be changed. This lets a
+user shrink a pod whose original spec no longer fits the cluster's available
+resources, then start it.
 
 Every request — whether it changes specs, just sets `target_status: running`,
 or both — is validated against the user's quota using the *effective* spec
