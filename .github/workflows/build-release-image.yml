@@ -32,5 +32,10 @@ jobs:
 
       - uses: actions/checkout@v3
 
+      - name: Build the Docker image (PR only)
+        if: github.event_name == 'pull_request'
+        run: make build.docker.buildx
+
       - name: Build and push the Docker image
+        if: github.event_name != 'pull_request'
         run: make push.docker.buildx
