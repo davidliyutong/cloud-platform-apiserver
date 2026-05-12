@@ -1,0 +1,30 @@
+name: openapi-schema
+
+on:
+  push:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  dump-openapi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Dump OpenAPI schema
+        env:
+          PYTHONPATH: .
+        run: python scripts/dump_openapi.py --output openapi.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openapi-schema
+          path: openapi.json
