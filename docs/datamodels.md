@@ -21,17 +21,18 @@
 - **image_ref**: reference of image, string, mutable
 - **template_ref**: unique id of template, uuid, immutable 
 - **template_str**: string copy of template, string, immutable
-- **cpu_lim_m_cpu**: limit of cpu, integer, immutable
-- **mem_lim_mb**: limit of memory, integer, immutable
-- **storage_lim_mb**: limit of storage, integer, immutable
-- **gpu**: limit of gpu, integer, immutable
+- **cpu_lim_m_cpu**: limit of cpu (mCPU), integer, mutable when pod is `stopped`
+- **mem_lim_mb**: limit of memory (MB), integer, mutable when pod is `stopped`
+- **storage_lim_mb**: limit of storage (MB), integer, mutable when pod is `stopped`
+- **gpu**: limit of gpu, integer, mutable when pod is `stopped`
 - **username**: username of owner, string, immutable
 - **user_uuid**: unique id of owner, uuid, immutable
 - **created_at**: timestamp, date, immutable, autogen
 - **started_at**: timestamp, date, mutable, autogen
 - **timeout_s**: timeout in terms of second, integer, mutable
-- **current_status**: 'creating'|'running'|'stopped'|'deleting', string, mutable, autogen
-- **target_status**: target status, string, mutable
+- **current_status**: 'pending'|'creating'|'running'|'stopped'|'deleting'|'failed'|'unknown', string, mutable, autogen
+- **target_status**: target status ('running' or 'stopped'), string, mutable
+- **current_status_reason**: short human-readable reason populated when a pod fails to reach `target_status` (e.g. `Unschedulable: 0/3 nodes available: 3 Insufficient memory`, `ImagePullBackOff: ...`). Cleared on a successful start. string|null, autogen
 
 ## Template
 
@@ -45,9 +46,9 @@
 
 ## Quota
 
-- **cpu**: micro cpus, int, mutable
-- **memory**: number of MBs, int, mutable
-- **storage**: number of MBs, int, mutable
-- **gpu**: gpu quota for running pods, int, mutable
-- **network**: TBD
-- **pod**: number of pods, int, mutable
+- **cpu_m**: total cpu allowance in mCPU. Charged only for pods whose `current_status == running`. int, mutable
+- **memory_mb**: total memory allowance in MB. Charged only for running pods. int, mutable
+- **storage_mb**: total storage allowance in MB. Charged for **all** pods regardless of running state. int, mutable
+- **gpu**: total gpu allowance. Charged only for running pods. int, mutable
+- **network_mb**: TBD
+- **pod_n**: maximum number of pods (any state), int, mutable
