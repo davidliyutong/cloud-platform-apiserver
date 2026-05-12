@@ -124,6 +124,8 @@ def main() -> int:
     opt.config_workspace_tls_secret = "openapi-tls"
     opt.config_auth_endpoint = "http://localhost"
     opt.config_token_secret = "openapi-dump-secret"
+    # Enable OIDC so its blueprint is registered and appears in the spec.
+    opt.config_use_oidc = True
 
     app = apiserver_prepare_run(apiserver_check_option(opt))
     app.config.update_config(opt.to_sanic_config())
