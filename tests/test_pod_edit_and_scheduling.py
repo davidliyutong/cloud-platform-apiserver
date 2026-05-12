@@ -214,6 +214,163 @@ def test_spec_edit_rejected_on_running_pod_for_user():
     assert err is errors.pod_not_stopped
 
 
+# --- template_ref switch -------------------------------------------------------
+
+
+class _RecordingPodRepo:
+    """Like _FakePodRepo but records update kwargs and actually returns the updated pod."""
+
+    def __init__(self, pod):
+        self._pod = pod
+        self.last_update_kwargs = None
+
+    async def get(self, pod_id):
+        return self._pod, None
+
+    async def list(self, extra_query_filter=None):
+        return 1, [self._pod], None
+
+    async def update(self, **kwargs):
+        self.last_update_kwargs = kwargs
+        # Build updated pod reflecting the new values.
+        pod_dict = self._pod.model_dump(mode='python')
+        for key, value in kwargs.items():
+            if value is not None and key not in ('clear_status_reason',):
+                pod_dict[key] = value
+        if kwargs.get('clear_status_reason'):
+            pod_dict['current_status_reason'] = None
+        pod_dict.setdefault('resource_status', 'pending')
+        pod_dict['resource_status'] = 'pending'
+        updated = datamodels.PodModel(**pod_dict)
+        return updated, None
+
+
+class _FakeTemplateRepo:
+    def __init__(self, template_id, committed=True):
+        self._template_id = template_id
+        self._status = (datamodels.ResourceStatusEnum.committed
+                        if committed else datamodels.ResourceStatusEnum.pending)
+
+    async def get(self, template_id):
+        if template_id == self._template_id:
+            from types import SimpleNamespace as _SN
+            return _SN(resource_status=self._status), None
+        from src.components import errors as _errors
+        return None, _errors.template_not_found
+
+
+def _make_service_with_template(user, pod, new_template_id, committed=True):
+    service = PodService.__new__(PodService)
+    pod_repo = _RecordingPodRepo(pod)
+    service.repo = pod_repo
+    service.parent = SimpleNamespace(
+        user_service=SimpleNamespace(repo=_FakeUserRepo(user)),
+        pod_service=SimpleNamespace(repo=pod_repo),
+        template_service=SimpleNamespace(repo=_FakeTemplateRepo(new_template_id, committed)),
+    )
+    return service
+
+
+def test_template_ref_switch_updates_db_field():
+    """Switching template_ref on a stopped pod must persist the new UUID."""
+    user = _new_user()
+    old_template_id = str(uuid.uuid4())
+    new_template_id = str(uuid.uuid4())
+    pod = _new_pod(pod_id="p1")
+    pod.template_ref = uuid.UUID(old_template_id)
+    pod.current_status = datamodels.PodStatusEnum.stopped
+
+    service = _make_service_with_template(user, pod, new_template_id, committed=True)
+
+    req = PodUpdateRequest(pod_id="p1", template_ref=new_template_id)
+    result, err = asyncio.get_event_loop().run_until_complete(
+        service.update(_FakeApp(), req)
+    )
+
+    assert err is None, f"unexpected error: {err}"
+    assert result is not None
+    # The new template_ref must be reflected on the returned pod.
+    assert str(result.template_ref) == new_template_id
+    # repo.update must have received the new template_ref string, not None.
+    assert service.repo.last_update_kwargs is not None
+    assert service.repo.last_update_kwargs.get('template_ref') == new_template_id
+
+
+def test_template_ref_switch_rejected_on_running_pod():
+    """Switching template_ref on a running pod must be rejected."""
+    user = _new_user()
+    new_template_id = str(uuid.uuid4())
+    pod = _new_pod(pod_id="p1", status=datamodels.PodStatusEnum.running)
+
+    service = _make_service_with_template(user, pod, new_template_id, committed=True)
+
+    req = PodUpdateRequest(pod_id="p1", template_ref=new_template_id)
+    result, err = asyncio.get_event_loop().run_until_complete(
+        service.update(_FakeApp(), req)
+    )
+
+    assert result is None
+    assert err is errors.pod_not_stopped
+
+
+def test_template_ref_switch_rejected_when_template_not_committed():
+    """Switching to a non-committed template must be rejected."""
+    user = _new_user()
+    new_template_id = str(uuid.uuid4())
+    pod = _new_pod(pod_id="p1")
+    pod.current_status = datamodels.PodStatusEnum.stopped
+
+    service = _make_service_with_template(user, pod, new_template_id, committed=False)
+
+    req = PodUpdateRequest(pod_id="p1", template_ref=new_template_id)
+    result, err = asyncio.get_event_loop().run_until_complete(
+        service.update(_FakeApp(), req)
+    )
+
+    assert result is None
+    assert err is errors.template_not_committed
+
+
+def test_template_ref_switch_rejected_when_template_not_found():
+    """Requesting a non-existent template_ref must be rejected."""
+    user = _new_user()
+    new_template_id = str(uuid.uuid4())
+    wrong_template_id = str(uuid.uuid4())
+    pod = _new_pod(pod_id="p1")
+    pod.current_status = datamodels.PodStatusEnum.stopped
+
+    # fake repo only knows about wrong_template_id, not new_template_id
+    service = _make_service_with_template(user, pod, wrong_template_id, committed=True)
+
+    req = PodUpdateRequest(pod_id="p1", template_ref=new_template_id)
+    result, err = asyncio.get_event_loop().run_until_complete(
+        service.update(_FakeApp(), req)
+    )
+
+    assert result is None
+    assert err is errors.template_not_found
+
+
+def test_template_ref_same_value_is_noop():
+    """Sending the same template_ref that is already set should not trigger an update."""
+    user = _new_user()
+    existing_template_id = str(uuid.uuid4())
+    pod = _new_pod(pod_id="p1")
+    pod.template_ref = uuid.UUID(existing_template_id)
+    pod.current_status = datamodels.PodStatusEnum.stopped
+
+    service = _make_service_with_template(user, pod, existing_template_id, committed=True)
+
+    req = PodUpdateRequest(pod_id="p1", template_ref=existing_template_id)
+    result, err = asyncio.get_event_loop().run_until_complete(
+        service.update(_FakeApp(), req)
+    )
+
+    assert err is None
+    # repo.update must have received template_ref=None (no-op — same value)
+    assert service.repo.last_update_kwargs.get('template_ref') is None
+
+
 # --- scheduling failure reason extraction -------------------------------------
 
 
