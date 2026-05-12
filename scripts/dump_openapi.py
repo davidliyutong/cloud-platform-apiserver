@@ -125,7 +125,12 @@ def main() -> int:
     opt.config_auth_endpoint = "http://localhost"
     opt.config_token_secret = "openapi-dump-secret"
     # Enable OIDC so its blueprint is registered and appears in the spec.
+    # The four fields below are required by opt.verify() when OIDC is on.
     opt.config_use_oidc = True
+    opt.oidc_frontend_login_url = "http://localhost/login"
+    opt.oidc_client_id = "openapi-dump"
+    opt.oidc_client_secret = "openapi-dump-secret"
+    opt.oidc_redirect_url = "http://localhost/callback"
 
     app = apiserver_prepare_run(apiserver_check_option(opt))
     app.config.update_config(opt.to_sanic_config())
