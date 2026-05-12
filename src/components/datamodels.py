@@ -300,6 +300,7 @@ class TemplateModel(BaseModel):
     template_str: str
     fields: Optional[Dict[str, FieldTypeEnum]]  # not used
     defaults: Optional[Dict[str, Any]]  # not used
+    enabled: bool = True
 
     @field_validator("version")
     def version_must_be_valid(cls, v):
@@ -376,6 +377,8 @@ class TemplateModel(BaseModel):
 
     @classmethod
     def upgrade(cls, d: Dict[str, Any]) -> Self:
+        if 'enabled' not in d:
+            d['enabled'] = True
         res = cls(**d)
         res.version = config.CONFIG_BUILD_VERSION
         return res

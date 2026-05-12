@@ -181,6 +181,7 @@ class TemplateGetResponse(TemplateCreateResponse):
 class TemplateUpdateRequest(BaseModel):
     """
     Update request for templates, all fields except template_id are optional.
+    Set enabled=false to hide the template from non-admin users; enabled=true to restore visibility.
     """
     template_id: str
     name: Optional[str] = None
@@ -189,6 +190,7 @@ class TemplateUpdateRequest(BaseModel):
     template_str: Optional[str] = None
     fields: Optional[Dict[str, Any]] = None
     defaults: Optional[Dict[str, Any]] = None
+    enabled: Optional[bool] = None
 
 
 class TemplateUpdateResponse(TemplateGetResponse):

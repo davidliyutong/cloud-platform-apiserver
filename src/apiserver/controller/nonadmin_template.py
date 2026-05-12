@@ -3,6 +3,7 @@ This module implements the non-admin template controller.
 """
 
 import http
+import json
 
 from loguru import logger
 from sanic import Blueprint
@@ -34,14 +35,33 @@ bp = Blueprint("nonadmin_template", url_prefix="/templates", version=1)
 @protected()
 async def list(request):
     """
-    List all templates. The same as admin_template_list, but without role check.
+    List all enabled templates. Disabled templates are hidden from non-admin users.
     """
     logger.debug(f"{request.method} {request.path} invoked")
 
-    if request.query_args is None:
-        req = TemplateListRequest()
-    else:
-        req = TemplateListRequest(**{k: v for (k, v) in request.query_args})
+    args = {k: v for (k, v) in request.query_args}
+
+    # Merge caller-supplied filter with the enabled constraint so disabled
+    # templates are never visible to non-admin users.
+    user_filter = {}
+    if args.get("extra_query_filter", ""):
+        try:
+            user_filter = json.loads(args["extra_query_filter"])
+        except json.JSONDecodeError:
+            return json_response(
+                TemplateListResponse(
+                    status=http.HTTPStatus.BAD_REQUEST,
+                    message=str(errors.wrong_query_filter)
+                ).model_dump(),
+                status=http.HTTPStatus.BAD_REQUEST
+            )
+
+    # {"enabled": {"$ne": False}} matches both explicit True and legacy docs
+    # that pre-date the enabled field (treated as enabled by default).
+    merged_filter = {"enabled": {"$ne": False}, **user_filter}
+    args["extra_query_filter"] = json.dumps(merged_filter)
+
+    req = TemplateListRequest(**args)
 
     # list templates
     count, templates, err = await get_root_service().template_service.list(request.app, req)
@@ -79,7 +99,7 @@ async def list(request):
 @protected()
 async def get(request, template_id: str):
     """
-    Get a template by id. The same as admin_template_get, but without role check.
+    Get a template by id. Returns 404 for disabled templates.
     """
     logger.debug(f"{request.method} {request.path} invoked")
 
@@ -105,6 +125,14 @@ async def get(request, template_id: str):
                     message=str(err)
                 ).model_dump(),
                 status=http.HTTPStatus.INTERNAL_SERVER_ERROR
+            )
+        elif not template.enabled:
+            return json_response(
+                TemplateGetResponse(
+                    status=http.HTTPStatus.NOT_FOUND,
+                    message=str(errors.template_not_found)
+                ).model_dump(),
+                status=http.HTTPStatus.NOT_FOUND
             )
         else:
             return json_response(
