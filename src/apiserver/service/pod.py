@@ -192,6 +192,18 @@ class PodService(ServiceInterface):
         # list all pods of the user
         _, pods, err = await self.parent.pod_service.repo.list(extra_query_filter={"username": req.username})
 
+        # Validate and resolve template_ref switch.
+        if req.template_ref is not None and req.template_ref != str(old_pod.template_ref):
+            if old_pod.current_status != datamodels.PodStatusEnum.stopped:
+                return None, errors.pod_not_stopped
+            new_template, err = await self.parent.template_service.repo.get(req.template_ref)
+            if err is not None or new_template is None:
+                return None, errors.template_not_found
+            if new_template.resource_status != datamodels.ResourceStatusEnum.committed:
+                return None, errors.template_not_committed
+        else:
+            req.template_ref = None  # no change, do not write to repo
+
         # Determine whether the user requested a spec change.
         spec_requested = any([
             req.cpu_lim_m_cpu is not None,
@@ -230,6 +242,7 @@ class PodService(ServiceInterface):
             user_uuid=req.user_uuid,
             timeout_s=req.timeout_s,
             target_status=req.target_status,
+            template_ref=req.template_ref,
             cpu_lim_m_cpu=effective_cpu if spec_requested else None,
             mem_lim_mb=effective_mem if spec_requested else None,
             storage_lim_mb=None,

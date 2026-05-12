@@ -133,6 +133,7 @@ class PodRepo:
             user_uuid: Optional[str] = None,
             timeout_s: Optional[int] = None,
             target_status: Optional[datamodels.PodStatusEnum] = None,
+            template_ref: Optional[str] = None,
             cpu_lim_m_cpu: Optional[int] = None,
             mem_lim_mb: Optional[int] = None,
             storage_lim_mb: Optional[int] = None,
@@ -168,6 +169,8 @@ class PodRepo:
                 pod['timeout_s'] = timeout_s if timeout_s is not None else pod['timeout_s']
                 pod['target_status'] = target_status if target_status is not None else pod['target_status']
 
+                pod['template_ref'] = template_ref if template_ref is not None else pod['template_ref']
+
                 # spec fields (editable only when pod is stopped; enforced by the service layer)
                 pod['cpu_lim_m_cpu'] = cpu_lim_m_cpu if cpu_lim_m_cpu is not None else pod['cpu_lim_m_cpu']
                 pod['mem_lim_mb'] = mem_lim_mb if mem_lim_mb is not None else pod['mem_lim_mb']
@@ -186,10 +189,11 @@ class PodRepo:
                 elif current_status_reason is not None:
                     pod['current_status_reason'] = current_status_reason
 
-                # if username, target_status, or any spec field is changed, set resource_status to pending
+                # if username, target_status, template_ref, or any spec field is changed, set resource_status to pending
                 if any([
                     username is not None,
                     target_status is not None,
+                    template_ref is not None,
                     cpu_lim_m_cpu is not None,
                     mem_lim_mb is not None,
                     storage_lim_mb is not None,
