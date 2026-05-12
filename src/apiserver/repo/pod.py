@@ -129,6 +129,7 @@ class PodRepo:
             pod_id: str,
             name: Optional[str] = None,
             description: Optional[str] = None,
+            template_ref: Optional[str] = None,
             username: Optional[str] = None,
             user_uuid: Optional[str] = None,
             timeout_s: Optional[int] = None,
@@ -174,6 +175,12 @@ class PodRepo:
                 pod['storage_lim_mb'] = storage_lim_mb if storage_lim_mb is not None else pod['storage_lim_mb']
                 pod['gpu'] = gpu if gpu is not None else pod.get('gpu', 0)
 
+                # switching template: update ref and invalidate the cached template_str so the
+                # event handler fetches and re-caches the new template on next deployment
+                if template_ref is not None:
+                    pod['template_ref'] = template_ref
+                    pod['template_str'] = None
+
                 # only controller can change the following fields
                 pod['started_at'] = started_at if started_at is not None else pod['started_at']
                 pod['accessed_at'] = accessed_at if accessed_at is not None else datetime.datetime.utcnow()  # auto
@@ -186,10 +193,11 @@ class PodRepo:
                 elif current_status_reason is not None:
                     pod['current_status_reason'] = current_status_reason
 
-                # if username, target_status, or any spec field is changed, set resource_status to pending
+                # if username, target_status, template, or any spec field changes, set resource_status to pending
                 if any([
                     username is not None,
                     target_status is not None,
+                    template_ref is not None,
                     cpu_lim_m_cpu is not None,
                     mem_lim_mb is not None,
                     storage_lim_mb is not None,

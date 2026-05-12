@@ -313,10 +313,12 @@ class PodUpdateRequest(BaseModel):
     """
     Update request for pods, all fields except pod_id are optional.
     target_status is the target status for the pod to reach. Can be either running or stopped.
+    template_ref, if provided, replaces the pod's template and clears the cached template_str.
     """
     pod_id: Optional[str]
     name: Optional[str] = None
     description: Optional[str] = None
+    template_ref: Optional[str] = None
     cpu_lim_m_cpu: Optional[int] = None
     mem_lim_mb: Optional[int] = None
     storage_lim_mb: Optional[int] = None
@@ -326,6 +328,18 @@ class PodUpdateRequest(BaseModel):
     timeout_s: Optional[int] = None
     target_status: Optional[datamodels.PodStatusEnum] = None
     force: bool = False
+
+    @field_validator('template_ref')
+    def template_ref_must_be_valid(cls, v):
+        if v is None:
+            return v
+        if v == "":
+            raise ValueError("template_ref cannot be empty")
+        try:
+            _ = uuid.UUID(v)
+        except ValueError as e:
+            raise e
+        return v
 
     @model_validator(mode="after")
     def validate_request(self):

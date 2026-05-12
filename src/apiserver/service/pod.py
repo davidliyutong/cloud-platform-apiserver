@@ -192,8 +192,9 @@ class PodService(ServiceInterface):
         # list all pods of the user
         _, pods, err = await self.parent.pod_service.repo.list(extra_query_filter={"username": req.username})
 
-        # Determine whether the user requested a spec change.
+        # Determine whether the user requested a spec change (includes template swap).
         spec_requested = any([
+            req.template_ref is not None,
             req.cpu_lim_m_cpu is not None,
             req.mem_lim_mb is not None,
             req.storage_lim_mb is not None,
@@ -227,6 +228,7 @@ class PodService(ServiceInterface):
             pod_id=req.pod_id,
             name=req.name,
             description=req.description,
+            template_ref=req.template_ref,
             username=req.username,
             user_uuid=req.user_uuid,
             timeout_s=req.timeout_s,
