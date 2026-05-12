@@ -365,9 +365,8 @@ class PodUpdateRequest(BaseModel):
     @field_validator('storage_lim_mb')
     def storage_lim_mb_must_be_valid(cls, v):
         if v is not None:
-            return PodCreateRequest.storage_lim_mb_must_be_valid(v)
-        else:
-            return v
+            raise ValueError('storage cannot be changed after pod creation')
+        return v
 
     @field_validator('gpu')
     def gpu_must_be_valid(cls, v):

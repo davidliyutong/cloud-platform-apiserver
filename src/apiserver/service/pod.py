@@ -196,7 +196,6 @@ class PodService(ServiceInterface):
         spec_requested = any([
             req.cpu_lim_m_cpu is not None,
             req.mem_lim_mb is not None,
-            req.storage_lim_mb is not None,
             req.gpu is not None,
         ])
 
@@ -209,12 +208,12 @@ class PodService(ServiceInterface):
         # Effective spec used for both the quota check and the persisted update.
         effective_cpu = req.cpu_lim_m_cpu if req.cpu_lim_m_cpu is not None else old_pod.cpu_lim_m_cpu
         effective_mem = req.mem_lim_mb if req.mem_lim_mb is not None else old_pod.mem_lim_mb
-        effective_storage = req.storage_lim_mb if req.storage_lim_mb is not None else old_pod.storage_lim_mb
         effective_gpu = req.gpu if req.gpu is not None else old_pod.gpu
 
         req.cpu_lim_m_cpu = effective_cpu
         req.mem_lim_mb = effective_mem
-        req.storage_lim_mb = effective_storage
+        # Storage is fixed at creation; always use the existing value for the quota check.
+        req.storage_lim_mb = old_pod.storage_lim_mb
         req.gpu = effective_gpu
 
         # Enforce the user's quota using the effective spec (covers both spec edits
@@ -233,7 +232,7 @@ class PodService(ServiceInterface):
             target_status=req.target_status,
             cpu_lim_m_cpu=effective_cpu if spec_requested else None,
             mem_lim_mb=effective_mem if spec_requested else None,
-            storage_lim_mb=effective_storage if spec_requested else None,
+            storage_lim_mb=None,
             gpu=effective_gpu if spec_requested else None,
         )
 

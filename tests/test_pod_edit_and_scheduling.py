@@ -63,36 +63,22 @@ def _update_req(
         target_status: datamodels.PodStatusEnum = None,
         cpu: int = None,
         mem: int = None,
-        storage: int = None,
         gpu: int = None,
 ) -> PodUpdateRequest:
     return PodUpdateRequest(
         pod_id=pod_id,
         cpu_lim_m_cpu=cpu,
         mem_lim_mb=mem,
-        storage_lim_mb=storage,
         gpu=gpu,
         target_status=target_status,
     )
 
 
-def test_check_quota_update_storage_exceeded_even_when_not_starting():
-    """Storage is charged regardless of running state — editing a stopped pod's
-    storage must respect the storage quota."""
-    user = _new_user(storage_mb=20480)
-    pod = _new_pod(storage=10240, status=datamodels.PodStatusEnum.stopped, pod_id="a")
-    other = _new_pod(storage=10240, status=datamodels.PodStatusEnum.stopped, pod_id="b")
-    req = _update_req("a", storage=20480)  # 20G + 10G > 20G quota
-
-    assert PodService.check_quota(user, [pod, other], req, mode=ModeEnum.update) is False
-
-
-def test_check_quota_update_storage_ok_when_within_limit():
-    user = _new_user(storage_mb=20480)
-    pod = _new_pod(storage=10240, status=datamodels.PodStatusEnum.stopped, pod_id="a")
-    req = _update_req("a", storage=15360)
-
-    assert PodService.check_quota(user, [pod], req, mode=ModeEnum.update) is True
+def test_update_request_rejects_storage_change():
+    """Storage is immutable after pod creation; the request validator must reject it."""
+    import pytest
+    with pytest.raises(Exception):
+        PodUpdateRequest(pod_id="a", storage_lim_mb=20480)
 
 
 def test_check_quota_update_running_counts_other_running_pods_only():
@@ -196,7 +182,6 @@ def _spec_update_req(pod_id, force=False):
         pod_id=pod_id,
         cpu_lim_m_cpu=2000,
         mem_lim_mb=2048,
-        storage_lim_mb=20480,
         force=force,
     )
 
