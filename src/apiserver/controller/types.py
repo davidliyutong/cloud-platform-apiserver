@@ -334,16 +334,18 @@ class PodUpdateRequest(BaseModel):
                 raise ValueError('timeout_s must be positive')
             elif self.timeout_s > 86400 and not self.force:
                 raise ValueError('timeout_s must be less than 86400 seconds')
+        return self
 
     @field_validator('target_status')
     def target_status_must_be_valid(cls, v):
+        if v is None:
+            return v
         if isinstance(v, str):
             v = datamodels.PodStatusEnum(v)
-        if v is not None and v not in datamodels.PodStatusEnum:
+        if v not in datamodels.PodStatusEnum:
             raise ValueError('target_status must be valid PodStatusEnum')
-
         if v not in [datamodels.PodStatusEnum.running, datamodels.PodStatusEnum.stopped]:
-            raise ValueError('target_status must be valid')
+            raise ValueError('target_status must be running or stopped')
         return v
 
     @field_validator('cpu_lim_m_cpu')
@@ -363,7 +365,7 @@ class PodUpdateRequest(BaseModel):
     @field_validator('storage_lim_mb')
     def storage_lim_mb_must_be_valid(cls, v):
         if v is not None:
-            PodCreateRequest.storage_lim_mb_must_be_valid(v)
+            return PodCreateRequest.storage_lim_mb_must_be_valid(v)
         else:
             return v
 

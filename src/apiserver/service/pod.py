@@ -50,26 +50,35 @@ class PodService(ServiceInterface):
             return True
 
         elif mode == ModeEnum.update:
+            # Exclude the pod being updated from totals; we'll add the requested values back in.
+            other_pods = [p for p in pods if p.pod_id != req.pod_id]
+
+            req_cpu = req.cpu_lim_m_cpu if req.cpu_lim_m_cpu is not None else 0
+            req_mem = req.mem_lim_mb if req.mem_lim_mb is not None else 0
+            req_storage = req.storage_lim_mb if req.storage_lim_mb is not None else 0
+            req_gpu = req.gpu if req.gpu is not None else 0
+
+            # Storage and pod count are charged whether or not the pod is running.
+            storage_mb = sum([p.storage_lim_mb for p in other_pods]) + req_storage
+            if storage_mb > user.quota.storage_mb:
+                return False
+
+            # When the pod is not being started, cpu/mem/gpu are not consumed.
             if req.target_status != datamodels.PodStatusEnum.running:
                 return True
 
-            # Update to running: check cpu/mem/gpu against running pods only
-            running_pods = list(
-                filter(
-                    lambda x: x.current_status == datamodels.PodStatusEnum.running and x.pod_id != req.pod_id,
-                    pods
-                )
-            )
-            req_gpu = req.gpu if req.gpu is not None else 0
-            cpu_m = sum([pod.cpu_lim_m_cpu for pod in running_pods]) + req.cpu_lim_m_cpu
-            mem_mb = sum([pod.mem_lim_mb for pod in running_pods]) + req.mem_lim_mb
-            storage_mb = sum([pod.storage_lim_mb for pod in pods])
-            gpu = sum([pod.gpu for pod in running_pods]) + req_gpu
+            # Starting (or already running): count this pod's requested resources
+            # together with the resources held by other currently-running pods.
+            other_running_pods = [
+                p for p in other_pods if p.current_status == datamodels.PodStatusEnum.running
+            ]
+            cpu_m = sum([p.cpu_lim_m_cpu for p in other_running_pods]) + req_cpu
+            mem_mb = sum([p.mem_lim_mb for p in other_running_pods]) + req_mem
+            gpu = sum([p.gpu for p in other_running_pods]) + req_gpu
 
             if any([
                 cpu_m > user.quota.cpu_m,
                 mem_mb > user.quota.memory_mb,
-                storage_mb > user.quota.storage_mb,
                 gpu > user.quota.gpu,
             ]):
                 return False
@@ -183,12 +192,33 @@ class PodService(ServiceInterface):
         # list all pods of the user
         _, pods, err = await self.parent.pod_service.repo.list(extra_query_filter={"username": req.username})
 
-        # check if user has reached the quota
-        req.cpu_lim_m_cpu = old_pod.cpu_lim_m_cpu
-        req.mem_lim_mb = old_pod.mem_lim_mb
-        req.storage_lim_mb = old_pod.storage_lim_mb
-        req.gpu = old_pod.gpu
+        # Determine whether the user requested a spec change.
+        spec_requested = any([
+            req.cpu_lim_m_cpu is not None,
+            req.mem_lim_mb is not None,
+            req.storage_lim_mb is not None,
+            req.gpu is not None,
+        ])
 
+        # Spec edits are only allowed when the pod is currently stopped.
+        # Admins (force=True) may override this guard.
+        if spec_requested and not req.force:
+            if old_pod.current_status != datamodels.PodStatusEnum.stopped:
+                return None, errors.pod_not_stopped
+
+        # Effective spec used for both the quota check and the persisted update.
+        effective_cpu = req.cpu_lim_m_cpu if req.cpu_lim_m_cpu is not None else old_pod.cpu_lim_m_cpu
+        effective_mem = req.mem_lim_mb if req.mem_lim_mb is not None else old_pod.mem_lim_mb
+        effective_storage = req.storage_lim_mb if req.storage_lim_mb is not None else old_pod.storage_lim_mb
+        effective_gpu = req.gpu if req.gpu is not None else old_pod.gpu
+
+        req.cpu_lim_m_cpu = effective_cpu
+        req.mem_lim_mb = effective_mem
+        req.storage_lim_mb = effective_storage
+        req.gpu = effective_gpu
+
+        # Enforce the user's quota using the effective spec (covers both spec edits
+        # and start-the-pod requests so a user can never exceed their allowance).
         ret = self.check_quota(user, pods, req, mode=ModeEnum.update)
         if not ret:
             return None, errors.quota_exceeded
@@ -201,6 +231,10 @@ class PodService(ServiceInterface):
             user_uuid=req.user_uuid,
             timeout_s=req.timeout_s,
             target_status=req.target_status,
+            cpu_lim_m_cpu=effective_cpu if spec_requested else None,
+            mem_lim_mb=effective_mem if spec_requested else None,
+            storage_lim_mb=effective_storage if spec_requested else None,
+            gpu=effective_gpu if spec_requested else None,
         )
 
         # if success and target_status is pending, trigger pod create event

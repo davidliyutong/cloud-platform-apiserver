@@ -133,10 +133,16 @@ class PodRepo:
             user_uuid: Optional[str] = None,
             timeout_s: Optional[int] = None,
             target_status: Optional[datamodels.PodStatusEnum] = None,
+            cpu_lim_m_cpu: Optional[int] = None,
+            mem_lim_mb: Optional[int] = None,
+            storage_lim_mb: Optional[int] = None,
+            gpu: Optional[int] = None,
             started_at: Optional[datetime.datetime] = None,  # hidden argument
             accessed_at: Optional[datetime.datetime] = None,  # hidden argument
             current_status: Optional[datamodels.PodStatusEnum] = None,  # hidden argument
             template_str: Optional[str] = None,  # hidden argument
+            current_status_reason: Optional[str] = None,  # hidden argument
+            clear_status_reason: bool = False,  # hidden argument: force-clear the reason
     ) -> Tuple[Optional[datamodels.PodModel], Optional[Exception]]:
         """
         Update a pod.
@@ -162,16 +168,32 @@ class PodRepo:
                 pod['timeout_s'] = timeout_s if timeout_s is not None else pod['timeout_s']
                 pod['target_status'] = target_status if target_status is not None else pod['target_status']
 
+                # spec fields (editable only when pod is stopped; enforced by the service layer)
+                pod['cpu_lim_m_cpu'] = cpu_lim_m_cpu if cpu_lim_m_cpu is not None else pod['cpu_lim_m_cpu']
+                pod['mem_lim_mb'] = mem_lim_mb if mem_lim_mb is not None else pod['mem_lim_mb']
+                pod['storage_lim_mb'] = storage_lim_mb if storage_lim_mb is not None else pod['storage_lim_mb']
+                pod['gpu'] = gpu if gpu is not None else pod.get('gpu', 0)
+
                 # only controller can change the following fields
                 pod['started_at'] = started_at if started_at is not None else pod['started_at']
                 pod['accessed_at'] = accessed_at if accessed_at is not None else datetime.datetime.utcnow()  # auto
                 pod['current_status'] = current_status if current_status is not None else pod['current_status']
                 pod['template_str'] = template_str if template_str is not None else pod['template_str']
 
-                # if username or target_status is changed, then set resource_status to pending
+                # status reason: settable on failure, clearable on success
+                if clear_status_reason:
+                    pod['current_status_reason'] = None
+                elif current_status_reason is not None:
+                    pod['current_status_reason'] = current_status_reason
+
+                # if username, target_status, or any spec field is changed, set resource_status to pending
                 if any([
                     username is not None,
                     target_status is not None,
+                    cpu_lim_m_cpu is not None,
+                    mem_lim_mb is not None,
+                    storage_lim_mb is not None,
+                    gpu is not None,
                 ]):
                     pod['resource_status'] = datamodels.ResourceStatusEnum.pending.value
 

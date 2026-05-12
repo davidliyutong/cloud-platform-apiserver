@@ -21,6 +21,15 @@ from src.components.config import (
     CONFIG_K8S_NAMESPACE,
     CONFIG_K8S_SERVICE_FMT, CONFIG_K8S_DEPLOYMENT_FMT
 )
+# Reasons we surface verbatim to the user; anything else is summarized generically.
+_K8S_USER_VISIBLE_WAITING_REASONS = {
+    "ImagePullBackOff",
+    "ErrImagePull",
+    "CrashLoopBackOff",
+    "CreateContainerConfigError",
+    "InvalidImageName",
+    "RunContainerError",
+}
 from src.components.datamodels import PodStatusEnum
 from src.components.resources import K8SIngressResource
 from .common import ServiceInterface
@@ -225,9 +234,20 @@ class K8SOperatorService(ServiceInterface):
         logger.info(f"pod {pod_id} created or updated successfully")
         return None
 
-    async def wait_pod(self, pod_id: str, target_status: PodStatusEnum, timeout_s: int = 120) -> Optional[Exception]:
+    async def wait_pod(
+            self,
+            pod_id: str,
+            target_status: PodStatusEnum,
+            timeout_s: int = 120,
+    ) -> Tuple[Optional[str], Optional[Exception]]:
         """
-        This method wait for a pod(deployment) to update
+        Wait for a pod (deployment) to reach the target status.
+
+        Returns a (reason, error) tuple. On success both are None. On failure
+        ``reason`` carries a short human-readable explanation suitable for
+        surfacing to the end user (e.g. "FailedScheduling: 0/3 nodes available:
+        3 Insufficient memory"). ``error`` is the underlying exception that
+        callers can use for branching.
         """
         start_t = time.time()
         while True:
@@ -243,16 +263,73 @@ class K8SOperatorService(ServiceInterface):
 
                 if _current_status == target_status:
                     logger.info(f"pod {pod_id} status is {target_status}")
-                    return None
+                    return None, None
                 elif (time.time() - start_t) > timeout_s:
-                    logger.warning(f"pod {pod_id} status is {_current_status}, timeout")
-                    return errors.k8s_timeout
+                    reason = await self.get_pod_failure_reason(pod_id)
+                    logger.warning(
+                        f"pod {pod_id} status is {_current_status}, timeout. reason={reason}"
+                    )
+                    return reason, errors.k8s_timeout
                 else:
+                    # early detect un-recoverable problems (image pull, scheduling)
+                    # so we don't have to wait the full timeout.
+                    reason = await self.get_pod_failure_reason(pod_id)
+                    if reason is not None:
+                        logger.warning(f"pod {pod_id} failed early: {reason}")
+                        return reason, errors.k8s_timeout
                     await asyncio.sleep(2)
 
             except ApiException as e:
                 logger.exception(e)
-                return errors.k8s_failed_to_update
+                return None, errors.k8s_failed_to_update
+
+    async def get_pod_failure_reason(self, pod_id: str) -> Optional[str]:
+        """
+        Inspect the underlying K8s Pods for this deployment and return a short
+        explanation if one of them is unschedulable or otherwise stuck.
+
+        Returns ``None`` when no actionable problem is visible (e.g. the pod is
+        still starting normally).
+        """
+        try:
+            pod_label = CONFIG_K8S_POD_LABEL_FMT.format(pod_id)
+            ret = self.v1.list_namespaced_pod(
+                self.namespace,
+                label_selector=f"{CONFIG_K8S_POD_LABEL_KEY}={pod_label}",
+            )
+        except ApiException as e:
+            logger.warning(f"failed to list pods for failure-reason lookup: {e}")
+            return None
+        except Exception as e:
+            logger.warning(f"unexpected error listing pods for failure-reason lookup: {e}")
+            return None
+
+        for p in (ret.items or []):
+            status = p.status
+            if status is None:
+                continue
+
+            # PodScheduled=False is what surfaces "insufficient cpu/memory/gpu"
+            # from kube-scheduler.
+            for cond in (status.conditions or []):
+                if cond.type == "PodScheduled" and cond.status == "False":
+                    return self._format_reason(cond.reason, cond.message)
+
+            # Container can't start (bad image, config error, crash loop, ...).
+            for cs in (status.container_statuses or []):
+                waiting = getattr(cs.state, "waiting", None) if cs.state else None
+                if waiting and waiting.reason in _K8S_USER_VISIBLE_WAITING_REASONS:
+                    return self._format_reason(waiting.reason, waiting.message)
+
+        return None
+
+    @staticmethod
+    def _format_reason(reason: Optional[str], message: Optional[str]) -> str:
+        reason = (reason or "").strip()
+        message = (message or "").strip()
+        if reason and message:
+            return f"{reason}: {message}"
+        return reason or message or "unknown scheduling failure"
 
     async def delete_pod(self, pod_id: str) -> Optional[Exception]:
         """
