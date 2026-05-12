@@ -32,7 +32,7 @@
 - **timeout_s**: timeout in terms of second, integer, mutable
 - **current_status**: 'pending'|'creating'|'running'|'stopped'|'deleting'|'failed'|'unknown', string, mutable, autogen
 - **target_status**: target status ('running' or 'stopped'), string, mutable
-- **current_status_reason**: short human-readable reason populated when a pod fails to reach `target_status` (e.g. `Unschedulable: 0/3 nodes available: 3 Insufficient memory`, `ImagePullBackOff: ...`). Cleared on a successful start. string|null, autogen
+- **current_status_reason**: short human-readable reason populated when a pod fails to reach `target_status` (e.g. `Unschedulable: 0/3 nodes available: 3 Insufficient memory`, `ImagePullBackOff: ...`). Cleared on any subsequent non-failed status transition (a successful start *or* a successful stop). string|null, autogen
 
 ## Template
 

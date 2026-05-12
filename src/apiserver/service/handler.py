@@ -255,8 +255,11 @@ async def handle_pod_create_update_event(srv: Optional['src.apiserver.service.Ro
     else:
         pod_current_status = pod.target_status
 
-    # update pod's status; surface the scheduling reason (or clear it on success)
-    # so the user can see "Insufficient cpu", "ImagePullBackOff", etc.
+    # Update pod's status. We always overwrite `current_status_reason`:
+    # - when the pod failed with a known reason, store it
+    # - otherwise (success, or failed-without-a-reason), clear any stale value
+    # so a previous failure can never linger and confuse the user.
+    should_set_reason = pod_current_status == PodStatusEnum.failed and reason
     _now = datetime.datetime.utcnow()
     _, err = await srv.pod_service.repo.update(
         pod_id=pod.pod_id,
@@ -264,8 +267,8 @@ async def handle_pod_create_update_event(srv: Optional['src.apiserver.service.Ro
         accessed_at=_now,
         current_status=pod_current_status,
         template_str=original_template_str,
-        current_status_reason=reason if pod_current_status == PodStatusEnum.failed else None,
-        clear_status_reason=pod_current_status != PodStatusEnum.failed,
+        current_status_reason=reason if should_set_reason else None,
+        clear_status_reason=not should_set_reason,
     )
     if err is not None:
         logger.error(f"handle_pod_create_update_event failed to update pod {pod.pod_id}: {err}")

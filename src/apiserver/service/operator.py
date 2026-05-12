@@ -246,8 +246,17 @@ class K8SOperatorService(ServiceInterface):
         Returns a (reason, error) tuple. On success both are None. On failure
         ``reason`` carries a short human-readable explanation suitable for
         surfacing to the end user (e.g. "FailedScheduling: 0/3 nodes available:
-        3 Insufficient memory"). ``error`` is the underlying exception that
-        callers can use for branching.
+        3 Insufficient memory").
+
+        ``error`` distinguishes the failure mode:
+
+        - ``errors.k8s_pod_failed`` — the pod has hit a terminal problem
+          (unschedulable, ImagePullBackOff, CrashLoopBackOff, …); detected
+          early without waiting for the full timeout. ``reason`` is set.
+        - ``errors.k8s_timeout`` — the deployment never reached
+          ``target_status`` within ``timeout_s`` and no terminal reason was
+          surfaced. ``reason`` may or may not be set.
+        - ``errors.k8s_failed_to_update`` — the K8s API call itself errored.
         """
         start_t = time.time()
         while True:
@@ -264,20 +273,21 @@ class K8SOperatorService(ServiceInterface):
                 if _current_status == target_status:
                     logger.info(f"pod {pod_id} status is {target_status}")
                     return None, None
-                elif (time.time() - start_t) > timeout_s:
-                    reason = await self.get_pod_failure_reason(pod_id)
+
+                # early detect un-recoverable problems (image pull, scheduling)
+                # so we don't have to wait the full timeout.
+                reason = await self.get_pod_failure_reason(pod_id)
+                if reason is not None:
+                    logger.warning(f"pod {pod_id} failed: {reason}")
+                    return reason, errors.k8s_pod_failed
+
+                if (time.time() - start_t) > timeout_s:
                     logger.warning(
-                        f"pod {pod_id} status is {_current_status}, timeout. reason={reason}"
+                        f"pod {pod_id} status is {_current_status}, timeout"
                     )
-                    return reason, errors.k8s_timeout
-                else:
-                    # early detect un-recoverable problems (image pull, scheduling)
-                    # so we don't have to wait the full timeout.
-                    reason = await self.get_pod_failure_reason(pod_id)
-                    if reason is not None:
-                        logger.warning(f"pod {pod_id} failed early: {reason}")
-                        return reason, errors.k8s_timeout
-                    await asyncio.sleep(2)
+                    return None, errors.k8s_timeout
+
+                await asyncio.sleep(2)
 
             except ApiException as e:
                 logger.exception(e)

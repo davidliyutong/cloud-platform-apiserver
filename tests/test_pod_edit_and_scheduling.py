@@ -302,3 +302,62 @@ def test_get_pod_failure_reason_none_when_healthy():
 
     reason = asyncio.get_event_loop().run_until_complete(op.get_pod_failure_reason("pid"))
     assert reason is None
+
+
+# --- wait_pod error-type distinction -----------------------------------------
+
+
+def _wait_pod_op_stub(deployment_status, pods):
+    op = K8SOperatorService.__new__(K8SOperatorService)
+    op.namespace = "test-ns"
+    op.app_v1 = SimpleNamespace(
+        read_namespaced_deployment_status=lambda *_a, **_kw: SimpleNamespace(
+            status=deployment_status
+        )
+    )
+    op.v1 = SimpleNamespace(
+        list_namespaced_pod=lambda namespace, label_selector: SimpleNamespace(items=pods)
+    )
+    return op
+
+
+def test_wait_pod_returns_k8s_pod_failed_on_terminal_failure():
+    """Unschedulable -> early exit with k8s_pod_failed (not k8s_timeout)."""
+    op = _wait_pod_op_stub(
+        deployment_status=SimpleNamespace(replicas=1, ready_replicas=None),
+        pods=[_pod_with_unschedulable("Insufficient memory")],
+    )
+    reason, err = asyncio.get_event_loop().run_until_complete(
+        op.wait_pod("pid", datamodels.PodStatusEnum.running, timeout_s=5)
+    )
+    assert err is errors.k8s_pod_failed
+    assert reason is not None
+    assert "Insufficient memory" in reason
+
+
+def test_wait_pod_returns_k8s_timeout_when_no_terminal_reason():
+    """No terminal reason + deadline elapsed -> k8s_timeout with reason None."""
+    op = _wait_pod_op_stub(
+        deployment_status=SimpleNamespace(replicas=1, ready_replicas=None),
+        pods=[],  # no pods visible, no reason to surface
+    )
+    reason, err = asyncio.get_event_loop().run_until_complete(
+        op.wait_pod("pid", datamodels.PodStatusEnum.running, timeout_s=0)
+    )
+    assert err is errors.k8s_timeout
+    assert reason is None
+
+
+# --- error -> HTTP status mapping --------------------------------------------
+
+
+def test_http_status_for_user_errors():
+    import http as _http
+    assert errors.http_status_for(errors.pod_not_stopped) == _http.HTTPStatus.BAD_REQUEST
+    assert errors.http_status_for(errors.quota_exceeded) == _http.HTTPStatus.BAD_REQUEST
+    assert errors.http_status_for(errors.pod_not_found) == _http.HTTPStatus.NOT_FOUND
+
+
+def test_http_status_for_unknown_falls_back_to_500():
+    import http as _http
+    assert errors.http_status_for(Exception("totally unexpected")) == _http.HTTPStatus.INTERNAL_SERVER_ERROR
