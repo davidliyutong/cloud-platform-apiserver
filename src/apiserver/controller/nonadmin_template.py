@@ -35,7 +35,8 @@ bp = Blueprint("nonadmin_template", url_prefix="/templates", version=1)
 @protected()
 async def list(request):
     """
-    List all templates. The same as admin_template_list, but without role check.
+    List enabled templates. Only templates with enabled=true are returned;
+    disabled templates are invisible to non-admin users.
     """
     logger.debug(f"{request.method} {request.path} invoked")
 
@@ -88,7 +89,7 @@ async def list(request):
 @protected()
 async def get(request, template_id: str):
     """
-    Get a template by id. The same as admin_template_get, but without role check.
+    Get a template by id. Returns 404 if the template does not exist or is disabled.
     """
     logger.debug(f"{request.method} {request.path} invoked")
 

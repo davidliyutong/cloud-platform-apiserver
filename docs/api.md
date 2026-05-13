@@ -251,9 +251,10 @@ This section describes admin APIs that manipulate template resource.
 
 #### GET /v1/admin/templates
 
-List all templates. If `template_id_start` and `template_id_end` are “greater than” 0, only templates with `template_id`
-between `template_id_start` and `template_id_end` are returned. If `filter` is not empty, apply filter on results. This
-API returns profiles of templates and total number of templates. Limited to admins.
+List all templates, including disabled ones. If `index_start` and `index_end`
+are greater than 0 they slice the result window. `extra_query_filter` accepts
+an additional MongoDB filter (JSON). Returns profiles of templates and total
+count. Limited to admins.
 
 - Request Header:
 
@@ -353,6 +354,12 @@ Get a single template. Limited to admins.
 
 Modify template. Payload is new template profile. Limited to admins.
 
+All payload fields are optional; omitted fields are left unchanged.
+
+Setting `enabled` to `false` hides the template from non-admin users without
+deleting it. Non-admin list and get endpoints treat disabled templates as
+non-existent (404). Admins can always see and toggle disabled templates.
+
 - Request Header:
 
     ```conf
@@ -366,10 +373,12 @@ Modify template. Payload is new template profile. Limited to admins.
     { 
         "template_id": "",
         "name": "",
+        "description": "",
         "image_ref": "",
         "template_str": "", 
         "fields": {},
-        "defaults": {} 
+        "defaults": {},
+        "enabled": true
     }
     ```
 
@@ -664,13 +673,16 @@ Modify user. Payload is new user profile. Similar to /v1/admin/user/:username. U
     ```
 ### Templates Management
 
-This section describes user APIs that read template resource.
+This section describes user APIs that read template resource. Only templates
+with `enabled: true` are visible through these endpoints — disabled templates
+are treated as non-existent and return 404.
 
-#### GET /v1/admin/templates
+#### GET /v1/templates
 
-List all templates. If `template_id_start` and `template_id_end` are “greater than” 0, only templates with `template_id`
-between `template_id_start` and `template_id_end` are returned. If `filter` is not empty, apply filter on results. This
-API returns profiles of templates and total number of templates.
+List enabled templates. Disabled templates are automatically excluded.
+If `index_start` and `index_end` are greater than 0 they slice the result
+window. `extra_query_filter` accepts an additional MongoDB filter (JSON) that
+is merged with the mandatory `{“enabled”: true}` constraint.
 
 - Request Header:
 
@@ -678,36 +690,31 @@ API returns profiles of templates and total number of templates.
     Authorization=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey
     Content-Type=application/json
     ```
-
-- Request Payload:
-    ```
-    ```
-
 
 - Request Query:
 
     ```conf
-     "index_start"= -1
-     "index_end"= -1,
-     "filter"= ""
+     “index_start”= -1
+     “index_end”= -1,
+     “extra_query_filter”= “”
     ```
 
 - Response:
 
     ```json
     {
-        "description": "",
-        "status":200,
-        "message":"",
-        "total_templates": 1,
-        "templates": []
+        “description”: “”,
+        “status”:200,
+        “message”:””,
+        “total_templates”: 1,
+        “templates”: []
     }
     ```
-  
 
-#### GET /v1/admin/templates/:template_id
+#### GET /v1/templates/:template_id
 
-Get a single template. Limited to admins.
+Get a single enabled template. Returns 404 if the template does not exist
+or has been disabled by an admin.
 
 - Request Header:
 
@@ -716,20 +723,22 @@ Get a single template. Limited to admins.
     Content-Type=application/json
     ```
 
-- Request Payload:
-
-    ```json
-    ```
-
 - Response:
 
     ```json
     {
-        "description": "",
-        "status":200,
-        "message":"",
-        "template": {}
+        “description”: “”,
+        “status”:200,
+        “message”:””,
+        “template”: {}
     }
+    ```
+
+- Error responses:
+
+    ```json
+    {“status”: 404, “message”: “template not found”}
+    {“status”: 404, “message”: “template is disabled”}
     ```
 
 ### Pod Management
