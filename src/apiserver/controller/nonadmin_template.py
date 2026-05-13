@@ -3,6 +3,7 @@ This module implements the non-admin template controller.
 """
 
 import http
+import json
 
 from loguru import logger
 from sanic import Blueprint
@@ -42,6 +43,14 @@ async def list(request):
         req = TemplateListRequest()
     else:
         req = TemplateListRequest(**{k: v for (k, v) in request.query_args})
+
+    # merge enabled=True filter so non-admin users only see enabled templates
+    try:
+        base_filter = json.loads(req.extra_query_filter) if req.extra_query_filter else {}
+    except json.JSONDecodeError:
+        base_filter = {}
+    base_filter["enabled"] = True
+    req.extra_query_filter = json.dumps(base_filter)
 
     # list templates
     count, templates, err = await get_root_service().template_service.list(request.app, req)
@@ -97,14 +106,19 @@ async def get(request, template_id: str):
         req = TemplateGetRequest(template_id=template_id)
         template, err = await get_root_service().template_service.get(request.app, req)
 
+        # treat disabled templates as not found for non-admin users
+        if err is None and not template.enabled:
+            err = errors.template_disabled
+            template = None
+
         # return response
         if err is not None:
             return json_response(
                 TemplateGetResponse(
-                    status=http.HTTPStatus.INTERNAL_SERVER_ERROR,
+                    status=http.HTTPStatus.NOT_FOUND,
                     message=str(err)
                 ).model_dump(),
-                status=http.HTTPStatus.INTERNAL_SERVER_ERROR
+                status=http.HTTPStatus.NOT_FOUND
             )
         else:
             return json_response(

@@ -85,7 +85,8 @@ class TemplateService(ServiceInterface):
                                                image_ref=req.image_ref,
                                                template_str=req.template_str,
                                                fields=req.fields,
-                                               defaults=req.defaults)
+                                               defaults=req.defaults,
+                                               enabled=req.enabled)
 
         # if success and target_status is pending, trigger template update event
         if err is None and template.resource_status == datamodels.ResourceStatusEnum.pending:

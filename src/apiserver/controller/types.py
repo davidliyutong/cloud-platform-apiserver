@@ -189,6 +189,7 @@ class TemplateUpdateRequest(BaseModel):
     template_str: Optional[str] = None
     fields: Optional[Dict[str, Any]] = None
     defaults: Optional[Dict[str, Any]] = None
+    enabled: Optional[bool] = None
 
 
 class TemplateUpdateResponse(TemplateGetResponse):

@@ -12,7 +12,26 @@ from loguru import logger
 from pydantic import BaseModel
 from vyper import Vyper
 
-CONFIG_BUILD_VERSION = "v0.0.8"
+def _resolve_build_version() -> str:
+    # 1. Injected at build time (e.g. Docker --build-arg → ENV CLPL_BUILD_VERSION)
+    v = os.environ.get("CLPL_BUILD_VERSION", "")
+    if v:
+        return v
+    # 2. Runtime git describe (local dev)
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["git", "describe", "--tags", "--abbrev=0", "--always"],
+            capture_output=True, text=True, timeout=2,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return "dev"
+
+
+CONFIG_BUILD_VERSION = _resolve_build_version()
 CONFIG_HOME_PATH = os.path.expanduser('~')
 CONFIG_CONFIG_NAME = "apiserver"
 CONFIG_PROJECT_NAME = "clpl"
