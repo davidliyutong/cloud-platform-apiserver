@@ -123,7 +123,8 @@ class TemplateRepo:
             image_ref: Optional[str],
             template_str: Optional[str],
             fields: Optional[Dict[str, Any]],
-            defaults: Optional[Dict[str, Any]]
+            defaults: Optional[Dict[str, Any]],
+            enabled: Optional[bool] = None,
     ) -> Tuple[Optional[datamodels.TemplateModel], Optional[Exception]]:
         """
         Update a template.
@@ -147,6 +148,7 @@ class TemplateRepo:
                 template['template_str'] = template_str if template_str is not None else template['template_str']
                 template['fields'] = fields if fields is not None else template['fields']
                 template['defaults'] = defaults if defaults is not None else template['defaults']
+                template['enabled'] = enabled if enabled is not None else template.get('enabled', True)
                 template['resource_status'] = datamodels.ResourceStatusEnum.pending.value
 
                 # check if the template model is valid

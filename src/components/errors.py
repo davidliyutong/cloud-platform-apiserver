@@ -26,6 +26,7 @@ template_invalid = Exception("template invalid")
 template_key_not_exists = BaseException("template key not exists")
 template_key_not_used = Exception("template key not used")
 template_not_committed = Exception("template is not committed")
+template_disabled = Exception("template is disabled")
 template_not_found = Exception("template not found")
 unknown_error = Exception("unknown error")
 user_not_found = Exception("user not found")
@@ -47,6 +48,7 @@ USER_ERROR_HTTP_STATUS = {
     id(invalid_request_body): http.HTTPStatus.BAD_REQUEST,
     id(wrong_pod_profile): http.HTTPStatus.BAD_REQUEST,
     id(pod_not_found): http.HTTPStatus.NOT_FOUND,
+    id(template_disabled): http.HTTPStatus.NOT_FOUND,
     id(template_not_found): http.HTTPStatus.NOT_FOUND,
     id(template_not_committed): http.HTTPStatus.BAD_REQUEST,
     id(user_not_found): http.HTTPStatus.NOT_FOUND,

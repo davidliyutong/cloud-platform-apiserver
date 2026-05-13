@@ -198,7 +198,8 @@ async def get(request, template_id: str):
 @authn.validate_role(role=("admin", "super_admin"))
 async def update(request, template_id: str):
     """
-    Update a template.
+    Update a template. Supports toggling the enabled field to hide/show
+    the template from non-admin users without deleting it.
     """
     logger.debug(f"{request.method} {request.path} invoked")
 

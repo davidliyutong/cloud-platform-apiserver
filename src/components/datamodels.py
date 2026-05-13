@@ -300,6 +300,7 @@ class TemplateModel(BaseModel):
     template_str: str
     fields: Optional[Dict[str, FieldTypeEnum]]  # not used
     defaults: Optional[Dict[str, Any]]  # not used
+    enabled: bool = True
 
     @field_validator("version")
     def version_must_be_valid(cls, v):
@@ -335,7 +336,8 @@ class TemplateModel(BaseModel):
             image_ref: str,
             template_str: str,
             fields: Optional[Dict[str, Any]],
-            defaults: Optional[Dict[str, Any]]):
+            defaults: Optional[Dict[str, Any]],
+            enabled: bool = True):
         return cls(
             version=config.CONFIG_BUILD_VERSION,
             template_id=uuid.uuid4(),
@@ -345,6 +347,7 @@ class TemplateModel(BaseModel):
             template_str=template_str,
             fields=fields,
             defaults=defaults,
+            enabled=enabled,
         )
 
     # example values to test if template is valid
