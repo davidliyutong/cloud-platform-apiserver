@@ -372,6 +372,37 @@ class K8SOperatorService(ServiceInterface):
         logger.info(f"pod {pod_id} deleted successfully")
         return None
 
+    async def delete_pod_except_pvc(self, pod_id: str) -> Optional[Exception]:
+        """
+        Delete all K8s resources for a pod except PersistentVolumeClaims.
+        Used when switching templates so old non-storage resources are removed
+        before the new template is applied.
+        """
+        pod_label = CONFIG_K8S_POD_LABEL_FMT.format(pod_id)
+        skipped_kinds = {'PersistentVolumeClaim'}
+
+        try:
+            for kind, col in self._resource_function_map.items():
+                if kind in skipped_kinds:
+                    continue
+                resources = col['list'](
+                    self.namespace,
+                    label_selector=f"{CONFIG_K8S_POD_LABEL_KEY}={pod_label}"
+                )
+                for resource in resources.items:
+                    col['delete'](resource.metadata.name, self.namespace)
+
+        except ApiException as e:
+            logger.exception(e)
+            return e
+
+        except Exception as e:
+            logger.exception(e)
+            return e
+
+        logger.info(f"pod {pod_id} non-PVC resources deleted for template switch")
+        return None
+
     async def _apply_k8s_resource(self, resource: dict) -> Optional[Exception]:
         """
         Apply k8s resource, similar to kubectl apply

@@ -1,3 +1,6 @@
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
 [project]
 name = "cloud-platform-apiserver"
 version = "0.1.0"

@@ -19,7 +19,7 @@
 - **name**: name, string, mutable
 - **description**: name, string, mutable
 - **image_ref**: reference of image, string, mutable
-- **template_ref**: unique id of template, uuid, immutable 
+- **template_ref**: unique id of template, uuid, mutable when pod is `stopped` (must reference a `committed` template)
 - **template_str**: string copy of template, string, immutable
 - **cpu_lim_m_cpu**: limit of cpu (mCPU), integer, mutable when pod is `stopped`
 - **mem_lim_mb**: limit of memory (MB), integer, mutable when pod is `stopped`

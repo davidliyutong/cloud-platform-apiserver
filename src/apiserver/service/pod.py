@@ -192,12 +192,23 @@ class PodService(ServiceInterface):
         # list all pods of the user
         _, pods, err = await self.parent.pod_service.repo.list(extra_query_filter={"username": req.username})
 
-        # Determine whether the user requested a spec change (includes template swap).
+        # Validate and resolve template_ref switch.
+        if req.template_ref is not None and req.template_ref != str(old_pod.template_ref):
+            if old_pod.current_status != datamodels.PodStatusEnum.stopped:
+                return None, errors.pod_not_stopped
+            new_template, err = await self.parent.template_service.repo.get(req.template_ref)
+            if err is not None or new_template is None:
+                return None, errors.template_not_found
+            if new_template.resource_status != datamodels.ResourceStatusEnum.committed:
+                return None, errors.template_not_committed
+        else:
+            req.template_ref = None  # no change, do not write to repo
+
+        # Determine whether the user requested a spec change.
         spec_requested = any([
             req.template_ref is not None,
             req.cpu_lim_m_cpu is not None,
             req.mem_lim_mb is not None,
-            req.storage_lim_mb is not None,
             req.gpu is not None,
         ])
 
@@ -210,12 +221,12 @@ class PodService(ServiceInterface):
         # Effective spec used for both the quota check and the persisted update.
         effective_cpu = req.cpu_lim_m_cpu if req.cpu_lim_m_cpu is not None else old_pod.cpu_lim_m_cpu
         effective_mem = req.mem_lim_mb if req.mem_lim_mb is not None else old_pod.mem_lim_mb
-        effective_storage = req.storage_lim_mb if req.storage_lim_mb is not None else old_pod.storage_lim_mb
         effective_gpu = req.gpu if req.gpu is not None else old_pod.gpu
 
         req.cpu_lim_m_cpu = effective_cpu
         req.mem_lim_mb = effective_mem
-        req.storage_lim_mb = effective_storage
+        # Storage is fixed at creation; always use the existing value for the quota check.
+        req.storage_lim_mb = old_pod.storage_lim_mb
         req.gpu = effective_gpu
 
         # Enforce the user's quota using the effective spec (covers both spec edits
@@ -233,9 +244,10 @@ class PodService(ServiceInterface):
             user_uuid=req.user_uuid,
             timeout_s=req.timeout_s,
             target_status=req.target_status,
+            template_ref=req.template_ref,
             cpu_lim_m_cpu=effective_cpu if spec_requested else None,
             mem_lim_mb=effective_mem if spec_requested else None,
-            storage_lim_mb=effective_storage if spec_requested else None,
+            storage_lim_mb=None,
             gpu=effective_gpu if spec_requested else None,
         )
 
