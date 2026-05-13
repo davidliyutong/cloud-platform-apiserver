@@ -24,7 +24,7 @@ class PodRepo:
         Commit a pod, set its resource_status to committed.
         """
         collection = self.db.get_db_collection(datamodels.database_name, datamodels.pod_collection_name)
-        ret = collection.find_one_and_update(
+        ret = await collection.find_one_and_update(
             {"pod_id": pod_id},
             {"$set": {"resource_status": datamodels.ResourceStatusEnum.committed.value}}
         )
